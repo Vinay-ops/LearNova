@@ -1,22 +1,26 @@
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import {
   ArrowRight,
   BookOpen,
   Target,
   BarChart3,
-  CheckCircle2,
   Brain,
   Zap,
-  Clock,
   TrendingUp,
-  Shield,
   Play,
   ChevronRight,
 } from "lucide-react";
 import { Link } from "react-router";
+import { motion } from "framer-motion";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 12 },
+  visible: { opacity: 1, y: 0 },
+};
+
+const stagger = {
+  visible: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
+};
 
 const steps = [
   { label: "Assess", desc: "Find your baseline" },
@@ -28,7 +32,11 @@ const steps = [
 
 export default function Landing() {
   return (
-    <div className="min-h-screen bg-background">
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      className="min-h-screen bg-background"
+    >
       {/* Navigation */}
       <nav className="sticky top-0 z-50 border-b bg-background/90 backdrop-blur-md">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
@@ -58,17 +66,33 @@ export default function Landing() {
       <section className="relative overflow-hidden border-b">
         <div className="mx-auto max-w-6xl px-6 py-16 lg:py-24">
           <div className="max-w-2xl">
-            <p className="text-sm font-semibold text-accent mb-4 tracking-wide uppercase">
+            <motion.p
+              variants={fadeUp}
+              transition={{ duration: 0.5 }}
+              className="text-sm font-semibold text-accent mb-4 tracking-wide uppercase"
+            >
               Consulting interview prep
-            </p>
-            <h1 className="text-4xl font-bold tracking-tight lg:text-[3.25rem] leading-[1.08] text-balance">
+            </motion.p>
+            <motion.h1
+              variants={fadeUp}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="text-4xl font-bold tracking-tight lg:text-[3.25rem] leading-[1.08] text-balance"
+            >
               Train for the consulting interview you actually want.
-            </h1>
-            <p className="mt-4 text-base text-muted-foreground leading-relaxed max-w-lg">
+            </motion.h1>
+            <motion.p
+              variants={fadeUp}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="mt-4 text-base text-muted-foreground leading-relaxed max-w-lg"
+            >
               Practice realistic cases, identify your weaknesses, and build
               measurable interview readiness — before the real interview.
-            </p>
-            <div className="flex items-center gap-3 mt-7">
+            </motion.p>
+            <motion.div
+              variants={fadeUp}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="flex items-center gap-3 mt-7"
+            >
               <Link to="/auth">
                 <Button size="lg" className="gap-2 px-6">
                   Start Practicing
@@ -81,13 +105,18 @@ export default function Landing() {
                   See How It Works
                 </Button>
               </a>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Product Preview — not in a card, shown as real interface */}
-      <section className="border-b">
+      {/* Product Preview */}
+      <motion.section
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+        className="border-b"
+      >
         <div className="mx-auto max-w-6xl px-6 py-16">
           <div className="rounded-xl border bg-card overflow-hidden shadow-lg">
             {/* Fake app toolbar */}
@@ -144,10 +173,17 @@ export default function Landing() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="border-b">
+      <motion.section
+        id="how-it-works"
+        className="border-b"
+        variants={stagger}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-80px" }}
+      >
         <div className="mx-auto max-w-6xl px-6 py-16">
           <p className="text-xs font-semibold text-accent uppercase tracking-widest mb-3">Process</p>
           <h2 className="text-2xl font-bold tracking-tight mb-10">
@@ -173,10 +209,16 @@ export default function Landing() {
             ))}
           </div>
         </div>
-      </section>
+      </motion.section>
 
-      {/* Features — no cards, just a two-column layout with real content */}
-      <section className="border-b">
+      {/* Features */}
+      <motion.section
+        className="border-b"
+        variants={stagger}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, margin: "-80px" }}
+      >
         <div className="mx-auto max-w-6xl px-6 py-16">
           <div className="grid gap-16 lg:grid-cols-2">
             {/* Left: feature list */}
@@ -254,7 +296,7 @@ export default function Landing() {
             </div>
           </div>
         </div>
-      </section>
+      </motion.section>
 
       {/* Social proof — stats strip, not cards */}
       <section className="border-b bg-muted/20">
@@ -311,6 +353,6 @@ export default function Landing() {
           </div>
         </div>
       </footer>
-    </div>
+    </motion.div>
   );
 }

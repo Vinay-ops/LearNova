@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -19,6 +18,8 @@ import {
 } from "lucide-react";
 import { assessments, assessmentQuestions } from "@/data/mock-data";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import { FadeIn, StaggerList, StaggerItem } from "@/components/app/AnimatedSection";
 
 const categoryIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   "Numerical Reasoning": Calculator,
@@ -102,7 +103,11 @@ function ActiveAssessment({ onExit }: { onExit: () => void }) {
   };
 
   return (
-    <div>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3 }}
+    >
       {/* Assessment header */}
       <div className="flex items-center justify-between mb-6">
         <Button variant="ghost" size="sm" onClick={onExit}>
@@ -123,7 +128,15 @@ function ActiveAssessment({ onExit }: { onExit: () => void }) {
       <Progress value={progress} className="mb-8" />
 
       {/* Question */}
-      <div className="rounded-xl border bg-card p-6 mb-6">
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentQ}
+          initial={{ opacity: 0, x: 12 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -12 }}
+          transition={{ duration: 0.25 }}
+          className="rounded-xl border bg-card p-6 mb-6"
+        >
         <div className="flex items-start justify-between mb-5">
           <p className="text-base font-medium leading-relaxed pr-4">{q.question}</p>
           <Button
@@ -168,7 +181,8 @@ function ActiveAssessment({ onExit }: { onExit: () => void }) {
             </button>
           ))}
         </div>
-      </div>
+      </motion.div>
+      </AnimatePresence>
 
       {/* Navigation */}
       <div className="flex items-center justify-between">
@@ -210,7 +224,7 @@ function ActiveAssessment({ onExit }: { onExit: () => void }) {
           </Button>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -227,6 +241,7 @@ export default function Assessments() {
 
   return (
     <AppLayout>
+      <FadeIn>
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Assessments</h1>
@@ -244,6 +259,7 @@ export default function Assessments() {
           />
         ))}
       </div>
+      </FadeIn>
     </AppLayout>
   );
 }

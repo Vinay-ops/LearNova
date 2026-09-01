@@ -19,7 +19,6 @@ import {
   CheckCircle2,
   ArrowRight,
   Filter,
-  Clock,
 } from "lucide-react";
 import {
   practiceCases,
@@ -29,6 +28,8 @@ import {
   behavioralDrills,
 } from "@/data/mock-data";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { FadeIn, StaggerList, StaggerItem } from "@/components/app/AnimatedSection";
 
 function CaseRow({
   title,
@@ -48,7 +49,11 @@ function CaseRow({
   score?: number;
 }) {
   return (
-    <div className="group flex items-center gap-4 px-4 py-3.5 border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
+    <motion.div
+      whileHover={{ backgroundColor: "oklch(0.96 0.004 260 / 0.3)" }}
+      transition={{ duration: 0.15 }}
+      className="group flex items-center gap-4 px-4 py-3.5 border-b border-border/50 last:border-0"
+    >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2.5">
           <span className="font-medium text-sm">{title}</span>
@@ -87,7 +92,7 @@ function CaseRow({
         {completed ? "Review" : "Start"}
         <ArrowRight className="h-3 w-3" />
       </Button>
-    </div>
+    </motion.div>
   );
 }
 
@@ -107,7 +112,11 @@ function DrillRow({
   score?: number;
 }) {
   return (
-    <div className="group flex items-center gap-4 px-4 py-3.5 border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
+    <motion.div
+      whileHover={{ backgroundColor: "oklch(0.96 0.004 260 / 0.3)" }}
+      transition={{ duration: 0.15 }}
+      className="group flex items-center gap-4 px-4 py-3.5 border-b border-border/50 last:border-0"
+    >
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2.5">
           <span className="font-medium text-sm">{title}</span>
@@ -132,7 +141,7 @@ function DrillRow({
         {completed ? "Again" : "Start"}
         <ArrowRight className="h-3 w-3" />
       </Button>
-    </div>
+    </motion.div>
   );
 }
 
@@ -166,6 +175,7 @@ export default function Practice() {
         </Select>
       </div>
 
+      <FadeIn delay={0.15}>
       <Tabs defaultValue="cases">
         <TabsList>
           <TabsTrigger value="cases" className="gap-1.5">
@@ -191,7 +201,7 @@ export default function Practice() {
         </TabsList>
 
         <TabsContent value="cases">
-          <div className="rounded-xl border bg-card overflow-hidden mt-4">
+          <StaggerList className="rounded-xl border bg-card overflow-hidden mt-4">
             <div className="px-4 py-2.5 border-b bg-muted/30 flex items-center gap-4 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
               <span className="flex-1">Case</span>
               <span className="w-12 text-right">Score</span>
@@ -199,43 +209,44 @@ export default function Practice() {
               <span className="w-20" />
             </div>
             {filterByDifficulty(practiceCases).map((c) => (
-              <CaseRow key={c.id} {...c} />
+              <StaggerItem key={c.id}><CaseRow {...c} /></StaggerItem>
             ))}
-          </div>
+          </StaggerList>
         </TabsContent>
 
         <TabsContent value="drills">
-          <div className="rounded-xl border bg-card overflow-hidden mt-4">
+          <StaggerList className="rounded-xl border bg-card overflow-hidden mt-4">
             {filterByDifficulty(skillDrills).map((d) => (
-              <DrillRow key={d.id} {...d} />
+              <StaggerItem key={d.id}><DrillRow {...d} /></StaggerItem>
             ))}
-          </div>
+          </StaggerList>
         </TabsContent>
 
         <TabsContent value="math">
-          <div className="rounded-xl border bg-card overflow-hidden mt-4">
+          <StaggerList className="rounded-xl border bg-card overflow-hidden mt-4">
             {filterByDifficulty(mentalMathDrills).map((d) => (
-              <DrillRow key={d.id} {...d} />
+              <StaggerItem key={d.id}><DrillRow {...d} /></StaggerItem>
             ))}
-          </div>
+          </StaggerList>
         </TabsContent>
 
         <TabsContent value="data">
-          <div className="rounded-xl border bg-card overflow-hidden mt-4">
+          <StaggerList className="rounded-xl border bg-card overflow-hidden mt-4">
             {filterByDifficulty(dataInterpDrills).map((d) => (
-              <DrillRow key={d.id} {...d} />
+              <StaggerItem key={d.id}><DrillRow {...d} /></StaggerItem>
             ))}
-          </div>
+          </StaggerList>
         </TabsContent>
 
         <TabsContent value="behavioral">
-          <div className="rounded-xl border bg-card overflow-hidden mt-4">
+          <StaggerList className="rounded-xl border bg-card overflow-hidden mt-4">
             {filterByDifficulty(behavioralDrills).map((d) => (
-              <DrillRow key={d.id} {...d} />
+              <StaggerItem key={d.id}><DrillRow {...d} /></StaggerItem>
             ))}
-          </div>
+          </StaggerList>
         </TabsContent>
       </Tabs>
+      </FadeIn>
     </AppLayout>
   );
 }

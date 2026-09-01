@@ -6,13 +6,12 @@ import {
   BarChart3,
   ClipboardList,
   Settings,
-  HelpCircle,
-  User,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -42,11 +41,10 @@ export function AppSidebar() {
   };
 
   return (
-    <aside
-      className={cn(
-        "relative flex h-screen flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300",
-        collapsed ? "w-[68px]" : "w-60"
-      )}
+    <motion.aside
+      animate={{ width: collapsed ? 68 : 240 }}
+      transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+      className="relative flex h-screen flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground overflow-hidden"
     >
       {/* Logo */}
       <div className="flex h-14 items-center gap-2 px-4 shrink-0">
@@ -158,6 +156,6 @@ export function AppSidebar() {
           <ChevronLeft className="h-3 w-3" />
         )}
       </button>
-    </aside>
+    </motion.aside>
   );
 }

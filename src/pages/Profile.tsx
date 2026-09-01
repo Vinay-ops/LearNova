@@ -1,10 +1,11 @@
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Pencil, Target, Calendar, GraduationCap, Building2, TrendingUp } from "lucide-react";
+import { Pencil, Target, Calendar, GraduationCap, Building2 } from "lucide-react";
 import { userProfile } from "@/data/mock-data";
+import { motion } from "framer-motion";
+import { FadeIn, StaggerList, StaggerItem } from "@/components/app/AnimatedSection";
 
 function getDaysUntil(dateStr: string) {
   const target = new Date(dateStr);
@@ -42,7 +43,7 @@ export default function Profile() {
       </div>
 
       {/* Stats strip */}
-      <div className="flex items-center gap-10 mb-8 pb-8 border-b">
+      <FadeIn delay={0.15} className="flex items-center gap-10 mb-8 pb-8 border-b">
         <div>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-1">
             Readiness
@@ -56,10 +57,10 @@ export default function Profile() {
           </p>
           <p className="text-3xl font-bold tabular-nums">{daysLeft}<span className="text-base font-normal text-muted-foreground ml-1">days</span></p>
         </div>
-      </div>
+      </FadeIn>
 
-      {/* Details — simple data rows */}
-      <div className="space-y-0 rounded-xl border bg-card overflow-hidden">
+      {/* Details */}
+      <StaggerList className="rounded-xl border bg-card overflow-hidden">
         {[
           { icon: Building2, label: "Target Firms", value: userProfile.targetFirms.join(", ") },
           { icon: Target, label: "Target Role", value: "BCG Associate" },
@@ -68,14 +69,16 @@ export default function Profile() {
         ].map((item) => {
           const Icon = item.icon;
           return (
-            <div key={item.label} className="flex items-center gap-3 px-4 py-3.5 border-b border-border/50 last:border-0">
-              <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span className="text-sm text-muted-foreground w-36 shrink-0">{item.label}</span>
-              <span className="text-sm font-medium">{item.value}</span>
-            </div>
+            <StaggerItem key={item.label}>
+              <motion.div whileHover={{ x: 2 }} transition={{ type: "spring", stiffness: 500, damping: 30 }} className="flex items-center gap-3 px-4 py-3.5 border-b border-border/50 last:border-0">
+                <Icon className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-sm text-muted-foreground w-36 shrink-0">{item.label}</span>
+                <span className="text-sm font-medium">{item.value}</span>
+              </motion.div>
+            </StaggerItem>
           );
         })}
-      </div>
+      </StaggerList>
     </AppLayout>
   );
 }

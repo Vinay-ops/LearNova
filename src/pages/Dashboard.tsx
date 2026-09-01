@@ -1,8 +1,6 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { FadeIn, StaggerList, StaggerItem, AnimatedBar } from "@/components/app/AnimatedSection";
 import {
   ArrowRight,
   BookOpen,
@@ -30,6 +28,7 @@ import {
 } from "@/data/mock-data";
 import { Link } from "react-router";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -55,8 +54,13 @@ export default function Dashboard() {
 
   return (
     <AppLayout>
-      {/* Header — readiness is inline, not in a card */}
-      <div className="flex items-start justify-between mb-8">
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+        className="flex items-start justify-between mb-8"
+      >
         <div>
           <h1 className="text-2xl font-bold tracking-tight">
             {getGreeting()}, {userProfile.name}
@@ -73,10 +77,10 @@ export default function Dashboard() {
             <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         </Link>
-      </div>
+      </motion.div>
 
-      {/* Readiness hero — not in a card, just big text */}
-      <div className="flex items-center gap-8 mb-8 pb-8 border-b">
+      {/* Readiness hero */}
+      <FadeIn delay={0.1} className="flex items-center gap-8 mb-8 pb-8 border-b">
         <div>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-1">
             Interview Readiness
@@ -94,88 +98,121 @@ export default function Dashboard() {
             </span>
           </div>
         </div>
-        {/* Mini ring */}
-        <svg width="100" height="100" className="-rotate-90 shrink-0">
+        <motion.svg
+          width="100"
+          height="100"
+          className="-rotate-90 shrink-0"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.3, duration: 0.5, type: "spring", stiffness: 200 }}
+        >
           <circle cx="50" cy="50" r="42" fill="none" stroke="oklch(0.92 0.004 260)" strokeWidth="7" />
-          <circle
+          <motion.circle
             cx="50"
             cy="50"
             r="42"
             fill="none"
             stroke="oklch(0.48 0.14 245)"
             strokeWidth="7"
-            strokeDasharray="263.9"
-            strokeDashoffset={263.9 * (1 - userProfile.readinessScore / 100)}
             strokeLinecap="round"
+            initial={{ strokeDasharray: "263.9", strokeDashoffset: 263.9 }}
+            animate={{ strokeDashoffset: 263.9 * (1 - userProfile.readinessScore / 100) }}
+            transition={{ delay: 0.5, duration: 1.2, ease: "easeOut" }}
           />
-        </svg>
-      </div>
+        </motion.svg>
+      </FadeIn>
 
-      {/* Stats strip — inline, no cards */}
-      <div className="flex items-center gap-10 mb-8 pb-8 border-b">
+      {/* Stats strip */}
+      <FadeIn delay={0.2} className="flex items-center gap-10 mb-8 pb-8 border-b">
         {[
           { icon: Flame, value: userProfile.streak, label: "day streak" },
           { icon: BookOpen, value: userProfile.totalCasesCompleted, label: "cases done" },
           { icon: Clock, value: `${userProfile.averageScore}%`, label: "avg score" },
-        ].map((s) => {
+        ].map((s, i) => {
           const Icon = s.icon;
           return (
-            <div key={s.label} className="flex items-center gap-2.5">
+            <motion.div
+              key={s.label}
+              className="flex items-center gap-2.5"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 + i * 0.1, duration: 0.35 }}
+            >
               <Icon className="h-4 w-4 text-muted-foreground" />
               <span className="text-lg font-bold tabular-nums">{s.value}</span>
               <span className="text-xs text-muted-foreground">{s.label}</span>
-            </div>
+            </motion.div>
           );
         })}
-      </div>
+      </FadeIn>
 
-      {/* Main content: skills left, training right */}
+      {/* Main content */}
       <div className="grid gap-8 lg:grid-cols-5 mb-8">
-        {/* Skills — dense data rows, not cards */}
+        {/* Skills */}
         <div className="lg:col-span-3">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
             Skill Performance
           </p>
-          <div className="space-y-3">
-            {skillScores.map((skill) => (
-              <div key={skill.name} className="flex items-center gap-3">
-                <span className={cn(
-                  "text-sm w-40 shrink-0",
-                  skill.name === weakestSkill.name
-                    ? "font-semibold text-foreground"
-                    : "text-muted-foreground"
-                )}>
-                  {skill.name}
-                </span>
-                <div className="flex-1 h-2 rounded-full bg-muted">
-                  <div
-                    className={cn("h-full rounded-full transition-all duration-700", skillColor(skill.score))}
-                    style={{ width: `${skill.score}%` }}
-                  />
+          <StaggerList className="space-y-3">
+            {skillScores.map((skill, i) => (
+              <StaggerItem key={skill.name}>
+                <div className="flex items-center gap-3">
+                  <span
+                    className={cn(
+                      "text-sm w-40 shrink-0",
+                      skill.name === weakestSkill.name
+                        ? "font-semibold text-foreground"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    {skill.name}
+                  </span>
+                  <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                    <AnimatedBar
+                      width={skill.score}
+                      className={cn("h-full rounded-full", skillColor(skill.score))}
+                      delay={0.2 + i * 0.08}
+                    />
+                  </div>
+                  <div className="flex items-center gap-2 w-20 justify-end">
+                    <motion.span
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.3 + i * 0.08 }}
+                      className="text-sm font-semibold tabular-nums"
+                    >
+                      {skill.score}
+                    </motion.span>
+                    {skill.previousScore && (
+                      <motion.span
+                        initial={{ opacity: 0, x: -4 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.5 + i * 0.08 }}
+                        className="text-[11px] text-emerald-600 tabular-nums"
+                      >
+                        +{skill.score - skill.previousScore}
+                      </motion.span>
+                    )}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2 w-20 justify-end">
-                  <span className="text-sm font-semibold tabular-nums">{skill.score}</span>
-                  {skill.previousScore && (
-                    <span className="text-[11px] text-emerald-600 tabular-nums">
-                      +{skill.score - skill.previousScore}
-                    </span>
-                  )}
-                </div>
-              </div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerList>
+
           {/* Weakness callout */}
-          <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 flex items-start gap-2.5">
-            <Target className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-amber-800">
-                Focus: {weakestSkill.name} ({weakestSkill.score}/100)
-              </p>
-              <p className="text-xs text-amber-700 mt-0.5">
-                This is your lowest skill. Targeted drills can improve it fastest.
-              </p>
+          <FadeIn delay={0.6} className="mt-4">
+            <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 flex items-start gap-2.5">
+              <Target className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-amber-800">
+                  Focus: {weakestSkill.name} ({weakestSkill.score}/100)
+                </p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  This is your lowest skill. Targeted drills can improve it fastest.
+                </p>
+              </div>
             </div>
-          </div>
+          </FadeIn>
         </div>
 
         {/* Right column */}
@@ -185,7 +222,12 @@ export default function Dashboard() {
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
               Recommended Next
             </p>
-            <div className="rounded-lg border bg-primary/[0.03] p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3, duration: 0.4 }}
+              className="rounded-lg border bg-primary/[0.03] p-4"
+            >
               <div className="flex items-start gap-3">
                 <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 shrink-0 mt-0.5">
                   <Target className="h-4 w-4 text-primary" />
@@ -194,7 +236,8 @@ export default function Dashboard() {
                   <p className="font-semibold text-sm">Business Judgment Drill</p>
                   <p className="text-xs text-muted-foreground mt-0.5">10 minutes</p>
                   <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-                    Practice identifying the most important business implications from limited information.
+                    Practice identifying the most important business implications
+                    from limited information.
                   </p>
                   <Link to="/practice">
                     <Button className="mt-3 gap-1.5" size="sm">
@@ -204,50 +247,55 @@ export default function Dashboard() {
                   </Link>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
 
-          {/* Today's training — checklist, not cards */}
+          {/* Today's training */}
           <div>
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
               Today&apos;s Training
             </p>
-            <div className="space-y-1">
+            <StaggerList className="space-y-1">
               {todayTraining.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-muted/50 transition-colors"
-                >
-                  {item.completed ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                  ) : (
-                    <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/20 shrink-0" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className={cn(
-                      "text-sm font-medium",
-                      item.completed && "text-muted-foreground line-through"
-                    )}>
-                      {item.title}
-                    </p>
-                  </div>
-                  <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-                    {item.duration} min
-                  </span>
-                  {!item.completed && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
-                      <Play className="h-3 w-3" />
-                    </Button>
-                  )}
-                </div>
+                <StaggerItem key={item.id}>
+                  <motion.div
+                    whileHover={{ x: 2 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-muted/50 transition-colors cursor-pointer"
+                  >
+                    {item.completed ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                    ) : (
+                      <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/20 shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className={cn(
+                          "text-sm font-medium",
+                          item.completed && "text-muted-foreground line-through"
+                        )}
+                      >
+                        {item.title}
+                      </p>
+                    </div>
+                    <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                      {item.duration} min
+                    </span>
+                    {!item.completed && (
+                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
+                        <Play className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </motion.div>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerList>
           </div>
         </div>
       </div>
 
-      {/* Readiness chart — full width */}
-      <div>
+      {/* Readiness chart */}
+      <FadeIn delay={0.4}>
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
           Readiness Over Time
         </p>
@@ -283,12 +331,14 @@ export default function Dashboard() {
                   strokeWidth={2}
                   dot={false}
                   activeDot={{ r: 4, strokeWidth: 2 }}
+                  animationDuration={1200}
+                  animationEasing="ease-out"
                 />
               </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
-      </div>
+      </FadeIn>
     </AppLayout>
   );
 }

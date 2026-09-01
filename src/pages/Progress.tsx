@@ -1,15 +1,7 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent } from "@/components/ui/card";
-import {
-  TrendingUp,
-  Flame,
-  BookOpen,
-  Clock,
-  BarChart3,
-  Award,
-  Target,
-  Zap,
-} from "lucide-react";
+import { TrendingUp, Flame, BookOpen, Clock, BarChart3 } from "lucide-react";
+import { motion } from "framer-motion";
+import { FadeIn, StaggerList, StaggerItem, AnimatedBar } from "@/components/app/AnimatedSection";
 import {
   LineChart,
   Line,
@@ -42,8 +34,8 @@ export default function Progress() {
         </p>
       </div>
 
-      {/* Readiness + Key insights — inline, not cards */}
-      <div className="flex items-start gap-10 mb-8 pb-8 border-b">
+      {/* Readiness + Key insights */}
+      <FadeIn delay={0.1} className="flex items-start gap-10 mb-8 pb-8 border-b">
         <div>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-1">
             Interview Readiness
@@ -79,10 +71,10 @@ export default function Progress() {
             </div>
           ))}
         </div>
-      </div>
+      </FadeIn>
 
       {/* Chart */}
-      <div className="mb-8">
+      <FadeIn delay={0.2} className="mb-8">
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
           Performance Over Time
         </p>
@@ -122,7 +114,7 @@ export default function Progress() {
             </ResponsiveContainer>
           </div>
         </div>
-      </div>
+      </FadeIn>
 
       {/* Skill Development — dense rows */}
       <div className="mb-8">
@@ -130,9 +122,10 @@ export default function Progress() {
           Skill Development
         </p>
         <div className="rounded-xl border bg-card p-5">
-          <div className="space-y-3">
+          <StaggerList className="space-y-3">
             {skillScores.map((skill) => (
-              <div key={skill.name} className="flex items-center gap-3">
+              <StaggerItem key={skill.name}>
+                <div className="flex items-center gap-3">
                 <span className="text-sm w-40 text-muted-foreground shrink-0">
                   {skill.name}
                 </span>
@@ -148,14 +141,15 @@ export default function Progress() {
                     +{skill.score - skill.previousScore}
                   </span>
                 </div>
-              </div>
+                </div>
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerList>
         </div>
       </div>
 
-      {/* Key Metrics — stat strip, not cards */}
-      <div>
+      {/* Key Metrics */}
+      <FadeIn delay={0.4}>
         <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
           Key Metrics
         </p>
@@ -182,7 +176,7 @@ export default function Progress() {
             })}
           </div>
         </div>
-      </div>
+      </FadeIn>
     </AppLayout>
   );
 }
