@@ -1,6 +1,4 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { ScoreRing } from "@/components/app/ScoreRing";
-import { SkillBar } from "@/components/app/SkillBar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,12 +6,12 @@ import { Separator } from "@/components/ui/separator";
 import {
   ArrowRight,
   BookOpen,
-  Calendar,
   CheckCircle2,
   Clock,
   Flame,
   Play,
   TrendingUp,
+  Target,
 } from "lucide-react";
 import {
   LineChart,
@@ -47,215 +45,233 @@ function getDaysUntilInterview(dateStr: string) {
   return diff;
 }
 
+const skillColor = (score: number) =>
+  score >= 80 ? "bg-emerald-600" : score >= 65 ? "bg-accent" : "bg-amber-500";
+
 export default function Dashboard() {
   const daysLeft = getDaysUntilInterview(userProfile.interviewDate);
   const weakestSkill = [...skillScores].sort((a, b) => a.score - b.score)[0];
+  const scoreDiff = userProfile.readinessScore - userProfile.previousReadinessScore;
 
   return (
     <AppLayout>
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">
-          {getGreeting()}, {userProfile.name}
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          Your interview is in{" "}
-          <span className="font-medium text-foreground">{daysLeft} days</span>.{" "}
-          Let&apos;s keep improving.
-        </p>
-      </div>
-
-      {/* Main grid */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Interview Readiness - left 2 cols */}
-        <Card className="lg:col-span-2">
-          <CardContent className="pt-6">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground mb-1">
-                  Interview Readiness
-                </p>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-4xl font-bold tracking-tight tabular-nums">
-                    {userProfile.readinessScore}
-                  </span>
-                  <span className="text-lg text-muted-foreground">/ 100</span>
-                </div>
-                <div className="flex items-center gap-1 mt-1">
-                  <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
-                  <span className="text-sm text-emerald-600 font-medium">
-                    +{userProfile.readinessScore - userProfile.previousReadinessScore} points this
-                    month
-                  </span>
-                </div>
-              </div>
-              <ScoreRing score={userProfile.readinessScore} size={120} strokeWidth={8} />
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Quick Stats - right col */}
-        <div className="flex flex-col gap-6">
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <Flame className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold tabular-nums">{userProfile.streak}</p>
-                  <p className="text-xs text-muted-foreground">Day streak</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <BookOpen className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold tabular-nums">{userProfile.totalCasesCompleted}</p>
-                  <p className="text-xs text-muted-foreground">Cases completed</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <Clock className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold tabular-nums">{userProfile.averageScore}<span className="text-sm font-normal text-muted-foreground">%</span></p>
-                  <p className="text-xs text-muted-foreground">Avg score</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+      {/* Header — readiness is inline, not in a card */}
+      <div className="flex items-start justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {getGreeting()}, {userProfile.name}
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Interview in{" "}
+            <span className="font-semibold text-foreground">{daysLeft} days</span>.
+          </p>
         </div>
+        <Link to="/cases/case-1">
+          <Button className="gap-2">
+            <Target className="h-4 w-4" />
+            Start Mock Interview
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Button>
+        </Link>
       </div>
 
-      {/* Skill Performance + Recommended Next */}
-      <div className="grid gap-6 mt-6 lg:grid-cols-5">
-        {/* Skills */}
-        <Card className="lg:col-span-3">
-          <CardHeader>
-            <CardTitle className="text-base">Skill Performance</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
+      {/* Readiness hero — not in a card, just big text */}
+      <div className="flex items-center gap-8 mb-8 pb-8 border-b">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-1">
+            Interview Readiness
+          </p>
+          <div className="flex items-baseline gap-2">
+            <span className="text-5xl font-bold tracking-tight tabular-nums">
+              {userProfile.readinessScore}
+            </span>
+            <span className="text-xl text-muted-foreground">/ 100</span>
+          </div>
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
+            <span className="text-sm text-emerald-600 font-medium">
+              +{scoreDiff} points this month
+            </span>
+          </div>
+        </div>
+        {/* Mini ring */}
+        <svg width="100" height="100" className="-rotate-90 shrink-0">
+          <circle cx="50" cy="50" r="42" fill="none" stroke="oklch(0.92 0.004 260)" strokeWidth="7" />
+          <circle
+            cx="50"
+            cy="50"
+            r="42"
+            fill="none"
+            stroke="oklch(0.48 0.14 245)"
+            strokeWidth="7"
+            strokeDasharray="263.9"
+            strokeDashoffset={263.9 * (1 - userProfile.readinessScore / 100)}
+            strokeLinecap="round"
+          />
+        </svg>
+      </div>
+
+      {/* Stats strip — inline, no cards */}
+      <div className="flex items-center gap-10 mb-8 pb-8 border-b">
+        {[
+          { icon: Flame, value: userProfile.streak, label: "day streak" },
+          { icon: BookOpen, value: userProfile.totalCasesCompleted, label: "cases done" },
+          { icon: Clock, value: `${userProfile.averageScore}%`, label: "avg score" },
+        ].map((s) => {
+          const Icon = s.icon;
+          return (
+            <div key={s.label} className="flex items-center gap-2.5">
+              <Icon className="h-4 w-4 text-muted-foreground" />
+              <span className="text-lg font-bold tabular-nums">{s.value}</span>
+              <span className="text-xs text-muted-foreground">{s.label}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Main content: skills left, training right */}
+      <div className="grid gap-8 lg:grid-cols-5 mb-8">
+        {/* Skills — dense data rows, not cards */}
+        <div className="lg:col-span-3">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
+            Skill Performance
+          </p>
+          <div className="space-y-3">
             {skillScores.map((skill) => (
-              <SkillBar
-                key={skill.name}
-                name={skill.name}
-                score={skill.score}
-                previousScore={skill.previousScore}
-                highlight={skill.name === weakestSkill.name}
-              />
-            ))}
-          </CardContent>
-        </Card>
-
-        {/* Recommended Next + Today */}
-        <div className="lg:col-span-2 flex flex-col gap-6">
-          {/* Recommended Next */}
-          <Card className="border-primary/20 bg-primary/[0.02]">
-            <CardHeader>
-              <CardTitle className="text-base">Recommended Next</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 mt-0.5">
-                    <Target className="h-4 w-4 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-semibold text-sm">Business Judgment Drill</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">10 minutes</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      &ldquo;Practice identifying the most important business implications from limited information.&rdquo;
-                    </p>
-                  </div>
+              <div key={skill.name} className="flex items-center gap-3">
+                <span className={cn(
+                  "text-sm w-40 shrink-0",
+                  skill.name === weakestSkill.name
+                    ? "font-semibold text-foreground"
+                    : "text-muted-foreground"
+                )}>
+                  {skill.name}
+                </span>
+                <div className="flex-1 h-2 rounded-full bg-muted">
+                  <div
+                    className={cn("h-full rounded-full transition-all duration-700", skillColor(skill.score))}
+                    style={{ width: `${skill.score}%` }}
+                  />
                 </div>
-                <Link to="/practice">
-                  <Button className="w-full" size="sm">
-                    Start Drill
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </Button>
-                </Link>
+                <div className="flex items-center gap-2 w-20 justify-end">
+                  <span className="text-sm font-semibold tabular-nums">{skill.score}</span>
+                  {skill.previousScore && (
+                    <span className="text-[11px] text-emerald-600 tabular-nums">
+                      +{skill.score - skill.previousScore}
+                    </span>
+                  )}
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            ))}
+          </div>
+          {/* Weakness callout */}
+          <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 flex items-start gap-2.5">
+            <Target className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-medium text-amber-800">
+                Focus: {weakestSkill.name} ({weakestSkill.score}/100)
+              </p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                This is your lowest skill. Targeted drills can improve it fastest.
+              </p>
+            </div>
+          </div>
+        </div>
 
-          {/* Today's Training */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Today&apos;s Training</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
+        {/* Right column */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Recommended next */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
+              Recommended Next
+            </p>
+            <div className="rounded-lg border bg-primary/[0.03] p-4">
+              <div className="flex items-start gap-3">
+                <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 shrink-0 mt-0.5">
+                  <Target className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm">Business Judgment Drill</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">10 minutes</p>
+                  <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+                    Practice identifying the most important business implications from limited information.
+                  </p>
+                  <Link to="/practice">
+                    <Button className="mt-3 gap-1.5" size="sm">
+                      Start Drill
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Today's training — checklist, not cards */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
+              Today&apos;s Training
+            </p>
+            <div className="space-y-1">
               {todayTraining.map((item) => (
                 <div
                   key={item.id}
-                  className="flex items-center justify-between rounded-lg border px-3 py-2.5"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-muted/50 transition-colors"
                 >
-                  <div className="flex items-center gap-2.5">
-                    {item.completed ? (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                    ) : (
-                      <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/30" />
-                    )}
-                    <div>
-                      <p
-                        className={cn(
-                          "text-sm font-medium",
-                          item.completed && "text-muted-foreground line-through"
-                        )}
-                      >
-                        {item.title}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground">{item.duration} min</p>
-                    </div>
+                  {item.completed ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                  ) : (
+                    <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/20 shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className={cn(
+                      "text-sm font-medium",
+                      item.completed && "text-muted-foreground line-through"
+                    )}>
+                      {item.title}
+                    </p>
                   </div>
+                  <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+                    {item.duration} min
+                  </span>
                   {!item.completed && (
-                    <Button variant="ghost" size="icon" className="h-7 w-7">
+                    <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0">
                       <Play className="h-3 w-3" />
                     </Button>
                   )}
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Readiness Over Time */}
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle className="text-base">Readiness Over Time</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64">
+      {/* Readiness chart — full width */}
+      <div>
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
+          Readiness Over Time
+        </p>
+        <div className="rounded-xl border bg-card p-6">
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={readinessOverTime}>
-                <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.92 0.005 250)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.92 0.004 260)" />
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 12, fill: "oklch(0.5 0.01 250)" }}
+                  tick={{ fontSize: 11, fill: "oklch(0.48 0.01 260)" }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   domain={[0, 100]}
-                  tick={{ fontSize: 12, fill: "oklch(0.5 0.01 250)" }}
+                  tick={{ fontSize: 11, fill: "oklch(0.48 0.01 260)" }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <Tooltip
                   contentStyle={{
                     borderRadius: "8px",
-                    border: "1px solid oklch(0.9 0.005 250)",
+                    border: "1px solid oklch(0.905 0.004 260)",
                     fontSize: "12px",
                     boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
                   }}
@@ -263,35 +279,16 @@ export default function Dashboard() {
                 <Line
                   type="monotone"
                   dataKey="score"
-                  stroke="oklch(0.55 0.15 240)"
-                  strokeWidth={2.5}
+                  stroke="oklch(0.48 0.14 245)"
+                  strokeWidth={2}
                   dot={false}
-                  activeDot={{ r: 5, strokeWidth: 2 }}
+                  activeDot={{ r: 4, strokeWidth: 2 }}
                 />
               </LineChart>
             </ResponsiveContainer>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </AppLayout>
-  );
-}
-
-function Target({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <circle cx="12" cy="12" r="10" />
-      <circle cx="12" cy="12" r="6" />
-      <circle cx="12" cy="12" r="2" />
-    </svg>
   );
 }

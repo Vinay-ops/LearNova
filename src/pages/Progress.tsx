@@ -1,17 +1,13 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { ScoreRing } from "@/components/app/ScoreRing";
-import { SkillBar } from "@/components/app/SkillBar";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   TrendingUp,
   Flame,
   BookOpen,
   Clock,
   BarChart3,
-  Target,
   Award,
+  Target,
   Zap,
 } from "lucide-react";
 import {
@@ -23,20 +19,11 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import {
-  skillScores,
-  readinessOverTime,
-  userProfile,
-} from "@/data/mock-data";
+import { skillScores, readinessOverTime, userProfile } from "@/data/mock-data";
 import { cn } from "@/lib/utils";
 
-const monthlyPerformance = [
-  { month: "Apr", cases: 3, avgScore: 52 },
-  { month: "May", cases: 5, avgScore: 58 },
-  { month: "Jun", cases: 8, avgScore: 64 },
-  { month: "Jul", cases: 12, avgScore: 70 },
-  { month: "Aug", cases: 24, avgScore: 74 },
-];
+const skillColor = (score: number) =>
+  score >= 80 ? "bg-emerald-600" : score >= 65 ? "bg-accent" : "bg-amber-500";
 
 export default function Progress() {
   const strongest = [...skillScores].sort((a, b) => b.score - a.score)[0];
@@ -48,193 +35,153 @@ export default function Progress() {
   return (
     <AppLayout>
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight">Progress</h1>
         <p className="text-muted-foreground mt-1">
           Track your interview preparation journey.
         </p>
       </div>
 
-      {/* Top row: Readiness + Key insights */}
-      <div className="grid gap-6 lg:grid-cols-3 mb-6">
-        <Card className="lg:col-span-1">
-          <CardContent className="pt-6 flex flex-col items-center">
-            <p className="text-sm font-medium text-muted-foreground mb-3">
-              Interview Readiness
-            </p>
-            <ScoreRing score={userProfile.readinessScore} size={140} strokeWidth={9} />
-            <div className="flex items-center gap-1 mt-3">
-              <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
-              <span className="text-sm text-emerald-600 font-medium">
-                +{userProfile.readinessScore - userProfile.previousReadinessScore} this month
-              </span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <div className="lg:col-span-2 grid gap-4 sm:grid-cols-3">
-          <Card className="border-emerald-200 bg-emerald-500/[0.03]">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Award className="h-4 w-4 text-emerald-600" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
-                  Strength
-                </span>
-              </div>
-              <p className="font-semibold">{strongest.name}</p>
-              <p className="text-sm text-muted-foreground tabular-nums">{strongest.score}/100</p>
-            </CardContent>
-          </Card>
-          <Card className="border-amber-200 bg-amber-500/[0.03]">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Target className="h-4 w-4 text-amber-600" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-amber-700">
-                  Focus Area
-                </span>
-              </div>
-              <p className="font-semibold">{weakest.name}</p>
-              <p className="text-sm text-muted-foreground tabular-nums">{weakest.score}/100</p>
-            </CardContent>
-          </Card>
-          <Card className="border-primary/20 bg-primary/[0.03]">
-            <CardContent className="pt-6">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="h-4 w-4 text-primary" />
-                <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-                  Most Improved
-                </span>
-              </div>
-              <p className="font-semibold">{mostImproved.name}</p>
-              <p className="text-sm text-emerald-600 font-medium tabular-nums">
-                +{mostImproved.score - mostImproved.previousScore}
+      {/* Readiness + Key insights — inline, not cards */}
+      <div className="flex items-start gap-10 mb-8 pb-8 border-b">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-1">
+            Interview Readiness
+          </p>
+          <div className="flex items-baseline gap-2">
+            <span className="text-5xl font-bold tracking-tight tabular-nums">
+              {userProfile.readinessScore}
+            </span>
+            <span className="text-xl text-muted-foreground">/ 100</span>
+          </div>
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
+            <span className="text-sm text-emerald-600 font-medium">
+              +{userProfile.readinessScore - userProfile.previousReadinessScore} this month
+            </span>
+          </div>
+        </div>
+        {/* Key insights */}
+        <div className="flex gap-8">
+          {[
+            { label: "Strength", value: strongest.name, sub: `${strongest.score}/100`, color: "text-emerald-600" },
+            { label: "Focus Area", value: weakest.name, sub: `${weakest.score}/100`, color: "text-amber-600" },
+            { label: "Most Improved", value: mostImproved.name, sub: `+${mostImproved.score - mostImproved.previousScore}`, color: "text-accent" },
+          ].map((item) => (
+            <div key={item.label} className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+                {item.label}
               </p>
-            </CardContent>
-          </Card>
+              <p className="text-sm font-semibold">{item.value}</p>
+              <p className={cn("text-xs font-medium tabular-nums", item.color)}>
+                {item.sub}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Performance Over Time */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-base">Performance Over Time</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64">
+      {/* Chart */}
+      <div className="mb-8">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
+          Performance Over Time
+        </p>
+        <div className="rounded-xl border bg-card p-6">
+          <div className="h-56">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={readinessOverTime}>
-                <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.92 0.005 250)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.92 0.004 260)" />
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 12, fill: "oklch(0.5 0.01 250)" }}
+                  tick={{ fontSize: 11, fill: "oklch(0.48 0.01 260)" }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   domain={[0, 100]}
-                  tick={{ fontSize: 12, fill: "oklch(0.5 0.01 250)" }}
+                  tick={{ fontSize: 11, fill: "oklch(0.48 0.01 260)" }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <Tooltip
                   contentStyle={{
                     borderRadius: "8px",
-                    border: "1px solid oklch(0.9 0.005 250)",
+                    border: "1px solid oklch(0.905 0.004 260)",
                     fontSize: "12px",
                   }}
                 />
                 <Line
                   type="monotone"
                   dataKey="score"
-                  stroke="oklch(0.55 0.15 240)"
-                  strokeWidth={2.5}
+                  stroke="oklch(0.48 0.14 245)"
+                  strokeWidth={2}
                   dot={false}
-                  activeDot={{ r: 5, strokeWidth: 2 }}
+                  activeDot={{ r: 4, strokeWidth: 2 }}
                 />
               </LineChart>
             </ResponsiveContainer>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Skill Development */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-base">Skill Development</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {skillScores.map((skill) => (
-            <SkillBar
-              key={skill.name}
-              name={skill.name}
-              score={skill.score}
-              previousScore={skill.previousScore}
-            />
-          ))}
-        </CardContent>
-      </Card>
+      {/* Skill Development — dense rows */}
+      <div className="mb-8">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
+          Skill Development
+        </p>
+        <div className="rounded-xl border bg-card p-5">
+          <div className="space-y-3">
+            {skillScores.map((skill) => (
+              <div key={skill.name} className="flex items-center gap-3">
+                <span className="text-sm w-40 text-muted-foreground shrink-0">
+                  {skill.name}
+                </span>
+                <div className="flex-1 h-2 rounded-full bg-muted">
+                  <div
+                    className={cn("h-full rounded-full transition-all duration-700", skillColor(skill.score))}
+                    style={{ width: `${skill.score}%` }}
+                  />
+                </div>
+                <div className="flex items-center gap-2 w-20 justify-end">
+                  <span className="text-sm font-semibold tabular-nums">{skill.score}</span>
+                  <span className="text-[11px] text-emerald-600 tabular-nums">
+                    +{skill.score - skill.previousScore}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
 
-      {/* Key Metrics */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                <BookOpen className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold tabular-nums">
-                  {userProfile.totalCasesCompleted}
-                </p>
-                <p className="text-xs text-muted-foreground">Cases completed</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                <BarChart3 className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold tabular-nums">
-                  {userProfile.averageScore}%
-                </p>
-                <p className="text-xs text-muted-foreground">Average score</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                <Clock className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold tabular-nums">
-                  {userProfile.averageCaseTime}
-                  <span className="text-sm font-normal text-muted-foreground">m</span>
-                </p>
-                <p className="text-xs text-muted-foreground">Avg case time</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                <Flame className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold tabular-nums">{userProfile.streak}</p>
-                <p className="text-xs text-muted-foreground">Practice streak (days)</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Key Metrics — stat strip, not cards */}
+      <div>
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
+          Key Metrics
+        </p>
+        <div className="rounded-xl border bg-card">
+          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-border">
+            {[
+              { icon: BookOpen, value: userProfile.totalCasesCompleted, label: "Cases completed" },
+              { icon: BarChart3, value: `${userProfile.averageScore}%`, label: "Average score" },
+              { icon: Clock, value: `${userProfile.averageCaseTime}m`, label: "Avg case time" },
+              { icon: Flame, value: `${userProfile.streak}`, label: "Day streak" },
+            ].map((m) => {
+              const Icon = m.icon;
+              return (
+                <div key={m.label} className="px-5 py-4">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                      {m.label}
+                    </span>
+                  </div>
+                  <p className="text-xl font-bold tabular-nums">{m.value}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </AppLayout>
   );

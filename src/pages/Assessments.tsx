@@ -1,22 +1,21 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import {
   ArrowRight,
-  Clock,
-  CheckCircle2,
   ArrowLeft,
   Flag,
   ChevronLeft,
   ChevronRight,
+  Clock,
   Calculator,
   Brain,
   BarChart3,
   Briefcase,
+  CheckCircle2,
 } from "lucide-react";
 import { assessments, assessmentQuestions } from "@/data/mock-data";
 import { cn } from "@/lib/utils";
@@ -28,7 +27,7 @@ const categoryIcons: Record<string, React.ComponentType<{ className?: string }>>
   "Situational Judgment": Briefcase,
 };
 
-function AssessmentCard({
+function AssessmentRow({
   title,
   questions,
   timeMinutes,
@@ -48,53 +47,38 @@ function AssessmentCard({
   const Icon = categoryIcons[title] || Calculator;
 
   return (
-    <Card className="group hover:border-primary/30 transition-colors">
-      <CardContent className="pt-6">
-        <div className="flex items-start gap-3 mb-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-            <Icon className="h-5 w-5 text-primary" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-sm">{title}</h3>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-              <span>{questions} questions</span>
-              <span>·</span>
-              <span>{timeMinutes} min</span>
-              <span>·</span>
-              <span>{difficulty}</span>
-            </div>
-          </div>
-          {completed && score && (
-            <Badge
-              variant="secondary"
-              className={cn(
-                "text-xs tabular-nums",
-                score >= 80
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : "bg-primary/10 text-primary"
-              )}
-            >
-              {score}%
-            </Badge>
+    <div className="flex items-center gap-4 px-4 py-4 border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
+      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted shrink-0">
+        <Icon className="h-5 w-5 text-muted-foreground" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-sm">{title}</span>
+          {completed && (
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
           )}
         </div>
-        {completed && (
-          <div className="flex items-center gap-1.5 text-xs text-emerald-600 mb-3">
-            <CheckCircle2 className="h-3.5 w-3.5" />
-            <span>Completed</span>
-          </div>
-        )}
-        <Button
-          variant={completed ? "outline" : "default"}
-          size="sm"
-          className="w-full gap-1.5"
-          onClick={onStart}
-        >
-          {completed ? "Retake" : "Start Assessment"}
-          <ArrowRight className="h-3 w-3" />
-        </Button>
-      </CardContent>
-    </Card>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+          <span>{questions} questions</span>
+          <span>·</span>
+          <span>{timeMinutes} min</span>
+          <span>·</span>
+          <span>{difficulty}</span>
+        </div>
+      </div>
+      {completed && score && (
+        <span className="text-sm font-semibold tabular-nums shrink-0">{score}%</span>
+      )}
+      <Button
+        variant={completed ? "ghost" : "default"}
+        size="sm"
+        className="gap-1.5 shrink-0"
+        onClick={onStart}
+      >
+        {completed ? "Retake" : "Start"}
+        <ArrowRight className="h-3 w-3" />
+      </Button>
+    </div>
   );
 }
 
@@ -125,7 +109,7 @@ function ActiveAssessment({ onExit }: { onExit: () => void }) {
           <ArrowLeft className="h-4 w-4 mr-1" />
           Exit
         </Button>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           <Badge variant="outline" className="tabular-nums">
             Question {currentQ + 1} / {assessmentQuestions.length}
           </Badge>
@@ -139,58 +123,52 @@ function ActiveAssessment({ onExit }: { onExit: () => void }) {
       <Progress value={progress} className="mb-8" />
 
       {/* Question */}
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="flex items-start justify-between mb-4">
-            <p className="text-base font-medium leading-relaxed pr-4">{q.question}</p>
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "shrink-0 h-8 w-8",
-                flagged.has(currentQ) && "text-amber-600"
-              )}
-              onClick={toggleFlag}
-            >
-              <Flag className="h-4 w-4" />
-            </Button>
-          </div>
+      <div className="rounded-xl border bg-card p-6 mb-6">
+        <div className="flex items-start justify-between mb-5">
+          <p className="text-base font-medium leading-relaxed pr-4">{q.question}</p>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn("shrink-0 h-8 w-8", flagged.has(currentQ) && "text-amber-600")}
+            onClick={toggleFlag}
+          >
+            <Flag className="h-4 w-4" />
+          </Button>
+        </div>
 
-          {/* Answer options */}
-          <div className="space-y-2">
-            {q.options.map((opt, i) => (
-              <button
-                key={i}
-                onClick={() => {
-                  const newAnswers = [...answers];
-                  newAnswers[currentQ] = i;
-                  setAnswers(newAnswers);
-                }}
-                className={cn(
-                  "w-full text-left rounded-lg border px-4 py-3 text-sm transition-colors",
-                  answers[currentQ] === i
-                    ? "border-primary bg-primary/5 ring-1 ring-primary"
-                    : "border-border hover:border-primary/30 hover:bg-muted/50"
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className={cn(
-                      "flex h-6 w-6 items-center justify-center rounded-full border text-xs font-medium shrink-0",
-                      answers[currentQ] === i
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-muted-foreground/30"
-                    )}
-                  >
-                    {String.fromCharCode(65 + i)}
-                  </div>
-                  <span>{opt}</span>
+        <div className="space-y-2">
+          {q.options.map((opt, i) => (
+            <button
+              key={i}
+              onClick={() => {
+                const newAnswers = [...answers];
+                newAnswers[currentQ] = i;
+                setAnswers(newAnswers);
+              }}
+              className={cn(
+                "w-full text-left rounded-lg border px-4 py-3 text-sm transition-colors",
+                answers[currentQ] === i
+                  ? "border-primary bg-primary/5 ring-1 ring-primary"
+                  : "border-border hover:border-primary/30 hover:bg-muted/50"
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={cn(
+                    "flex h-6 w-6 items-center justify-center rounded-full border text-xs font-medium shrink-0",
+                    answers[currentQ] === i
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-muted-foreground/30"
+                  )}
+                >
+                  {String.fromCharCode(65 + i)}
                 </div>
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                <span>{opt}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Navigation */}
       <div className="flex items-center justify-between">
@@ -227,7 +205,7 @@ function ActiveAssessment({ onExit }: { onExit: () => void }) {
           </Button>
         ) : (
           <Button className="gap-1.5">
-            Submit Assessment
+            Submit
             <ArrowRight className="h-4 w-4" />
           </Button>
         )}
@@ -257,9 +235,9 @@ export default function Assessments() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
+      <div className="rounded-xl border bg-card overflow-hidden">
         {assessments.map((a) => (
-          <AssessmentCard
+          <AssessmentRow
             key={a.id}
             {...a}
             onStart={() => setActiveAssessment(true)}

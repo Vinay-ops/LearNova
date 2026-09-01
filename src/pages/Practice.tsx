@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,10 +16,10 @@ import {
   Calculator,
   BarChart3,
   Users,
-  Clock,
   CheckCircle2,
   ArrowRight,
   Filter,
+  Clock,
 } from "lucide-react";
 import {
   practiceCases,
@@ -31,7 +30,7 @@ import {
 } from "@/data/mock-data";
 import { cn } from "@/lib/utils";
 
-function CaseCard({
+function CaseRow({
   title,
   type,
   difficulty,
@@ -49,58 +48,50 @@ function CaseCard({
   score?: number;
 }) {
   return (
-    <Card className="group hover:border-primary/30 transition-colors">
-      <CardContent className="pt-6">
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <h3 className="font-semibold text-sm">{title}</h3>
-            <p className="text-xs text-muted-foreground mt-0.5">{type}</p>
-          </div>
-          {completed && score && (
-            <Badge
-              variant="secondary"
-              className={cn(
-                "text-xs tabular-nums",
-                score >= 80
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                  : score >= 65
-                  ? "bg-primary/10 text-primary"
-                  : "bg-amber-50 text-amber-700 border-amber-200"
-              )}
-            >
-              {score}/100
-            </Badge>
-          )}
+    <div className="group flex items-center gap-4 px-4 py-3.5 border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2.5">
+          <span className="font-medium text-sm">{title}</span>
+          <Badge variant="outline" className="text-[10px] font-normal px-1.5 py-0">
+            {type}
+          </Badge>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-          <span className="font-medium">{difficulty}</span>
-          <span>·</span>
-          <span>{duration} min</span>
-          {completed && (
-            <>
-              <span>·</span>
-              <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-              <span>Completed</span>
-            </>
-          )}
-        </div>
-        <div className="flex flex-wrap gap-1.5 mb-4">
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-xs text-muted-foreground">{difficulty}</span>
+          <span className="text-muted-foreground/40">·</span>
+          <span className="text-xs text-muted-foreground">{duration} min</span>
+          <span className="text-muted-foreground/40">·</span>
           {skills.map((s) => (
-            <Badge key={s} variant="outline" className="text-[10px] font-normal">
+            <Badge key={s} variant="secondary" className="text-[10px] font-normal px-1.5 py-0">
               {s}
             </Badge>
           ))}
         </div>
-        <Button variant={completed ? "outline" : "default"} size="sm" className="w-full gap-1.5">
-          {completed ? "Review" : "Start Case"}
-          <ArrowRight className="h-3 w-3" />
-        </Button>
-      </CardContent>
-    </Card>
+      </div>
+      {completed && score && (
+        <span className={cn(
+          "text-sm font-semibold tabular-nums shrink-0",
+          score >= 80 ? "text-emerald-600" : score >= 65 ? "text-foreground" : "text-amber-600"
+        )}>
+          {score}
+        </span>
+      )}
+      {completed && (
+        <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+      )}
+      <Button
+        variant={completed ? "ghost" : "default"}
+        size="sm"
+        className="gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        {completed ? "Review" : "Start"}
+        <ArrowRight className="h-3 w-3" />
+      </Button>
+    </div>
   );
 }
 
-function DrillCard({
+function DrillRow({
   title,
   description,
   duration,
@@ -116,34 +107,32 @@ function DrillCard({
   score?: number;
 }) {
   return (
-    <Card className="group hover:border-primary/30 transition-colors">
-      <CardContent className="pt-6">
-        <div className="flex items-start justify-between mb-2">
-          <h3 className="font-semibold text-sm">{title}</h3>
-          {completed && score && (
-            <Badge variant="secondary" className="text-xs tabular-nums">
-              {score}/100
-            </Badge>
-          )}
+    <div className="group flex items-center gap-4 px-4 py-3.5 border-b border-border/50 last:border-0 hover:bg-muted/30 transition-colors">
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2.5">
+          <span className="font-medium text-sm">{title}</span>
+          <Badge variant="outline" className="text-[10px] font-normal px-1.5 py-0">
+            {difficulty}
+          </Badge>
         </div>
-        <p className="text-xs text-muted-foreground leading-relaxed mb-3">{description}</p>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground mb-4">
-          <span className="font-medium">{difficulty}</span>
-          <span>·</span>
-          <span>{duration} min</span>
-          {completed && (
-            <>
-              <span>·</span>
-              <CheckCircle2 className="h-3 w-3 text-emerald-600" />
-            </>
-          )}
-        </div>
-        <Button variant={completed ? "outline" : "default"} size="sm" className="w-full gap-1.5">
-          {completed ? "Practice Again" : "Start Drill"}
-          <ArrowRight className="h-3 w-3" />
-        </Button>
-      </CardContent>
-    </Card>
+        <p className="text-xs text-muted-foreground mt-0.5 truncate">{description}</p>
+      </div>
+      <span className="text-xs text-muted-foreground tabular-nums shrink-0">{duration} min</span>
+      {completed && score && (
+        <span className="text-sm font-semibold tabular-nums shrink-0">{score}</span>
+      )}
+      {completed && (
+        <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+      )}
+      <Button
+        variant={completed ? "ghost" : "default"}
+        size="sm"
+        className="gap-1.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+      >
+        {completed ? "Again" : "Start"}
+        <ArrowRight className="h-3 w-3" />
+      </Button>
+    </div>
   );
 }
 
@@ -156,18 +145,16 @@ export default function Practice() {
   return (
     <AppLayout>
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Practice</h1>
-        <p className="text-muted-foreground mt-1">
-          Build the skills that matter in consulting interviews.
-        </p>
-      </div>
-
-      {/* Filters */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-start justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Practice</h1>
+          <p className="text-muted-foreground mt-1">
+            Build the skills that matter in consulting interviews.
+          </p>
+        </div>
         <Select value={difficulty} onValueChange={setDifficulty}>
-          <SelectTrigger className="w-40">
-            <Filter className="h-3.5 w-3.5 mr-2" />
+          <SelectTrigger className="w-36">
+            <Filter className="h-3.5 w-3.5 mr-1.5" />
             <SelectValue placeholder="Difficulty" />
           </SelectTrigger>
           <SelectContent>
@@ -179,7 +166,7 @@ export default function Practice() {
         </Select>
       </div>
 
-      <Tabs defaultValue="cases" className="space-y-6">
+      <Tabs defaultValue="cases">
         <TabsList>
           <TabsTrigger value="cases" className="gap-1.5">
             <BookOpen className="h-3.5 w-3.5" />
@@ -195,7 +182,7 @@ export default function Practice() {
           </TabsTrigger>
           <TabsTrigger value="data" className="gap-1.5">
             <BarChart3 className="h-3.5 w-3.5" />
-            Data Interpretation
+            Data
           </TabsTrigger>
           <TabsTrigger value="behavioral" className="gap-1.5">
             <Users className="h-3.5 w-3.5" />
@@ -204,41 +191,47 @@ export default function Practice() {
         </TabsList>
 
         <TabsContent value="cases">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="rounded-xl border bg-card overflow-hidden mt-4">
+            <div className="px-4 py-2.5 border-b bg-muted/30 flex items-center gap-4 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+              <span className="flex-1">Case</span>
+              <span className="w-12 text-right">Score</span>
+              <span className="w-12" />
+              <span className="w-20" />
+            </div>
             {filterByDifficulty(practiceCases).map((c) => (
-              <CaseCard key={c.id} {...c} />
+              <CaseRow key={c.id} {...c} />
             ))}
           </div>
         </TabsContent>
 
         <TabsContent value="drills">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="rounded-xl border bg-card overflow-hidden mt-4">
             {filterByDifficulty(skillDrills).map((d) => (
-              <DrillCard key={d.id} {...d} />
+              <DrillRow key={d.id} {...d} />
             ))}
           </div>
         </TabsContent>
 
         <TabsContent value="math">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="rounded-xl border bg-card overflow-hidden mt-4">
             {filterByDifficulty(mentalMathDrills).map((d) => (
-              <DrillCard key={d.id} {...d} />
+              <DrillRow key={d.id} {...d} />
             ))}
           </div>
         </TabsContent>
 
         <TabsContent value="data">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="rounded-xl border bg-card overflow-hidden mt-4">
             {filterByDifficulty(dataInterpDrills).map((d) => (
-              <DrillCard key={d.id} {...d} />
+              <DrillRow key={d.id} {...d} />
             ))}
           </div>
         </TabsContent>
 
         <TabsContent value="behavioral">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="rounded-xl border bg-card overflow-hidden mt-4">
             {filterByDifficulty(behavioralDrills).map((d) => (
-              <DrillCard key={d.id} {...d} />
+              <DrillRow key={d.id} {...d} />
             ))}
           </div>
         </TabsContent>

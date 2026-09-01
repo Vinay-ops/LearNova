@@ -1,5 +1,4 @@
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
@@ -17,14 +16,14 @@ import {
 export default function Settings() {
   return (
     <AppLayout>
-      <div className="mb-6">
+      <div className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground mt-1">
           Manage your account and preferences.
         </p>
       </div>
 
-      <Tabs defaultValue="account" className="space-y-6">
+      <Tabs defaultValue="account">
         <TabsList>
           <TabsTrigger value="account" className="gap-1.5">
             <User className="h-3.5 w-3.5" />
@@ -50,19 +49,19 @@ export default function Settings() {
 
         {/* Account */}
         <TabsContent value="account">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Account</CardTitle>
-              <CardDescription>Manage your account settings.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+          <div className="rounded-xl border bg-card overflow-hidden mt-4">
+            <div className="px-4 py-3.5 border-b border-border/50">
+              <p className="font-semibold text-sm">Account</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Manage your account settings.</p>
+            </div>
+            <div className="p-4 space-y-5">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>Full Name</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Full Name</Label>
                   <Input defaultValue="Alex Chen" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Email</Label>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Email</Label>
                   <Input defaultValue="alex.chen@email.com" type="email" />
                 </div>
               </div>
@@ -70,132 +69,96 @@ export default function Settings() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium">Delete Account</p>
-                  <p className="text-xs text-muted-foreground">
-                    Permanently delete your account and all data.
-                  </p>
+                  <p className="text-xs text-muted-foreground">Permanently delete your account and all data.</p>
                 </div>
-                <Button variant="destructive" size="sm">
-                  Delete Account
-                </Button>
+                <Button variant="destructive" size="sm">Delete</Button>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         {/* Appearance */}
         <TabsContent value="appearance">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Appearance</CardTitle>
-              <CardDescription>Customize the look and feel.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Dark Mode</p>
-                  <p className="text-xs text-muted-foreground">
-                    Toggle between light and dark appearance.
-                  </p>
+          <div className="rounded-xl border bg-card overflow-hidden mt-4">
+            <div className="px-4 py-3.5 border-b border-border/50">
+              <p className="font-semibold text-sm">Appearance</p>
+            </div>
+            <div className="p-4 space-y-5">
+              {[
+                { title: "Dark Mode", desc: "Toggle between light and dark appearance." },
+                { title: "Compact View", desc: "Reduce spacing for more content density." },
+              ].map((item) => (
+                <div key={item.title} className="flex items-center justify-between py-1">
+                  <div>
+                    <p className="text-sm font-medium">{item.title}</p>
+                    <p className="text-xs text-muted-foreground">{item.desc}</p>
+                  </div>
+                  <Switch />
                 </div>
-                <Switch />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Compact View</p>
-                  <p className="text-xs text-muted-foreground">
-                    Reduce spacing for more content density.
-                  </p>
-                </div>
-                <Switch />
-              </div>
-            </CardContent>
-          </Card>
+              ))}
+            </div>
+          </div>
         </TabsContent>
 
         {/* Notifications */}
         <TabsContent value="notifications">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Notifications</CardTitle>
-              <CardDescription>Configure notification preferences.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
+          <div className="rounded-xl border bg-card overflow-hidden mt-4">
+            <div className="px-4 py-3.5 border-b border-border/50">
+              <p className="font-semibold text-sm">Notifications</p>
+            </div>
+            <div className="p-4 space-y-5">
               {[
-                {
-                  title: "Practice Reminders",
-                  description: "Daily reminders to practice.",
-                },
-                {
-                  title: "Streak Alerts",
-                  description: "Notifications when your streak is at risk.",
-                },
-                {
-                  title: "New Content",
-                  description: "Alerts when new cases or drills are available.",
-                },
-                {
-                  title: "Weekly Progress",
-                  description: "Weekly summary of your preparation progress.",
-                },
+                { title: "Practice Reminders", desc: "Daily reminders to practice." },
+                { title: "Streak Alerts", desc: "Notifications when your streak is at risk." },
+                { title: "New Content", desc: "Alerts when new cases or drills are available." },
+                { title: "Weekly Progress", desc: "Weekly summary of your preparation progress." },
               ].map((item) => (
-                <div key={item.title} className="flex items-center justify-between">
+                <div key={item.title} className="flex items-center justify-between py-1">
                   <div>
                     <p className="text-sm font-medium">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">{item.description}</p>
+                    <p className="text-xs text-muted-foreground">{item.desc}</p>
                   </div>
                   <Switch defaultChecked />
                 </div>
               ))}
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </TabsContent>
 
         {/* Privacy */}
         <TabsContent value="privacy">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Privacy</CardTitle>
-              <CardDescription>Control your privacy settings.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Show Profile on Leaderboard</p>
-                  <p className="text-xs text-muted-foreground">
-                    Display your name and score on the public leaderboard.
-                  </p>
+          <div className="rounded-xl border bg-card overflow-hidden mt-4">
+            <div className="px-4 py-3.5 border-b border-border/50">
+              <p className="font-semibold text-sm">Privacy</p>
+            </div>
+            <div className="p-4 space-y-5">
+              {[
+                { title: "Show Profile on Leaderboard", desc: "Display your name and score publicly." },
+                { title: "Share Analytics", desc: "Help improve CasePilot with anonymized data." },
+              ].map((item) => (
+                <div key={item.title} className="flex items-center justify-between py-1">
+                  <div>
+                    <p className="text-sm font-medium">{item.title}</p>
+                    <p className="text-xs text-muted-foreground">{item.desc}</p>
+                  </div>
+                  <Switch />
                 </div>
-                <Switch />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Share Analytics</p>
-                  <p className="text-xs text-muted-foreground">
-                    Help improve CasePilot by sharing anonymized usage data.
-                  </p>
-                </div>
-                <Switch />
-              </div>
-            </CardContent>
-          </Card>
+              ))}
+            </div>
+          </div>
         </TabsContent>
 
         {/* AI Preferences */}
         <TabsContent value="ai">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">AI Preferences</CardTitle>
-              <CardDescription>Configure how the AI interviewer behaves.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
+          <div className="rounded-xl border bg-card overflow-hidden mt-4">
+            <div className="px-4 py-3.5 border-b border-border/50">
+              <p className="font-semibold text-sm">AI Preferences</p>
+            </div>
+            <div className="p-4 space-y-5">
+              <div className="flex items-center justify-between py-1">
                 <div>
                   <p className="text-sm font-medium">Interviewer Style</p>
-                  <p className="text-xs text-muted-foreground">
-                    Choose the tone and difficulty of the AI interviewer.
-                  </p>
+                  <p className="text-xs text-muted-foreground">Tone and difficulty of the AI interviewer.</p>
                 </div>
                 <select className="rounded-md border bg-background px-3 py-1.5 text-sm">
                   <option>Standard</option>
@@ -204,27 +167,20 @@ export default function Settings() {
                 </select>
               </div>
               <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Auto-advance Questions</p>
-                  <p className="text-xs text-muted-foreground">
-                    Automatically move to the next question after responding.
-                  </p>
+              {[
+                { title: "Auto-advance Questions", desc: "Move to next question after responding." },
+                { title: "Voice Input", desc: "Enable voice responses during interviews." },
+              ].map((item) => (
+                <div key={item.title} className="flex items-center justify-between py-1">
+                  <div>
+                    <p className="text-sm font-medium">{item.title}</p>
+                    <p className="text-xs text-muted-foreground">{item.desc}</p>
+                  </div>
+                  <Switch />
                 </div>
-                <Switch />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium">Voice Input</p>
-                  <p className="text-xs text-muted-foreground">
-                    Enable voice responses during case interviews.
-                  </p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-            </CardContent>
-          </Card>
+              ))}
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </AppLayout>
