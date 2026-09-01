@@ -47,12 +47,12 @@ export function AppSidebar() {
       className="relative flex h-screen flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground overflow-hidden"
     >
       {/* Logo */}
-      <div className="flex h-14 items-center gap-2 px-4 shrink-0">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
+      <div className="flex h-14 items-center gap-2.5 px-4 shrink-0">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-sm">
           CP
         </div>
         {!collapsed && (
-          <span className="font-semibold text-sm tracking-tight">CasePilot</span>
+          <span className="font-bold text-sm tracking-tight">CasePilot</span>
         )}
       </div>
 
@@ -105,9 +105,9 @@ export function AppSidebar() {
               key={item.to}
               to={item.to}
               className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
                 active
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  ? "bg-primary/15 text-primary-foreground"
                   : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
               )}
             >
