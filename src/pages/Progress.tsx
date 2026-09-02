@@ -32,10 +32,10 @@ export default function Progress() {
   const userId = user?.id || "";
 
   const skillScores: SkillScore[] = summary?.skill_scores?.map((s) => ({
-    name: s.skill,
+    name: s.name,
     score: s.score,
-    previousScore: s.previous_score ?? 0,
-    trend: (s.trend as SkillScore["trend"]) || "flat",
+    previous_score: s.previous_score ?? 0,
+    trend: s.trend || "flat",
     color: s.color || "#1e3a5f",
   })) || [];
 
@@ -69,15 +69,15 @@ export default function Progress() {
 
   const strongest = skillScores.length > 0
     ? [...skillScores].sort((a, b) => b.score - a.score)[0]
-    : { name: "N/A", score: 0, previousScore: 0 };
+    : { name: "N/A", score: 0, previous_score: 0 };
   const weakest = skillScores.length > 0
     ? [...skillScores].sort((a, b) => a.score - b.score)[0]
-    : { name: "N/A", score: 0, previousScore: 0 };
+    : { name: "N/A", score: 0, previous_score: 0 };
   const mostImproved = skillScores.length > 0
     ? [...skillScores].sort(
-        (a, b) => (b.score - b.previousScore) - (a.score - a.previousScore)
+        (a, b) => (b.score - (b.previous_score ?? 0)) - (a.score - (a.previous_score ?? 0))
       )[0]
-    : { name: "N/A", score: 0, previousScore: 0 };
+    : { name: "N/A", score: 0, previous_score: 0 };
 
   return (
     <AppLayout>
@@ -127,7 +127,7 @@ export default function Progress() {
               {[
                 { label: "Strength", value: strongest.name, sub: `${strongest.score}/100`, color: "text-emerald-600", bgColor: "bg-emerald-50", borderColor: "border-emerald-200/60" },
                 { label: "Focus Area", value: weakest.name, sub: `${weakest.score}/100`, color: "text-amber-600", bgColor: "bg-amber-50", borderColor: "border-amber-200/60" },
-                { label: "Most Improved", value: mostImproved.name, sub: `+${mostImproved.score - mostImproved.previousScore}`, color: "text-primary", bgColor: "bg-purple-50", borderColor: "border-purple-200/60" },
+                { label: "Most Improved", value: mostImproved.name, sub: `+${mostImproved.score - (mostImproved.previous_score ?? 0)}`, color: "text-primary", bgColor: "bg-purple-50", borderColor: "border-purple-200/60" },
               ].map((item) => (
                 <div key={item.label} className={`rounded-3xl border ${item.borderColor} ${item.bgColor} p-5 shadow-xl shadow-slate-200/30`}>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
@@ -213,7 +213,7 @@ export default function Progress() {
                           {skill.score}
                         </span>
                         <span className="text-[11px] text-emerald-600 font-semibold tabular-nums">
-                          +{skill.score - skill.previousScore}
+                          +{skill.score - (skill.previous_score ?? 0)}
                         </span>
                       </div>
                     </div>

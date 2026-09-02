@@ -16,44 +16,56 @@ import {
   Bot,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useData } from "@/context/DataContext";
 import { cn } from "@/lib/utils";
 
 const TARGET_FIRMS = ["McKinsey", "BCG", "Bain", "Deloitte", "Accenture", "Kearney", "Other"];
 
+function loadSettings(userId: string) {
+  try {
+    const raw = localStorage.getItem(`settings_${userId}`);
+    if (raw) return JSON.parse(raw);
+  } catch { /* noop */ }
+  return {
+    notifications: { practiceReminders: true, streakAlerts: true, newContent: true, weeklyProgress: true },
+    defaultDifficulty: "All",
+    targetFirms: [] as string[],
+  };
+}
+
+function saveSettings(userId: string, settings: any) {
+  localStorage.setItem(`settings_${userId}`, JSON.stringify(settings));
+}
+
 export default function Settings() {
   const navigate = useNavigate();
-  const { user, profile, signOut } = useAuth();
-  const { getSettings, updateSettings } = useData();
+  const { user, profile, signOut, updateProfile } = useAuth();
   const userId = user?.id || "";
-  const settings = getSettings(userId);
+  const savedSettings = loadSettings(userId);
 
   const [name, setName] = useState(profile?.name || "");
   const [email, setEmail] = useState(profile?.email || "");
-  const [notifications, setNotifications] = useState(settings.notifications);
-  const [defaultDifficulty, setDefaultDifficulty] = useState(settings.defaultDifficulty);
-  const [targetFirms, setTargetFirms] = useState(settings.targetFirms);
+  const [notifications, setNotifications] = useState(savedSettings.notifications);
+  const [defaultDifficulty, setDefaultDifficulty] = useState(savedSettings.defaultDifficulty);
+  const [targetFirms, setTargetFirms] = useState(savedSettings.targetFirms);
   const [saved, setSaved] = useState(false);
 
   const displayName = profile?.name || user?.name || "User";
   const initial = displayName.charAt(0).toUpperCase();
 
   const handleSaveAccount = () => {
-    if (profile) {
-      // Profile update is handled through auth context
-    }
+    updateProfile({ name: name.trim() });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
   const handleSaveNotifications = () => {
-    updateSettings(userId, { notifications });
+    saveSettings(userId, { notifications, defaultDifficulty, targetFirms });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
   const handleSavePreferences = () => {
-    updateSettings(userId, { defaultDifficulty, targetFirms });
+    saveSettings(userId, { notifications, defaultDifficulty, targetFirms });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };

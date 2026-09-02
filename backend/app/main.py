@@ -21,10 +21,10 @@ setup_logging(settings.LOG_LEVEL)
 bootstrap_prompts()
 
 app = FastAPI(
-    title="CasePilot API",
+    title="Learnova API",
     version="0.2.0",
     description=(
-        "CasePilot — AI-powered consulting recruitment training platform. "
+        "Learnova — AI-powered consulting interview preparation platform. "
         "Architecture supports auth, profiles, cases, assessments, drills, "
         "applications, progress tracking, AI interviewer, evaluations, and "
         "prompt engineering experimentation."

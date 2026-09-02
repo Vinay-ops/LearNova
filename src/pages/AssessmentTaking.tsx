@@ -12,8 +12,9 @@ import {
   ChevronRight,
   Clock,
 } from "lucide-react";
-import { useData } from "@/context/DataContext";
 import { useAuth } from "@/context/AuthContext";
+import { useAssessments, useAssessmentQuestions } from "@/hooks/use-assessments";
+import { assessmentsApi } from "@/features/assessments";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -21,16 +22,10 @@ export default function AssessmentTaking() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const {
-    assessments,
-    getAssessmentQuestionsForAssessment,
-    createAssessmentAttempt,
-    completeAssessmentAttempt,
-    saveAssessmentAnswer,
-  } = useData();
+  const { assessments } = useAssessments();
+  const { questions } = useAssessmentQuestions(id);
 
   const assessment = assessments.find((a) => a.id === id);
-  const questions = id ? getAssessmentQuestionsForAssessment(id) : [];
 
   const [attemptId, setAttemptId] = useState<string | null>(null);
   const [currentQ, setCurrentQ] = useState(0);
@@ -40,15 +35,16 @@ export default function AssessmentTaking() {
   const [isPaused, setIsPaused] = useState(false);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
 
-  const totalSeconds = (assessment?.timeMinutes || 25) * 60;
+  const totalSeconds = ((assessment?.time_limit_minutes || assessment?.time_minutes) || 25) * 60;
   const timeRemaining = Math.max(0, totalSeconds - elapsed);
   const progress = questions.length > 0 ? ((currentQ + 1) / questions.length) * 100 : 0;
 
   // Create attempt on mount
   useEffect(() => {
     if (user && id && !attemptId) {
-      const attempt = createAssessmentAttempt(user.id, id);
-      setAttemptId(attempt.id);
+      assessmentsApi.createAttempt(user.id, id).then((attempt) => {
+        setAttemptId(attempt.id);
+      });
     }
   }, [user, id]);
 
@@ -90,12 +86,12 @@ export default function AssessmentTaking() {
 
     // Save immediately
     if (attemptId && questions[currentQ]) {
-      saveAssessmentAnswer({
-        attemptId,
-        questionId: questions[currentQ].id,
-        userId: user?.id || "",
-        selectedIndex: optionIndex,
-        isCorrect: optionIndex === questions[currentQ].correctIndex,
+      assessmentsApi.saveAnswer(attemptId, questions[currentQ].id, {
+        attempt_id: attemptId,
+        question_id: questions[currentQ].id,
+        selected_option_index: optionIndex,
+        is_correct: optionIndex === questions[currentQ].correct_option_index,
+        points_earned: optionIndex === questions[currentQ].correct_option_index ? 1 : 0,
       });
     }
   };
@@ -106,7 +102,7 @@ export default function AssessmentTaking() {
     // Calculate score
     let correct = 0;
     answers.forEach((ans, i) => {
-      if (ans != null && questions[i] && ans === questions[i].correctIndex) {
+      if (ans != null && questions[i] && ans === questions[i].correct_option_index) {
         correct++;
       }
     });
@@ -114,12 +110,8 @@ export default function AssessmentTaking() {
     const totalQs = questions.length;
     const score = totalQs > 0 ? Math.round((correct / totalQs) * 100) : 0;
 
-    completeAssessmentAttempt(attemptId, {
-      score,
-      totalQuestions: totalQs,
-      correctAnswers: correct,
-      startedAt: new Date(Date.now() - elapsed * 1000).toISOString(),
-      completedAt: new Date().toISOString(),
+    assessmentsApi.completeAttempt("", attemptId).then(() => {
+      // Score is already calculated client-side
     });
 
     navigate(`/assessments/${id}/results`);
@@ -182,7 +174,7 @@ export default function AssessmentTaking() {
           >
             <div className="flex items-start justify-between mb-6">
               <p className="text-lg font-semibold leading-relaxed pr-4 text-foreground">
-                {q.question}
+                {q.question_text}
               </p>
               <Button
                 variant="ghost"
@@ -195,10 +187,8 @@ export default function AssessmentTaking() {
               >
                 <Flag className="h-4.5 w-4.5" />
               </Button>
-            </div>
-
-            <div className="space-y-3">
-              {q.options.map((opt: any, i: number) => (
+            </div>                  <div className="space-y-3">
+                    {(q.options || []).map((opt: any, i: number) => (
                 <button
                   key={i}
                   onClick={() => selectAnswer(i)}

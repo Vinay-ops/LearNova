@@ -4,6 +4,7 @@ import type {
   CaseAttempt,
   CaseAnswer,
   CaseQuestion,
+  CaseType,
   ID,
 } from "@/types";
 import { practiceCases } from "@/data/mock-data";
@@ -35,7 +36,8 @@ export class MockCaseRepository implements CaseRepository {
   async list(): Promise<CaseData[]> {
     return practiceCases.map((c) => ({
       ...c,
-      case_type: c.type,
+      type: c.type as CaseType,
+      case_type: c.type as CaseType,
       duration_minutes: c.duration,
     }));
   }
@@ -45,7 +47,8 @@ export class MockCaseRepository implements CaseRepository {
     if (!found) return undefined;
     return {
       ...found,
-      case_type: found.type,
+      type: found.type as CaseType,
+      case_type: found.type as CaseType,
       duration_minutes: found.duration,
     };
   }
@@ -138,15 +141,25 @@ export class MockCaseRepository implements CaseRepository {
   }
 }
 
+function mapCaseResponse(raw: any): CaseData {
+  return {
+    ...raw,
+    type: raw.case_type,
+    duration: raw.duration_minutes,
+    completed: false,
+    score: undefined,
+  };
+}
+
 export class ApiCaseRepository implements CaseRepository {
   async list(): Promise<CaseData[]> {
-    const { data } = await api.get<CaseData[]>("/api/cases");
-    return data;
+    const { data } = await api.get<any[]>("/api/cases");
+    return data.map(mapCaseResponse);
   }
 
   async get(id: ID): Promise<CaseData | undefined> {
-    const { data } = await api.get<CaseData>(`/api/cases/${id}`);
-    return data;
+    const { data } = await api.get<any>(`/api/cases/${id}`);
+    return mapCaseResponse(data);
   }
 
   async createAttempt(_userId: ID, caseId: ID): Promise<CaseAttempt> {
@@ -217,7 +230,7 @@ export class ApiCaseRepository implements CaseRepository {
   }
 }
 
-const USE_API = false;
+const USE_API = true;
 export const caseRepository: CaseRepository = USE_API
   ? new ApiCaseRepository()
   : new MockCaseRepository();

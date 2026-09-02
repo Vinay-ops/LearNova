@@ -102,7 +102,7 @@ Duration Target: $duration_minutes minutes
         system_prompt=system_prompt,
         user_prompt_template=user_prompt_template,
         variables=variables,
-        model="gpt-4o",
+        model=None,
         temperature=0.9,
         techniques=techniques,
         technique_notes={

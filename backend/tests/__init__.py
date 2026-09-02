@@ -1,1 +1,1 @@
-"""Tests package for CasePilot backend."""
+"""Tests package for Learnova backend."""

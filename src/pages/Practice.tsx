@@ -18,8 +18,9 @@ import {
   ArrowRight,
   Filter,
 } from "lucide-react";
-import { useData } from "@/context/DataContext";
 import { useAuth } from "@/context/AuthContext";
+import { useCases, useCaseAttempts } from "@/hooks/use-cases";
+import { useDrills, useDrillAttempts } from "@/hooks/use-drills";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { FadeIn, StaggerList, StaggerItem } from "@/components/app/AnimatedSection";
@@ -70,7 +71,7 @@ function CaseRow({
           <Badge variant="outline" className={cn("text-[10px] font-medium px-1.5 py-0", difficultyColor)}>
             {caseData.difficulty}
           </Badge>
-          <span className="text-xs text-muted-foreground">{Math.round(caseData.duration / 60)} min</span>
+          <span className="text-xs text-muted-foreground">{caseData.duration_minutes || caseData.duration} min</span>
           {caseData.skills.map((s: string) => (
             <Badge key={s} variant="secondary" className="text-[10px] font-normal px-1.5 py-0 bg-purple-50 text-purple-600 border-0">
               {s}
@@ -139,7 +140,7 @@ function DrillRow({
         </div>
         <p className="text-xs text-muted-foreground mt-0.5 truncate">{drill.description}</p>
       </div>
-      <span className="text-xs text-muted-foreground tabular-nums shrink-0">{drill.durationMinutes} min</span>
+      <span className="text-xs text-muted-foreground tabular-nums shrink-0">{drill.duration_minutes || drill.duration} min</span>
       {completed && score != null && (
         <span className="text-sm font-bold tabular-nums shrink-0 text-primary">{score}</span>
       )}
@@ -165,11 +166,12 @@ function DrillRow({
 
 export default function Practice() {
   const { user } = useAuth();
-  const { cases, drills, assessments, getCaseAttempts, getDrillAttempts } = useData();
+  const userId = user?.id || "";
+  const { cases } = useCases();
+  const { drills } = useDrills();
+  const { attempts: caseAttempts } = useCaseAttempts(userId || undefined);
+  const { attempts: drillAttemptsList } = useDrillAttempts(userId || undefined);
   const [difficulty, setDifficulty] = useState<string>("all");
-
-  const caseAttempts = user ? getCaseAttempts(user.id) : [];
-  const drillAttemptsList = user ? getDrillAttempts(user.id) : [];
 
   const filterByDifficulty = (items: any[]) =>
     difficulty === "all" ? items : items.filter((i) => i.difficulty === difficulty);
@@ -177,17 +179,17 @@ export default function Practice() {
   // Determine which cases are completed
   const getCaseStatus = (caseId: string) => {
     const completed = caseAttempts.filter(
-      (a) => a.caseId === caseId && a.status === "completed"
+      (a) => a.case_id === caseId && a.status === "completed"
     );
     if (completed.length > 0) {
       const latest = completed[completed.length - 1];
-      return { completed: true, score: latest.overallScore || undefined };
+      return { completed: true, score: latest.overall_score || undefined };
     }
     return { completed: false, score: undefined };
   };
 
   const getDrillStatus = (drillId: string) => {
-    const attempts = drillAttemptsList.filter((a) => a.drillId === drillId);
+    const attempts = drillAttemptsList.filter((a) => a.drill_id === drillId);
     if (attempts.length > 0) {
       const latest = attempts[attempts.length - 1];
       return { completed: true, score: latest.score };

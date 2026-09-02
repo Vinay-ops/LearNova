@@ -130,7 +130,7 @@ Target: $target_firms
         system_prompt=system_prompt,
         user_prompt_template=user_prompt_template,
         variables=variables,
-        model="gpt-4o",
+        model=None,
         temperature=0.2,
         techniques=techniques,
         technique_notes={

@@ -25,6 +25,13 @@ class Settings(BaseSettings):
     LLM_TEMPERATURE: float = 0.7
     LLM_MAX_TOKENS: Optional[int] = None
 
+    # OpenRouter configuration
+    OPENROUTER_API_KEY: Optional[str] = None
+    OPENROUTER_MODEL: str = "openai/gpt-4o"
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    OPENROUTER_APP_NAME: str = "Learnova"
+    OPENROUTER_SITE_URL: Optional[str] = None
+
     ENVIRONMENT: str = "development"
 
     @property

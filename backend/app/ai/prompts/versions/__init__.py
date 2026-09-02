@@ -91,7 +91,7 @@ $drill_catalog
         system_prompt=system_prompt,
         user_prompt_template=user_prompt_template,
         variables=variables,
-        model="gpt-4o",
+        model=None,
         temperature=0.5,
         techniques=techniques,
     )
@@ -147,7 +147,7 @@ $upcoming_deadlines
         system_prompt=system_prompt,
         user_prompt_template=user_prompt_template,
         variables=variables,
-        model="gpt-4o",
+        model=None,
         temperature=0.6,
         techniques=techniques,
     )

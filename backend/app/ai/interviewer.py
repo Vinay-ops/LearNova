@@ -84,7 +84,7 @@ class InterviewerService:
             response = self.client.chat(
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
-                model=template.model,
+                model=template.model or None,
                 temperature=template.temperature,
             )
             latency_ms = int((time.perf_counter() - start) * 1000)

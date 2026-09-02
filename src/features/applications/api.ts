@@ -70,15 +70,24 @@ export class MockApplicationRepository implements ApplicationRepository {
   }
 }
 
+function mapApplicationResponse(raw: any): ApplicationData {
+  return {
+    ...raw,
+    createdAt: raw.created_at,
+    updatedAt: raw.updated_at,
+    deadline: raw.deadline || undefined,
+  };
+}
+
 export class ApiApplicationRepository implements ApplicationRepository {
   async list(): Promise<ApplicationData[]> {
-    const { data } = await api.get<ApplicationData[]>("/api/applications");
-    return data;
+    const { data } = await api.get<any[]>("/api/applications");
+    return data.map(mapApplicationResponse);
   }
 
   async get(_userId: ID, id: ID): Promise<ApplicationData | undefined> {
-    const { data } = await api.get<ApplicationData>(`/api/applications/${id}`);
-    return data;
+    const { data } = await api.get<any>(`/api/applications/${id}`);
+    return mapApplicationResponse(data);
   }
 
   async create(
@@ -103,7 +112,7 @@ export class ApiApplicationRepository implements ApplicationRepository {
   }
 }
 
-const USE_API = false;
+const USE_API = true;
 export const applicationRepository: ApplicationRepository = USE_API
   ? new ApiApplicationRepository()
   : new MockApplicationRepository();

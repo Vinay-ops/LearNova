@@ -37,7 +37,7 @@ class PromptTemplate:
     user_prompt_template: Optional[str] = None
     variables: list[PromptVariableDef] = field(default_factory=list)
     output_schema: Optional[type[BaseModel]] = None
-    model: str = "gpt-4o"
+    model: Optional[str] = None
     temperature: float = 0.7
     top_p: Optional[float] = None
     max_tokens: Optional[int] = None

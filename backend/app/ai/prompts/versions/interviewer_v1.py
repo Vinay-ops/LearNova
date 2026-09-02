@@ -113,7 +113,7 @@ Total questions: $total_questions
         user_prompt_template=user_prompt_template,
         variables=variables,
         output_schema=None,
-        model="gpt-4o",
+        model=None,
         temperature=0.8,
         techniques=techniques,
         technique_notes={

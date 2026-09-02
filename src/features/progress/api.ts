@@ -116,7 +116,7 @@ export class ApiProgressRepository implements ProgressRepository {
   }
 }
 
-const USE_API = false;
+const USE_API = true;
 export const progressRepository: ProgressRepository = USE_API
   ? new ApiProgressRepository()
   : new MockProgressRepository();

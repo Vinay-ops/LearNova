@@ -1,4 +1,49 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+.next/
+.vercel/
+
+# Environment variables
+.env
 .env.local
-node_modules
-dist
-src/convex/_generated
+.env*.local
+
+# Database files
+*.db
+*.db-journal
+
+# Python
+*.pyc
+__pycache__/
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Vercel
+.vercel/
+.vercelignore
+
+# Backend test database
+backend/test_casepilot.db
+
+# Coverage
+.coverage
+htmlcov/

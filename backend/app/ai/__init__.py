@@ -36,7 +36,7 @@ def execute_prompt(
     return client.chat(
         system_prompt=system_prompt,
         user_prompt=user_prompt,
-        model=template.model,
+        model=template.model or None,
         temperature=template.temperature,
         max_tokens=template.max_tokens,
     )

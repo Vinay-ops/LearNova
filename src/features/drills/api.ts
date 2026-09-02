@@ -79,14 +79,41 @@ export class MockDrillRepository implements DrillRepository {
   }
 }
 
+function mapDrillResponse(raw: any): DrillData {
+  return {
+    ...raw,
+    duration: raw.duration_minutes,
+    completed: false,
+    score: undefined,
+  };
+}
+
 export class ApiDrillRepository implements DrillRepository {
   async list(): Promise<DrillData[]> {
-    const { data } = await api.get<DrillData[]>("/api/drills");
-    return data;
+    const { data } = await api.get<any[]>("/api/drills");
+    return data.map(mapDrillResponse);
   }
 
   async get(id: ID): Promise<DrillData | undefined> {
-    const { data } = await api.get<DrillData>(`/api/drills/${id}`);
+    const { data } = await api.get<any>(`/api/drills/${id}`);
+    return mapDrillResponse(data);
+  }
+
+  async saveAttempt(
+    userId: ID,
+    drillId: ID,
+    result: Partial<DrillAttempt>,
+  ): Promise<DrillAttempt> {
+    const { data } = await api.post<DrillAttempt>("/api/drills/attempts", {
+      drill_id: drillId,
+    });
+    if (result.status || result.score != null || result.time_spent_seconds) {
+      const { data: updated } = await api.put<DrillAttempt>(
+        `/api/drills/attempts/${data.id}`,
+        result,
+      );
+      return updated;
+    }
     return data;
   }
 
@@ -97,28 +124,13 @@ export class ApiDrillRepository implements DrillRepository {
     return data;
   }
 
-  async saveAttempt(
-    userId: ID,
-    drillId: ID,
-    result: Partial<DrillAttempt>,
-  ): Promise<DrillAttempt> {
-    const attempts = await this.listAttempts(userId);
-    const existing = attempts.find(
-      (a) => a.drill_id === drillId && a.status === "in_progress",
-    );
-    if (existing) {
-      return existing;
-    }
-    return this.createAttempt(userId, drillId);
-  }
-
   async listAttempts(_userId: ID): Promise<DrillAttempt[]> {
     const { data } = await api.get<DrillAttempt[]>("/api/drills/attempts");
     return data;
   }
 }
 
-const USE_API = false;
+const USE_API = true;
 export const drillRepository: DrillRepository = USE_API
   ? new ApiDrillRepository()
   : new MockDrillRepository();

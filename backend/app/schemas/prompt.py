@@ -22,7 +22,7 @@ class PromptBase(BaseModel):
     user_prompt_template: Optional[str] = None
     variables: List[PromptVariable] = Field(default_factory=list)
     output_schema: Optional[Any] = None
-    model: str = "gpt-4o"
+    model: Optional[str] = None
     temperature: Decimal = Decimal("0.7")
     top_p: Optional[Decimal] = None
     max_tokens: Optional[int] = None
@@ -72,7 +72,7 @@ class PromptRenderResponse(BaseModel):
     version: str
     system_prompt: str
     user_prompt: Optional[str] = None
-    model: str
+    model: Optional[str] = None
     temperature: Decimal
 
 

@@ -22,8 +22,10 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { useData } from "@/context/DataContext";
 import { useAuth } from "@/context/AuthContext";
+import { useProgress } from "@/hooks/use-progress";
+import { useCaseAttempts, useCases } from "@/hooks/use-cases";
+import { useDrills } from "@/hooks/use-drills";
 import { Link } from "react-router";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -51,28 +53,20 @@ const skillTextColor = (score: number) =>
 
 export default function Dashboard() {
   const { user, profile } = useAuth();
-  const {
-    getSkillScores,
-    getReadinessScore,
-    getReadinessOverTime,
-    getCompletedCasesCount,
-    getCompletedAssessmentsCount,
-    getCompletedDrillsCount,
-    getAverageScore,
-    getStreak,
-    getCaseAttempts,
-    drills,
-  } = useData();
-
   const userId = user?.id || "";
-  const skillScores = getSkillScores(userId);
-  const readinessScore = getReadinessScore(userId);
-  const readinessOverTime = getReadinessOverTime(userId);
-  const completedCases = getCompletedCasesCount(userId);
-  const completedAssessments = getCompletedAssessmentsCount(userId);
-  const completedDrills = getCompletedDrillsCount(userId);
-  const averageScore = getAverageScore(userId);
-  const streak = getStreak(userId);
+  const { summary } = useProgress(userId || undefined);
+  const { attempts: caseAttempts } = useCaseAttempts(userId || undefined);
+  const { cases } = useCases();
+  const { drills } = useDrills();
+
+  const skillScores = summary?.skill_scores || [];
+  const readinessScore = summary?.readiness_score ?? 0;
+  const readinessOverTime = summary?.readiness_over_time || [];
+  const completedCases = summary?.total_cases_completed ?? 0;
+  const completedAssessments = summary?.total_assessments_completed ?? 0;
+  const completedDrills = summary?.total_drills_completed ?? 0;
+  const averageScore = summary?.average_score ?? 0;
+  const streak = summary?.streak_days ?? 0;
   const daysLeft = getDaysUntilInterview(profile?.interviewDate || null);
   const displayName = profile?.name?.split(" ")[0] || user?.name?.split(" ")[0] || "User";
   const weakestSkill = skillScores.length > 0
@@ -82,7 +76,7 @@ export default function Dashboard() {
   const scoreDiff = readinessScore - previousReadiness;
 
   // Recent case attempts for activity
-  const recentAttempts = getCaseAttempts(userId)
+  const recentAttempts = caseAttempts
     .filter((a) => a.status === "completed")
     .slice(-3)
     .reverse();
@@ -230,14 +224,14 @@ export default function Dashboard() {
                       >
                         {skill.score}
                       </motion.span>
-                      {skill.previousScore && (
+                      {(skill.previous_score ?? 0) > 0 && (
                         <motion.span
                           initial={{ opacity: 0, x: -4 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.5 + i * 0.08 }}
                           className="text-[11px] text-emerald-600 font-bold tabular-nums"
                         >
-                          +{skill.score - skill.previousScore}
+                          +{skill.score - (skill.previous_score ?? 0)}
                         </motion.span>
                       )}
                     </div>
@@ -283,7 +277,7 @@ export default function Dashboard() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <Badge className="bg-amber-400 text-amber-950 border-0 rounded-full text-[10px] font-extrabold mb-2 px-3 py-0.5">
-                    {recommendedDrill.durationMinutes} min drill
+                    {recommendedDrill.duration_minutes || recommendedDrill.duration} min drill
                   </Badge>
                   <p className="font-extrabold text-slate-900 text-base">{recommendedDrill.title}</p>
                   <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">
@@ -307,7 +301,7 @@ export default function Dashboard() {
               {recentAttempts.length > 0 ? (
                 <StaggerList>
                   {recentAttempts.map((attempt) => {
-                    const caseData = useData().cases.find((c) => c.id === attempt.caseId);
+                    const caseData = cases.find((c) => c.id === attempt.case_id);
                     return (
                       <StaggerItem key={attempt.id}>
                         <motion.div
@@ -325,9 +319,9 @@ export default function Dashboard() {
                           </div>
                           <span className={cn(
                             "text-sm font-bold tabular-nums shrink-0",
-                            (attempt.overallScore || 0) >= 70 ? "text-emerald-600" : "text-amber-600"
+                            (attempt.overall_score || 0) >= 70 ? "text-emerald-600" : "text-amber-600"
                           )}>
-                            {attempt.overallScore}
+                            {attempt.overall_score}
                           </span>
                         </motion.div>
                       </StaggerItem>

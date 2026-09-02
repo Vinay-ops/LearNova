@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Pencil, Target, Calendar, GraduationCap, Building2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useData } from "@/context/DataContext";
+import { useProgress } from "@/hooks/use-progress";
 import { motion } from "framer-motion";
 import { FadeIn, StaggerList, StaggerItem } from "@/components/app/AnimatedSection";
 import { cn } from "@/lib/utils";
@@ -29,9 +29,9 @@ function getDaysUntil(dateStr: string | null) {
 
 export default function Profile() {
   const { user, profile, updateProfile } = useAuth();
-  const { getReadinessScore } = useData();
   const userId = user?.id || "";
-  const readinessScore = getReadinessScore(userId);
+  const { summary } = useProgress(userId || undefined);
+  const readinessScore = summary?.readiness_score ?? 0;
 
   const [editOpen, setEditOpen] = useState(false);
   const [editName, setEditName] = useState("");

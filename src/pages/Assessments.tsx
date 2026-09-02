@@ -11,8 +11,8 @@ import {
   Briefcase,
   CheckCircle2,
 } from "lucide-react";
-import { useData } from "@/context/DataContext";
 import { useAuth } from "@/context/AuthContext";
+import { useAssessments, useAssessmentAttempts } from "@/hooks/use-assessments";
 import { cn } from "@/lib/utils";
 import { FadeIn, StaggerList, StaggerItem } from "@/components/app/AnimatedSection";
 
@@ -26,12 +26,11 @@ const categoryIcons: Record<string, React.ComponentType<{ className?: string }>>
 export default function Assessments() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { assessments, getAssessmentAttempts, getAssessmentQuestionsForAssessment } = useData();
-
-  const attempts = user ? getAssessmentAttempts(user.id) : [];
+  const { assessments } = useAssessments();
+  const { attempts } = useAssessmentAttempts(user?.id);
 
   const getAssessmentStatus = (assessmentId: string) => {
-    const assessmentAttempts = attempts.filter((a) => a.assessmentId === assessmentId);
+    const assessmentAttempts = attempts.filter((a) => a.assessment_id === assessmentId);
     if (assessmentAttempts.length > 0) {
       const latest = assessmentAttempts[assessmentAttempts.length - 1];
       return { completed: true, score: latest.score };
@@ -55,7 +54,7 @@ export default function Assessments() {
             {assessments.map((a) => {
               const Icon = categoryIcons[a.category] || Calculator;
               const { completed, score } = getAssessmentStatus(a.id);
-              const questionCount = getAssessmentQuestionsForAssessment(a.id).length;
+              const questionCount = a.total_questions || a.questions || 0;
               const difficultyColor =
                 a.difficulty === "Easy"
                   ? "bg-emerald-50 text-emerald-700 border-emerald-200"
@@ -80,7 +79,7 @@ export default function Assessments() {
                         </Badge>
                         <span className="text-xs text-muted-foreground">{questionCount} questions</span>
                         <span className="text-muted-foreground/40">·</span>
-                        <span className="text-xs text-muted-foreground">{a.timeMinutes} min</span>
+                        <span className="text-xs text-muted-foreground">{a.time_limit_minutes || a.time_minutes} min</span>
                       </div>
                     </div>
                     {completed && score != null && (

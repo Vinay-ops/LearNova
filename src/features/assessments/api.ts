@@ -111,15 +111,25 @@ export class MockAssessmentRepository implements AssessmentRepository {
   }
 }
 
+function mapAssessmentResponse(raw: any): AssessmentData {
+  return {
+    ...raw,
+    questions: raw.total_questions,
+    timeMinutes: raw.time_limit_minutes,
+    completed: false,
+    score: undefined,
+  };
+}
+
 export class ApiAssessmentRepository implements AssessmentRepository {
   async list(): Promise<AssessmentData[]> {
-    const { data } = await api.get<AssessmentData[]>("/api/assessments");
-    return data;
+    const { data } = await api.get<any[]>("/api/assessments");
+    return data.map(mapAssessmentResponse);
   }
 
   async get(id: ID): Promise<AssessmentData | undefined> {
-    const { data } = await api.get<AssessmentData>(`/api/assessments/${id}`);
-    return data;
+    const { data } = await api.get<any>(`/api/assessments/${id}`);
+    return mapAssessmentResponse(data);
   }
 
   async createAttempt(_userId: ID, assessmentId: ID): Promise<AssessmentAttempt> {
@@ -181,7 +191,7 @@ export class ApiAssessmentRepository implements AssessmentRepository {
   }
 }
 
-const USE_API = false;
+const USE_API = true;
 export const assessmentRepository: AssessmentRepository = USE_API
   ? new ApiAssessmentRepository()
   : new MockAssessmentRepository();

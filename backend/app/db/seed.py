@@ -115,7 +115,7 @@ def seed_cases(db: Session) -> None:
         if existing:
             continue
         case = Case(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             title=case_data["title"],
             company=case_data["company"],
             case_type=case_data["case_type"],
@@ -133,7 +133,7 @@ def seed_cases(db: Session) -> None:
 
         for q in case_data["questions"]:
             question = CaseQuestion(
-                id=uuid.uuid4(),
+                id=str(uuid.uuid4()),
                 case_id=case.id,
                 question_type=q["question_type"],
                 question_text=q["question_text"],
@@ -182,7 +182,7 @@ def seed_assessments(db: Session) -> None:
         if existing:
             continue
         assessment = Assessment(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             title=assessment_data["title"],
             category=assessment_data["category"],
             description=assessment_data["description"],
@@ -197,7 +197,7 @@ def seed_assessments(db: Session) -> None:
 
         for q in assessment_data["questions"]:
             question = AssessmentQuestion(
-                id=uuid.uuid4(),
+                id=str(uuid.uuid4()),
                 assessment_id=assessment.id,
                 question_type=q["question_type"],
                 question_text=q["question_text"],
@@ -250,7 +250,7 @@ def seed_drills(db: Session) -> None:
         if existing:
             continue
         drill = Drill(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             title=drill_data["title"],
             description=drill_data["description"],
             category=drill_data["category"],
@@ -281,7 +281,7 @@ def seed_prompts(db: Session) -> None:
                 {"name": "previous_answer", "type": "string", "required": False},
                 {"name": "performance", "type": "string", "required": False},
             ],
-            "model": "gpt-4o",
+            "model": "openai/gpt-4o",
             "temperature": 0.7,
             "prompt_techniques": ["role_prompting", "context_injection", "constraints", "adaptive_prompting"],
         },
@@ -297,7 +297,7 @@ def seed_prompts(db: Session) -> None:
                 {"name": "answers", "type": "string", "required": True},
                 {"name": "rubric", "type": "string", "required": True},
             ],
-            "model": "gpt-4o",
+            "model": "openai/gpt-4o",
             "temperature": 0.3,
             "prompt_techniques": ["role_prompting", "rubric_based_evaluation", "structured_output", "few_shot_examples"],
         },
@@ -315,7 +315,7 @@ def seed_prompts(db: Session) -> None:
                 {"name": "duration_minutes", "type": "string", "required": True},
                 {"name": "skills", "type": "string", "required": True},
             ],
-            "model": "gpt-4o",
+            "model": "openai/gpt-4o",
             "temperature": 0.8,
             "prompt_techniques": ["role_prompting", "constraints", "structured_output"],
         },
@@ -330,7 +330,7 @@ def seed_prompts(db: Session) -> None:
                 {"name": "performance", "type": "string", "required": True},
                 {"name": "skill_scores", "type": "string", "required": True},
             ],
-            "model": "gpt-4o",
+            "model": "openai/gpt-4o",
             "temperature": 0.6,
             "prompt_techniques": ["role_prompting", "few_shot_examples", "structured_output"],
         },
@@ -346,7 +346,7 @@ def seed_prompts(db: Session) -> None:
                 {"name": "performance", "type": "string", "required": True},
                 {"name": "skill_gaps", "type": "string", "required": True},
             ],
-            "model": "gpt-4o",
+            "model": "openai/gpt-4o",
             "temperature": 0.5,
             "prompt_techniques": ["role_prompting", "adaptive_prompting", "context_injection"],
         },
@@ -357,7 +357,7 @@ def seed_prompts(db: Session) -> None:
         if existing:
             continue
         prompt = Prompt(
-            id=uuid.uuid4(),
+            id=str(uuid.uuid4()),
             name=prompt_data["name"],
             purpose=prompt_data["purpose"],
             version=prompt_data["version"],

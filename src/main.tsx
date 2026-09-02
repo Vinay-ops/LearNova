@@ -1,6 +1,5 @@
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/context/AuthContext";
-import { DataProvider } from "@/context/DataContext";
 import React, { StrictMode, useEffect, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
@@ -230,12 +229,10 @@ createRoot(document.getElementById("root")!).render(
     <RootErrorBoundary>
       <BrowserRouter>
         <AuthProvider>
-          <DataProvider>
-            <RouteSyncer />
-            <Suspense fallback={<RouteLoading />}>
-              <AnimatedRoutes />
-            </Suspense>
-          </DataProvider>
+          <RouteSyncer />
+          <Suspense fallback={<RouteLoading />}>
+            <AnimatedRoutes />
+          </Suspense>
         </AuthProvider>
       </BrowserRouter>
       <Toaster />

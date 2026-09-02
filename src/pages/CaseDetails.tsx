@@ -2,8 +2,8 @@ import { useParams, useNavigate, Link } from "react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useData } from "@/context/DataContext";
 import { useAuth } from "@/context/AuthContext";
+import { useCases, useCaseAttempt } from "@/hooks/use-cases";
 import {
   ArrowLeft,
   Play,
@@ -16,8 +16,9 @@ import {
 export default function CaseDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { cases, getActiveCaseAttempt, createCaseAttempt } = useData();
   const { user } = useAuth();
+  const { cases } = useCases();
+  const { attempt, createAttempt } = useCaseAttempt(user?.id, id);
 
   const caseData = cases.find((c) => c.id === id);
 
@@ -42,17 +43,15 @@ export default function CaseDetails() {
       ? "bg-amber-50 text-amber-700 border-amber-200"
       : "bg-red-50 text-red-700 border-red-200";
 
-  const durationMinutes = Math.round(caseData.duration / 60);
+  const durationMinutes = caseData.duration_minutes || caseData.duration;
 
-  const handleStartCase = () => {
+  const handleStartCase = async () => {
     if (!user) return;
-    // Check for existing in-progress attempt
-    const active = getActiveCaseAttempt(user.id, caseData.id);
-    if (active) {
+    if (attempt && attempt.status === "in_progress") {
       navigate(`/cases/${caseData.id}`);
       return;
     }
-    createCaseAttempt(user.id, caseData.id);
+    await createAttempt(user.id, caseData.id);
     navigate(`/cases/${caseData.id}`);
   };
 
@@ -119,7 +118,7 @@ export default function CaseDetails() {
         <div className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm mb-8">
           <h3 className="text-sm font-extrabold text-slate-900 mb-3">What You'll Practice</h3>
           <ul className="space-y-2">
-            {caseData.whatYoullPractice.map((item: any, i: number) => (
+            {(caseData.skills || []).map((item: string, i: number) => (
               <li key={i} className="flex items-start gap-2.5">
                 <BookOpen className="h-4 w-4 text-purple-600 mt-0.5 shrink-0" />
                 <span className="text-sm text-slate-600">{item}</span>

@@ -3,8 +3,8 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertTriangle, ArrowRight, RotateCcw, Lightbulb, Target, Home } from "lucide-react";
-import { useData } from "@/context/DataContext";
 import { useAuth } from "@/context/AuthContext";
+import { useCases, useCaseAttempts } from "@/hooks/use-cases";
 import { motion } from "framer-motion";
 import { FadeIn, StaggerList, StaggerItem, AnimatedBar } from "@/components/app/AnimatedSection";
 import { cn } from "@/lib/utils";
@@ -14,12 +14,10 @@ const skillColor = (score: number) =>
 
 export default function CaseFeedback() {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
-  const { cases, getCaseAttempts } = useData();
-
+  const { user } = useAuth();  const { cases } = useCases();
+  const { attempts } = useCaseAttempts(user?.id);
   const caseData = cases.find((c) => c.id === id);
-  const attempts = user ? getCaseAttempts(user.id) : [];
-  const completedAttempts = attempts.filter((a) => a.caseId === id && a.status === "completed");
+  const completedAttempts = attempts.filter((a) => a.case_id === id && a.status === "completed");
   const latestAttempt = completedAttempts[completedAttempts.length - 1];
 
   if (!caseData || !latestAttempt) {
@@ -36,15 +34,15 @@ export default function CaseFeedback() {
     );
   }
 
-  const overallScore = latestAttempt.overallScore || 0;
+  const overallScore = latestAttempt.overall_score || 0;
   const maxScore = 100;
 
   const skillBreakdown = [
-    { name: "Structuring", score: latestAttempt.structuringScore || 0 },
-    { name: "Quantitative Analysis", score: latestAttempt.quantitativeScore || 0 },
-    { name: "Business Judgment", score: latestAttempt.businessJudgmentScore || 0 },
-    { name: "Communication", score: latestAttempt.communicationScore || 0 },
-    { name: "Synthesis", score: latestAttempt.synthesisScore || 0 },
+    { name: "Structuring", score: latestAttempt.structuring_score || 0 },
+    { name: "Quantitative Analysis", score: latestAttempt.quantitative_score || 0 },
+    { name: "Business Judgment", score: latestAttempt.business_judgment_score || 0 },
+    { name: "Communication", score: latestAttempt.communication_score || 0 },
+    { name: "Synthesis", score: latestAttempt.synthesis_score || 0 },
   ];
 
   const weakestSkill = [...skillBreakdown].sort((a, b) => a.score - b.score)[0];
@@ -156,19 +154,19 @@ export default function CaseFeedback() {
         </div>
         <div className="rounded-lg border bg-muted/30 p-4 pl-6">
           <p className="text-sm leading-relaxed">
-            {latestAttempt.feedback || "Complete the case to receive detailed feedback."}
+            {latestAttempt.ai_feedback || "Complete the case to receive detailed feedback."}
           </p>
         </div>
       </FadeIn>
 
       {/* Recommendation */}
-      {latestAttempt.recommendation && (
+      {latestAttempt.recommendations && (
         <FadeIn delay={0.55} className="mb-8">
           <div className="rounded-lg border bg-purple-50 p-4 pl-6">
             <p className="text-xs font-semibold text-purple-700 uppercase tracking-widest mb-1">
               Recommendation
             </p>
-            <p className="text-sm leading-relaxed text-purple-900">{latestAttempt.recommendation}</p>
+            <p className="text-sm leading-relaxed text-purple-900">{latestAttempt.recommendations || ""}</p>
           </div>
         </FadeIn>
       )}
