@@ -1,57 +1,43 @@
-import '@vly-ai/integrations';
 import { Toaster } from "@/components/ui/sonner";
-import { RequireAuth } from "@/components/RequireAuth";
-import { VlyToolbar } from "../vly-toolbar-readonly.tsx";
-import { ConvexAuthProvider } from "@convex-dev/auth/react";
-import { ConvexReactClient } from "convex/react";
+import { AuthProvider } from "@/context/AuthContext";
+import { DataProvider } from "@/context/DataContext";
 import React, { StrictMode, useEffect, lazy, Suspense } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router";
 import { AnimatePresence, motion } from "framer-motion";
+import { RequireAuth } from "@/components/RequireAuth";
 import "./index.css";
 
-// Lazy load route components for better code splitting
 const Landing = lazy(() => import("./pages/Landing.tsx"));
-const AuthPage = lazy(() => import("./pages/Auth.tsx"));
+const Auth = lazy(() => import("./pages/Auth.tsx"));
+const ProfileSetup = lazy(() => import("./pages/ProfileSetup.tsx"));
 const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
 const Practice = lazy(() => import("./pages/Practice.tsx"));
+const CaseDetails = lazy(() => import("./pages/CaseDetails.tsx"));
 const CaseSimulator = lazy(() => import("./pages/CaseSimulator.tsx"));
 const CaseFeedback = lazy(() => import("./pages/CaseFeedback.tsx"));
 const Assessments = lazy(() => import("./pages/Assessments.tsx"));
+const AssessmentTaking = lazy(() => import("./pages/AssessmentTaking.tsx"));
+const AssessmentResults = lazy(() => import("./pages/AssessmentResults.tsx"));
 const Progress = lazy(() => import("./pages/Progress.tsx"));
 const Applications = lazy(() => import("./pages/Applications.tsx"));
 const Profile = lazy(() => import("./pages/Profile.tsx"));
 const Settings = lazy(() => import("./pages/Settings.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 
-// Simple loading fallback for route transitions
 function RouteLoading() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="animate-pulse text-muted-foreground">Loading...</div>
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-8 w-8 rounded-xl bg-primary/20 flex items-center justify-center animate-pulse">
+          <div className="h-4 w-4 rounded-lg bg-primary/60" />
+        </div>
+        <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
+      </div>
     </div>
   );
 }
 
-/** Silent error boundary — if VlyToolbar crashes it renders nothing instead of
- *  crashing the whole app (e.g. hook errors in WebContainer environment). */
-class ToolbarErrorBoundary extends React.Component<
-  { children: React.ReactNode },
-  { hasError: boolean }
-> {
-  state = { hasError: false };
-  static getDerivedStateFromError() {
-    return { hasError: true };
-  }
-  componentDidCatch(err: Error) {
-    console.warn("[VlyToolbar] Caught error, toolbar disabled:", err.message);
-  }
-  render() {
-    return this.state.hasError ? null : this.props.children;
-  }
-}
-
-/** Hard guard so runtime errors never leave the preview as a blank page. */
 class RootErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean; message: string; stack: string }
@@ -65,7 +51,7 @@ class RootErrorBoundary extends React.Component<
     };
   }
   componentDidCatch(err: Error) {
-    console.error("[WebContainer preview] Root crash:", err);
+    console.error("[Preview] Root crash:", err);
   }
   render() {
     if (this.state.hasError) {
@@ -88,9 +74,6 @@ class RootErrorBoundary extends React.Component<
     return this.props.children;
   }
 }
-
-const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
-
 
 function RouteSyncer() {
   const location = useLocation();
@@ -129,9 +112,15 @@ function AnimatedRoutes() {
       >
         <Routes location={location}>
           <Route path="/" element={<Landing />} />
+          <Route path="/auth" element={<Auth />} />
+
           <Route
-            path="/auth"
-            element={<AuthPage redirectAfterAuth="/dashboard" />}
+            path="/setup"
+            element={
+              <RequireAuth>
+                <ProfileSetup />
+              </RequireAuth>
+            }
           />
           <Route
             path="/dashboard"
@@ -146,6 +135,14 @@ function AnimatedRoutes() {
             element={
               <RequireAuth>
                 <Practice />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/cases/:id/details"
+            element={
+              <RequireAuth>
+                <CaseDetails />
               </RequireAuth>
             }
           />
@@ -170,6 +167,22 @@ function AnimatedRoutes() {
             element={
               <RequireAuth>
                 <Assessments />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/assessments/:id"
+            element={
+              <RequireAuth>
+                <AssessmentTaking />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/assessments/:id/results"
+            element={
+              <RequireAuth>
+                <AssessmentResults />
               </RequireAuth>
             }
           />
@@ -212,22 +225,20 @@ function AnimatedRoutes() {
   );
 }
 
-
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <RootErrorBoundary>
-      <ToolbarErrorBoundary>
-        <VlyToolbar />
-      </ToolbarErrorBoundary>
-      <ConvexAuthProvider client={convex}>
-        <BrowserRouter>
-          <RouteSyncer />
-          <Suspense fallback={<RouteLoading />}>
-            <AnimatedRoutes />
-          </Suspense>
-        </BrowserRouter>
-        <Toaster />
-      </ConvexAuthProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <DataProvider>
+            <RouteSyncer />
+            <Suspense fallback={<RouteLoading />}>
+              <AnimatedRoutes />
+            </Suspense>
+          </DataProvider>
+        </AuthProvider>
+      </BrowserRouter>
+      <Toaster />
     </RootErrorBoundary>
   </StrictMode>,
 );

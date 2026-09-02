@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -11,11 +12,21 @@ import {
   ChevronRight,
   Clock,
   Users,
-  CheckCircle2,
-  Zap,
   Star,
-  Trophy,
   Briefcase,
+  GraduationCap,
+  Award,
+  Globe,
+  ShoppingCart,
+  Code,
+  Palette,
+  Megaphone,
+  User,
+  Sparkles,
+  Bot,
+  PieChart,
+  PenTool,
+  Camera,
 } from "lucide-react";
 import { Link } from "react-router";
 import { motion } from "framer-motion";
@@ -26,507 +37,567 @@ const fadeUp = {
 };
 
 const stagger = {
-  visible: { transition: { staggerChildren: 0.08, delayChildren: 0.15 } },
+  visible: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
 };
 
 const caseTypes = [
-  { label: "Profitability", color: "bg-orange/10 text-orange", icon: TrendingUp },
-  { label: "Market Entry", color: "bg-purple/10 text-purple", icon: Briefcase },
-  { label: "M&A", color: "bg-teal/10 text-teal", icon: Target },
-  { label: "Growth Strategy", color: "bg-emerald-100 text-emerald-700", icon: Zap },
-  { label: "Operations", color: "bg-amber-100 text-amber-700", icon: BarChart3 },
-  { label: "Pricing", color: "bg-blue-100 text-blue-700", icon: Brain },
+  { label: "Profitability", color: "text-purple-600", bg: "bg-purple-100", icon: TrendingUp },
+  { label: "Market Entry", color: "text-amber-600", bg: "bg-amber-100", icon: Briefcase },
+  { label: "M&A Strategy", color: "text-pink-600", bg: "bg-pink-100", icon: Target },
+  { label: "Growth Strategy", color: "text-emerald-600", bg: "bg-emerald-100", icon: BookOpen },
+  { label: "Operations", color: "text-orange-600", bg: "bg-orange-100", icon: BarChart3 },
+  { label: "Pricing Strategy", color: "text-blue-600", bg: "bg-blue-100", icon: Brain },
 ];
 
-const features = [
+const popularCases = [
   {
-    icon: BookOpen,
-    title: "AI Case Simulator",
-    text: "Practice realistic consulting cases with an adaptive AI interviewer. Not a chatbot — a simulated interview.",
-    color: "bg-orange/10 text-orange",
-    bg: "bg-orange/5",
+    tag: "Bestseller",
+    tagColor: "bg-amber-400 text-amber-950",
+    title: "Complete Web Development Bootcamp",
+    author: "John Smith",
+    rating: 4.8,
+    reviews: "1.2K",
+    duration: "25h",
+    level: "Beginner",
+    headerBg: "bg-gradient-to-br from-amber-100 via-orange-100 to-amber-200",
+    illustration: (
+      <div className="relative w-full h-full flex items-center justify-center p-4">
+        <div className="w-32 h-24 bg-zinc-800 rounded-lg shadow-lg border-2 border-zinc-700 p-2 flex flex-col justify-between">
+          <div className="flex gap-1 mb-1">
+            <div className="w-1.5 h-1.5 rounded-full bg-red-400"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-yellow-400"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+          </div>
+          <div className="space-y-1 font-mono text-[8px] text-emerald-400 leading-tight">
+            <div>&lt;html&gt;</div>
+            <div className="pl-2 text-sky-300">&lt;body&gt;</div>
+            <div className="pl-4 text-amber-300">Build Future</div>
+          </div>
+          <div className="h-1 w-8 bg-purple-500 rounded"></div>
+        </div>
+      </div>
+    ),
   },
   {
-    icon: Target,
-    title: "Targeted Drills",
-    text: "Isolate your weakest skills with focused 10-minute drills: structuring, mental math, synthesis, business judgment.",
-    color: "bg-purple/10 text-purple",
-    bg: "bg-purple/5",
+    tag: "New",
+    tagColor: "bg-blue-500 text-white",
+    title: "UI/UX Design Fundamentals",
+    author: "Sarah Johnson",
+    rating: 4.9,
+    reviews: "856",
+    duration: "15h",
+    level: "All Levels",
+    headerBg: "bg-gradient-to-br from-blue-100 via-indigo-100 to-sky-200",
+    illustration: (
+      <div className="relative w-full h-full flex items-center justify-center p-4">
+        <div className="w-28 h-24 bg-white rounded-xl shadow-md p-2.5 border border-sky-200 flex flex-col gap-1.5">
+          <div className="w-full h-8 bg-indigo-500 rounded-lg flex items-center justify-center text-white text-[10px] font-bold">
+            UI Canvas
+          </div>
+          <div className="flex gap-1.5">
+            <div className="flex-1 h-6 bg-pink-100 rounded-md"></div>
+            <div className="flex-1 h-6 bg-purple-100 rounded-md"></div>
+          </div>
+        </div>
+      </div>
+    ),
   },
   {
-    icon: BarChart3,
-    title: "Performance Tracking",
-    text: "See exactly where you stand and where you need to improve. Every session feeds your readiness score.",
-    color: "bg-teal/10 text-teal",
-    bg: "bg-teal/5",
+    tag: "Popular",
+    tagColor: "bg-pink-500 text-white",
+    title: "Digital Marketing Masterclass",
+    author: "Michael Lee",
+    rating: 4.7,
+    reviews: "2.1K",
+    duration: "18h",
+    level: "Intermediate",
+    headerBg: "bg-gradient-to-br from-pink-100 via-rose-100 to-orange-100",
+    illustration: (
+      <div className="relative w-full h-full flex items-center justify-center p-4">
+        <div className="w-28 h-24 bg-white rounded-xl shadow-md p-3 border border-pink-200 flex flex-col justify-between">
+          <div className="flex items-end gap-1.5 h-12 pt-2">
+            <div className="w-3 bg-pink-300 h-[40%] rounded-t"></div>
+            <div className="w-3 bg-pink-400 h-[60%] rounded-t"></div>
+            <div className="w-3 bg-pink-500 h-[85%] rounded-t"></div>
+            <div className="w-3 bg-purple-600 h-[100%] rounded-t"></div>
+          </div>
+          <div className="h-2 w-full bg-pink-100 rounded"></div>
+        </div>
+      </div>
+    ),
   },
+  {
+    tag: "New",
+    tagColor: "bg-blue-500 text-white",
+    title: "Data Analysis with Python",
+    author: "Emily Davis",
+    rating: 4.8,
+    reviews: "930",
+    duration: "20h",
+    level: "Intermediate",
+    headerBg: "bg-gradient-to-br from-teal-100 via-emerald-100 to-cyan-100",
+    illustration: (
+      <div className="relative w-full h-full flex items-center justify-center p-4">
+        <div className="w-28 h-24 bg-white rounded-xl shadow-md p-3 border border-teal-200 flex flex-col justify-between">
+          <div className="flex justify-between items-center">
+            <PieChart className="w-6 h-6 text-teal-600" />
+            <div className="text-[9px] font-bold text-teal-700 bg-teal-50 px-1.5 py-0.5 rounded">Python</div>
+          </div>
+          <div className="space-y-1">
+            <div className="h-1.5 w-full bg-teal-100 rounded"></div>
+            <div className="h-1.5 w-4/5 bg-teal-200 rounded"></div>
+            <div className="h-1.5 w-3/5 bg-teal-400 rounded"></div>
+          </div>
+        </div>
+      </div>
+    ),
+  },
+];
+
+const topics = [
+  { label: "Profitability", count: 120 },
+  { label: "Market Entry", count: 86 },
+  { label: "Operations", count: 64 },
+  { label: "M&A Strategy", count: 45 },
+  { label: "Growth Strategy", count: 95 },
+];
+
+const topicGrid = [
+  { label: "Artificial Intelligence", count: 120, icon: Bot, color: "bg-purple-100 text-purple-600" },
+  { label: "Finance & Investing", count: 86, icon: TrendingUp, color: "bg-emerald-100 text-emerald-600" },
+  { label: "Photography", count: 64, icon: Camera, color: "bg-orange-100 text-orange-600" },
+  { label: "Writing & Communication", count: 95, icon: PenTool, color: "bg-blue-100 text-blue-600" },
+];
+
+const valueProps = [
+  { icon: Globe, label: "Learn Anywhere", desc: "Access courses on any device, anytime.", color: "bg-purple-500 text-white" },
+  { icon: Users, label: "Expert Instructors", desc: "Learn from industry professionals.", color: "bg-orange-500 text-white" },
+  { icon: Award, label: "Get Certified", desc: "Earn certificates to boost your career.", color: "bg-emerald-500 text-white" },
+  { icon: GraduationCap, label: "Join Community", desc: "Connect with learners from around the world.", color: "bg-pink-500 text-pink-600" },
 ];
 
 export default function Landing() {
+  const [activeCategory, setActiveCategory] = useState("Profitability");
+  const [activeTopic, setActiveTopic] = useState("Profitability");
+
   return (
     <motion.div
       initial="hidden"
       animate="visible"
-      className="min-h-screen bg-background overflow-x-hidden"
+      className="min-h-screen bg-[#faf8f5] overflow-x-hidden font-sans text-slate-800"
     >
-      {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border/50">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-sm">
-              CP
-            </div>
-            <span className="font-bold text-base tracking-tight">CasePilot</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link to="/auth">
-              <Button variant="ghost" size="sm" className="text-muted-foreground">
-                Log in
-              </Button>
+      {/* ── Header / Navigation ── */}
+      <nav className="sticky top-0 z-50 bg-[#faf8f5]/90 backdrop-blur-md">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-8">
+          {/* Logo */}
+          <div className="flex items-center gap-3">
+            <Link to="/dashboard" className="flex items-center gap-1.5">
+              <span className="text-3xl font-extrabold text-indigo-950 tracking-tight">Learnova</span>
+              <Sparkles className="w-5 h-5 text-amber-500 fill-amber-500" />
             </Link>
+          </div>
+
+          {/* Search bar */}
+          <div className="hidden lg:flex items-center relative max-w-md w-full mx-8">
+            <div className="absolute left-4 text-slate-400">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <input
+              type="text"
+              placeholder="Search for cases, skills, frameworks..."
+              className="w-full bg-[#f3ede8] border-none rounded-full py-2.5 pl-11 pr-4 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-400"
+            />
+          </div>
+
+          {/* Center Links */}
+          <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-700">                <a href="#courses" className="hover:text-purple-600 transition-colors">Cases</a>
+            <a href="#topics" className="hover:text-purple-600 transition-colors">Categories</a>
+            <a href="#how-it-works" className="hover:text-purple-600 transition-colors">How It Works</a>
+            <Link to="/practice" className="hover:text-purple-600 transition-colors">Practice</Link>
+          </div>
+
+          {/* Right Actions */}
+          <div className="flex items-center gap-4">
             <Link to="/auth">
-              <Button size="sm" className="gap-1.5 rounded-xl px-5">
+              <Button variant="ghost" size="sm" className="text-sm font-bold text-slate-700 hover:bg-slate-100 rounded-full px-5">
+                Log In
+              </Button>
+            </Link>                <Link to="/auth">
+              <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full px-6 py-2 shadow-md shadow-purple-200">
                 Get Started
-                <ArrowRight className="h-3.5 w-3.5" />
               </Button>
             </Link>
           </div>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        {/* Decorative blobs */}
-        <div className="absolute top-10 right-[15%] h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute bottom-0 left-[10%] h-48 w-48 rounded-full bg-purple/5 blur-3xl" />
-
-        <div className="mx-auto max-w-6xl px-6 py-16 lg:py-24">
-          <div className="grid gap-12 lg:grid-cols-[1fr_1.1fr] items-center">
-            {/* Left: text */}
-            <div>
-              <motion.div variants={fadeUp} transition={{ duration: 0.5 }}>
-                <Badge className="bg-primary/10 text-primary border-0 rounded-full px-3 py-1 text-xs font-semibold mb-5">
-                  🎯 AI-Powered Interview Prep
-                </Badge>
-              </motion.div>
-
+      {/* ── Hero Section ── */}
+      <section className="relative pt-6 pb-16">
+        <div className="mx-auto max-w-7xl px-8">
+          <div className="grid gap-12 lg:grid-cols-12 items-center">
+            {/* Left: Text & CTA */}
+            <div className="lg:col-span-6 space-y-6">
               <motion.h1
                 variants={fadeUp}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                className="text-4xl lg:text-[3.5rem] font-bold tracking-tight leading-[1.08] text-balance"
+                transition={{ duration: 0.5 }}
+                className="text-5xl lg:text-[4rem] font-extrabold tracking-tight leading-[1.08] text-slate-900"
               >
-                Train for the{" "}
-                <span className="text-primary relative">
-                  consulting interview
-                  <svg className="absolute -bottom-1 left-0 w-full" viewBox="0 0 200 12" fill="none">
-                    <path d="M2 8 Q50 2 100 6 T198 4" stroke="oklch(0.65 0.20 30)" strokeWidth="3" strokeLinecap="round" fill="none" />
+                Train for cases. <br />
+                <span className="text-purple-600 relative inline-block">
+                  Shape
+                  <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 160 14" fill="none">
+                    <path d="M3 10 Q 80 2, 157 8" stroke="#f59e0b" strokeWidth="5" strokeLinecap="round" />
                   </svg>
                 </span>{" "}
-                you actually want.
+                your career.
               </motion.h1>
 
               <motion.p
                 variants={fadeUp}
-                transition={{ duration: 0.5, delay: 0.2 }}
-                className="mt-5 text-base text-muted-foreground leading-relaxed max-w-md"
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="text-lg text-slate-600 max-w-md font-medium leading-relaxed"
               >
-                Practice realistic cases, identify your weaknesses, and build
-                measurable interview readiness — before the real interview.
+                Practice realistic consulting cases, build framework mastery, and track your progress.
               </motion.p>
 
               <motion.div
                 variants={fadeUp}
-                transition={{ duration: 0.5, delay: 0.3 }}
-                className="flex items-center gap-3 mt-7"
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="flex items-center gap-4 pt-2"
               >
-                <Link to="/auth">
-                  <Button size="lg" className="gap-2 px-7 rounded-xl">
-                    Start Practicing
-                    <ArrowRight className="h-4 w-4" />
+                <Link to="/practice">
+                  <Button size="lg" className="bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full px-8 py-6 shadow-lg shadow-purple-200 gap-3 text-base">
+                    Explore Cases
+                    <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
                   </Button>
                 </Link>
-                <a href="#how-it-works">
-                  <Button variant="outline" size="lg" className="gap-2 rounded-xl border-border/60">
-                    <Play className="h-4 w-4 text-primary" />
-                    See How It Works
-                  </Button>
-                </a>
+                <Link to="/cases/case-1">
+                  <button className="flex items-center gap-3 px-6 py-3 rounded-full hover:bg-[#f3ede8] transition-colors font-bold text-slate-700 text-base">
+                    <div className="w-10 h-10 rounded-full border border-purple-300 flex items-center justify-center text-purple-600 bg-white shadow-sm">
+                      <Play className="w-4 h-4 fill-purple-600 ml-0.5" />
+                    </div>
+                    Start Case Simulator
+                  </button>
+                </Link>
               </motion.div>
 
-              {/* Stats */}
+              {/* Stat Chips */}
               <motion.div
                 variants={fadeUp}
-                transition={{ duration: 0.5, delay: 0.4 }}
-                className="flex items-center gap-8 mt-10"
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="flex items-center gap-10 pt-8"
               >
-                {[
-                  { value: "2,400+", label: "Cases Done", icon: BookOpen, color: "text-orange" },
-                  { value: "78%", label: "Avg Readiness", icon: TrendingUp, color: "text-teal" },
-                  { value: "4.8★", label: "User Rating", icon: Star, color: "text-amber-500" },
-                ].map((s) => (
-                  <div key={s.label} className="flex items-center gap-2">
-                    <div className={`h-8 w-8 rounded-lg bg-muted flex items-center justify-center ${s.color}`}>
-                      <s.icon className="h-4 w-4" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold tabular-nums">{s.value}</p>
-                      <p className="text-[10px] text-muted-foreground">{s.label}</p>
-                    </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center">
+                    <BarChart3 className="w-6 h-6" />
                   </div>
-                ))}
+                  <div>
+                    <p className="text-xl font-extrabold text-slate-900">100+</p>
+                    <p className="text-xs font-semibold text-slate-500">Cases</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center">
+                    <Users className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-extrabold text-slate-900">50K+</p>
+                    <p className="text-xs font-semibold text-slate-500">Candidates</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center border border-amber-200">
+                    <Star className="w-6 h-6 fill-amber-400" />
+                  </div>
+                  <div>
+                    <p className="text-xl font-extrabold text-slate-900">4.9</p>
+                    <p className="text-xs font-semibold text-slate-500">(2.3K reviews)</p>
+                  </div>
+                </div>
               </motion.div>
             </div>
 
-            {/* Right: product preview */}
-            <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: 0.3, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-              className="relative"
-            >
-              {/* Decorative circle */}
-              <div className="absolute -top-6 -right-6 h-40 w-40 rounded-full bg-primary/10 blur-2xl" />
-              <div className="absolute -bottom-4 -left-4 h-32 w-32 rounded-full bg-purple/10 blur-2xl" />
-
-              <div className="relative rounded-2xl border bg-card shadow-xl shadow-primary/5 p-6 overflow-hidden">
-                {/* Mini toolbar */}
-                <div className="flex items-center gap-2 mb-5">
-                  <div className="flex gap-1.5">
-                    <div className="h-2.5 w-2.5 rounded-full bg-red-400/70" />
-                    <div className="h-2.5 w-2.5 rounded-full bg-amber-400/70" />
-                    <div className="h-2.5 w-2.5 rounded-full bg-emerald-400/70" />
-                  </div>
-                  <div className="ml-2 flex-1 rounded-lg bg-muted h-6 px-2.5 flex items-center">
-                    <span className="text-[10px] text-muted-foreground">casepilot.app/dashboard</span>
-                  </div>
-                </div>
-
-                {/* Readiness */}
-                <div className="flex items-center justify-between mb-5">
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">Interview Readiness</p>
-                    <div className="flex items-baseline gap-1 mt-1">
-                      <span className="text-3xl font-bold tabular-nums">78</span>
-                      <span className="text-sm text-muted-foreground">/100</span>
-                    </div>
-                    <p className="text-[11px] text-emerald-600 font-semibold mt-0.5">+12 this month</p>
-                  </div>
-                  <div className="relative">
-                    <svg width="64" height="64" className="-rotate-90">
-                      <circle cx="32" cy="32" r="28" fill="none" stroke="oklch(0.95 0.008 80)" strokeWidth="5" />
-                      <circle cx="32" cy="32" r="28" fill="none" stroke="oklch(0.55 0.20 30)" strokeWidth="5" strokeDasharray="175.9" strokeDashoffset="38.7" strokeLinecap="round" />
-                    </svg>
-                  </div>
-                </div>
-
-                {/* Skills */}
-                <div className="space-y-2">
-                  {[
-                    { name: "Structuring", score: 82, color: "bg-emerald-500" },
-                    { name: "Quantitative", score: 89, color: "bg-emerald-500" },
-                    { name: "Business Judgment", score: 64, color: "bg-amber-500" },
-                    { name: "Communication", score: 73, color: "bg-primary" },
-                    { name: "Synthesis", score: 61, color: "bg-amber-500" },
-                  ].map((s) => (
-                    <div key={s.name} className="flex items-center gap-2.5">
-                      <span className="text-[11px] text-muted-foreground w-28 shrink-0">{s.name}</span>
-                      <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
-                        <div className={`h-full rounded-full ${s.color}`} style={{ width: `${s.score}%` }} />
+            {/* Right: Graphic Card inside Arch */}
+            <div className="lg:col-span-6 relative flex justify-center py-6">
+              <div className="relative w-[420px] h-[480px] bg-amber-400 rounded-t-full rounded-b-[140px] p-3 flex flex-col justify-end shadow-2xl">
+                <div className="w-full h-full bg-[#e6ded6] rounded-t-full rounded-b-[130px] overflow-hidden relative flex items-end justify-center">
+                  <div className="absolute inset-0 bg-gradient-to-b from-amber-100/50 to-transparent"></div>
+                  <div className="relative z-10 w-64 h-80 flex flex-col items-center">
+                    <div className="w-24 h-32 bg-[#e0ac69] rounded-b-full rounded-t-2xl relative mb-[-10px] shadow-sm">
+                      <div className="absolute -top-3 -left-4 -right-4 h-24 bg-amber-950 rounded-t-full rounded-b-xl"></div>
+                      <div className="absolute top-12 left-2 right-2 flex justify-between z-20">
+                        <div className="w-8 h-8 rounded-full border-4 border-slate-900 bg-white/20"></div>
+                        <div className="w-8 h-8 rounded-full border-4 border-slate-900 bg-white/20"></div>
                       </div>
-                      <span className="text-[11px] font-semibold tabular-nums w-6 text-right">{s.score}</span>
+                      <div className="absolute bottom-5 left-8 right-8 h-2 border-b-2 border-slate-800 rounded-full"></div>
                     </div>
-                  ))}
+                    <div className="w-56 h-52 bg-emerald-700 rounded-t-[50px] shadow-inner flex flex-col items-center pt-4">
+                      <div className="w-full h-20 bg-amber-900/40 mt-auto rounded-t-xl flex items-center justify-center text-white text-xs font-bold">
+                        [ Case Simulator Ready ]
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </motion.div>
+
+              <div className="absolute top-6 right-0 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-3.5 flex items-center gap-3 border border-slate-100 z-20 max-w-xs">
+                <div className="w-10 h-10 rounded-xl bg-purple-600 text-white flex items-center justify-center shrink-0">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-extrabold text-slate-900">Practice at your pace</h4>
+                  <p className="text-[11px] text-slate-500 font-medium">Access cases & drills anytime.</p>
+                </div>
+              </div>
+
+              <div className="absolute bottom-10 left-0 bg-white/95 backdrop-blur rounded-2xl shadow-xl p-3.5 flex items-center gap-3 border border-slate-100 z-20 max-w-xs">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                  <Award className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-extrabold text-slate-900">Readiness Report</h4>
+                  <p className="text-[11px] text-slate-500 font-medium">Detailed skill feedback.</p>
+                </div>
+              </div>
+
+              <div className="absolute -bottom-4 right-10 w-24 h-14 bg-emerald-600 rounded-t-full shadow-lg z-20"></div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Case Type Pills */}
-      <section className="border-y border-border/50 bg-card/50">
-        <div className="mx-auto max-w-6xl px-6 py-5">
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="flex items-center gap-3 flex-wrap justify-center"
-          >
+      {/* ── How It Works Section (anchor target) ── */}
+      <section id="how-it-works" className="py-12">
+        <div className="mx-auto max-w-7xl px-8">
+          <div className="rounded-3xl bg-purple-600 p-8 text-white text-center">
+            <h2 className="text-2xl font-extrabold mb-4">How It Works</h2>
+            <p className="text-purple-100 font-medium max-w-2xl mx-auto">
+              Practice realistic consulting cases, get scored on key skills, track your readiness over time, and ace your interviews.
+            </p>
+            <div className="grid grid-cols-3 gap-6 mt-8">
+              <div className="bg-white/10 rounded-2xl p-5">
+                <div className="text-2xl font-extrabold mb-2">1</div>
+                <p className="text-sm font-semibold">Pick a Case</p>
+                <p className="text-xs text-purple-200 mt-1">Choose from 8+ realistic consulting scenarios</p>
+              </div>
+              <div className="bg-white/10 rounded-2xl p-5">
+                <div className="text-2xl font-extrabold mb-2">2</div>
+                <p className="text-sm font-semibold">Practice</p>
+                <p className="text-xs text-purple-200 mt-1">Simulate the interview with timed responses</p>
+              </div>
+              <div className="bg-white/10 rounded-2xl p-5">
+                <div className="text-2xl font-extrabold mb-2">3</div>
+                <p className="text-sm font-semibold">Get Feedback</p>
+                <p className="text-xs text-purple-200 mt-1">Detailed skill scoring and improvement tips</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Category Bar with Click Handlers ── */}
+      <section className="py-6">
+        <div className="mx-auto max-w-7xl px-8">
+          <div className="flex items-center gap-4 overflow-x-auto pb-2 scrollbar-none justify-between">
             {caseTypes.map((ct) => {
               const Icon = ct.icon;
+              const isSelected = activeCategory === ct.label;
               return (
-                <motion.div
+                <div
                   key={ct.label}
-                  variants={fadeUp}
-                  transition={{ duration: 0.4 }}
-                  whileHover={{ scale: 1.04, y: -1 }}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border border-border/40 bg-card shadow-sm cursor-pointer transition-shadow hover:shadow-md`}
+                  onClick={() => setActiveCategory(ct.label)}
+                  className={`flex items-center gap-3 px-6 py-3.5 rounded-2xl transition-all cursor-pointer shrink-0 shadow-sm ${isSelected ? "bg-purple-600 text-white shadow-md" : "bg-[#f3ede8] hover:bg-[#e8dfd7] text-slate-800"
+                    }`}
                 >
-                  <div className={`h-7 w-7 rounded-lg flex items-center justify-center ${ct.color}`}>
-                    <Icon className="h-3.5 w-3.5" />
+                  <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${isSelected ? "bg-white/20 text-white" : ct.bg}`}>
+                    <Icon className={`w-4 h-4 ${isSelected ? "text-white" : ct.color}`} />
                   </div>
-                  <span className="text-sm font-medium">{ct.label}</span>
-                </motion.div>
+                  <span className="text-sm font-extrabold">{ct.label}</span>
+                </div>
               );
             })}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* How It Works */}
-      <section id="how-it-works">
-        <div className="mx-auto max-w-6xl px-6 py-20">
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            className="text-center mb-14"
-          >
-            <motion.p variants={fadeUp} className="text-xs font-bold text-primary uppercase tracking-widest mb-3">
-              How It Works
-            </motion.p>
-            <motion.h2 variants={fadeUp} className="text-3xl font-bold tracking-tight">
-              A systematic approach to{" "}
-              <span className="relative inline-block">
-                readiness
-                <svg className="absolute -bottom-1 left-0 w-full" viewBox="0 0 120 8" fill="none">
-                  <path d="M2 5 Q30 1 60 4 T118 3" stroke="oklch(0.60 0.18 160)" strokeWidth="2.5" strokeLinecap="round" />
-                </svg>
-              </span>
-            </motion.h2>
-          </motion.div>
-
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
-            className="grid gap-6 md:grid-cols-5"
-          >
-            {[
-              { num: "01", title: "Assess", desc: "Find your baseline with a diagnostic case.", color: "bg-orange/10 text-orange border-orange/20" },
-              { num: "02", title: "Diagnose", desc: "Identify your weakest skills.", color: "bg-purple/10 text-purple border-purple/20" },
-              { num: "03", title: "Practice", desc: "Targeted drills for each skill.", color: "bg-teal/10 text-teal border-teal/20" },
-              { num: "04", title: "Simulate", desc: "Realistic AI case interviews.", color: "bg-primary/10 text-primary border-primary/20" },
-              { num: "05", title: "Improve", desc: "Track and measure your progress.", color: "bg-emerald-100 text-emerald-700 border-emerald-200" },
-            ].map((step, i) => (
-              <motion.div
-                key={step.title}
-                variants={fadeUp}
-                transition={{ duration: 0.4, delay: i * 0.08 }}
-                className="relative text-center"
-              >
-                {i < 4 && (
-                  <div className="hidden md:block absolute top-6 left-[60%] w-[80%] h-px bg-border/60" />
-                )}
-                <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl border ${step.color} font-bold text-sm mb-3`}>
-                  {step.num}
-                </div>
-                <h3 className="font-bold text-sm">{step.title}</h3>
-                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{step.desc}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="bg-card/60 border-y border-border/50">
-        <div className="mx-auto max-w-6xl px-6 py-20">
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            className="text-center mb-14"
-          >
-            <motion.p variants={fadeUp} className="text-xs font-bold text-primary uppercase tracking-widest mb-3">
-              Features
-            </motion.p>
-            <motion.h2 variants={fadeUp} className="text-3xl font-bold tracking-tight">
-              Everything you need.{" "}
-              <span className="text-muted-foreground font-normal">Nothing you don&apos;t.</span>
-            </motion.h2>
-          </motion.div>
-
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
-            className="grid gap-6 md:grid-cols-3"
-          >
-            {features.map((f) => {
-              const Icon = f.icon;
-              return (
-                <motion.div
-                  key={f.title}
-                  variants={fadeUp}
-                  whileHover={{ y: -4, scale: 1.01 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className={`rounded-2xl border border-border/50 p-6 ${f.bg} hover:shadow-lg hover:shadow-primary/5 transition-shadow`}
-                >
-                  <div className={`inline-flex h-11 w-11 items-center justify-center rounded-xl ${f.color} mb-4`}>
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <h3 className="font-bold text-base mb-2">{f.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{f.text}</p>
-                </motion.div>
-              );
-            })}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Product preview — practice page */}
-      <section>
-        <div className="mx-auto max-w-6xl px-6 py-20">
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-80px" }}
-            className="text-center mb-14"
-          >
-            <motion.p variants={fadeUp} className="text-xs font-bold text-primary uppercase tracking-widest mb-3">
-              Case Simulator
-            </motion.p>
-            <motion.h2 variants={fadeUp} className="text-3xl font-bold tracking-tight">
-              Practice like it&apos;s the{" "}
-              <span className="text-primary font-extrabold">real thing</span>.
-            </motion.h2>
-            <motion.p variants={fadeUp} className="text-muted-foreground mt-2 max-w-md mx-auto text-sm">
-              Two-panel workspace with an AI interviewer on the left and your notes, issue tree, and calculator on the right.
-            </motion.p>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-60px" }}
-            transition={{ duration: 0.6 }}
-            className="rounded-2xl border bg-card shadow-xl shadow-primary/5 overflow-hidden"
-          >
-            <div className="grid lg:grid-cols-[1fr_340px] min-h-[400px]">
-              {/* Left: interviewer */}
-              <div className="border-r border-border/50 p-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Live Interview</span>
-                </div>
-                <div className="space-y-4">
-                  <div className="rounded-xl bg-muted/60 p-4 max-w-[85%]">
-                    <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Interviewer</p>
-                    <p className="text-sm leading-relaxed">The client is a global coffee company whose profits have declined by 15% over the last year. How would you approach this problem?</p>
-                  </div>
-                  <div className="rounded-xl bg-primary p-4 max-w-[85%] ml-auto">
-                    <p className="text-[10px] font-semibold text-primary-foreground/70 uppercase tracking-wider mb-1.5">Your Response</p>
-                    <p className="text-sm leading-relaxed text-primary-foreground">I&apos;d break down profitability into revenue and costs. On revenue, I&apos;d examine pricing, volume, and mix...</p>
-                  </div>
-                </div>
-              </div>
-              {/* Right: workspace */}
-              <div className="bg-muted/20 p-5">
-                <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-3">Issue Tree</p>
-                <div className="space-y-3">
-                  <div className="inline-block rounded-lg border border-primary/30 bg-primary/5 px-3 py-1.5 text-xs font-semibold">Profit Decline</div>
-                  <div className="ml-5 space-y-2">
-                    <div className="inline-block rounded-lg border bg-card px-3 py-1.5 text-xs font-medium">Revenue</div>
-                    <div className="ml-5 space-y-1.5">
-                      <div className="inline-block rounded-lg border bg-card px-3 py-1 text-[11px] text-muted-foreground">Price</div>
-                      <div className="inline-block rounded-lg border bg-card px-3 py-1 text-[11px] text-muted-foreground">Volume</div>
-                    </div>
-                    <div className="inline-block rounded-lg border bg-card px-3 py-1.5 text-xs font-medium">Costs</div>
-                    <div className="ml-5 space-y-1.5">
-                      <div className="inline-block rounded-lg border bg-card px-3 py-1 text-[11px] text-muted-foreground">Fixed</div>
-                      <div className="inline-block rounded-lg border bg-card px-3 py-1 text-[11px] text-muted-foreground">Variable</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Social proof */}
-      <section className="bg-card/60 border-y border-border/50">
-        <div className="mx-auto max-w-6xl px-6 py-14">
-          <motion.div
-            variants={stagger}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="grid grid-cols-2 lg:grid-cols-4 gap-8"
-          >
-            {[
-              { value: "2,400+", label: "Cases completed", color: "bg-orange/10 text-orange" },
-              { value: "74%", label: "Avg readiness gain", color: "bg-teal/10 text-teal" },
-              { value: "18 min", label: "Avg session time", color: "bg-purple/10 text-purple" },
-              { value: "4.8", label: "User rating", color: "bg-primary/10 text-primary" },
-            ].map((s, i) => (
-              <motion.div key={s.label} variants={fadeUp} className="text-center">
-                <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${s.color} mb-3`}>
-                  <Trophy className="h-5 w-5" />
-                </div>
-                <p className="text-2xl font-bold tracking-tight tabular-nums">{s.value}</p>
-                <p className="text-xs text-muted-foreground mt-1">{s.label}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section>
-        <div className="mx-auto max-w-6xl px-6 py-20">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="rounded-3xl bg-primary p-10 lg:p-14 text-center text-primary-foreground relative overflow-hidden"
-          >
-            <div className="absolute top-4 right-10 h-20 w-20 rounded-full bg-white/10 blur-xl" />
-            <div className="absolute bottom-4 left-10 h-16 w-16 rounded-full bg-white/10 blur-xl" />
-            <h2 className="text-2xl lg:text-3xl font-bold tracking-tight relative z-10">
-              Ready to prepare like a candidate, not a student?
-            </h2>
-            <p className="text-primary-foreground/80 mt-3 max-w-md mx-auto text-sm relative z-10">
-              Start with a diagnostic case to find your baseline, then follow a
-              targeted training plan until interview day.
-            </p>
-            <Link to="/auth">
-              <Button
-                variant="secondary"
-                size="lg"
-                className="mt-6 gap-2 bg-white text-primary hover:bg-white/90 rounded-xl px-8 relative z-10"
-              >
-                Start Practicing
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+            <Link to="/practice" className="w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center text-slate-700 shrink-0 hover:bg-slate-50">
+              <ChevronRight className="w-5 h-5" />
             </Link>
-          </motion.div>
+          </div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border/50">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-6">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-[9px]">
-              CP
+      {/* ── Popular Cases Grid with Direct Navigation Links ── */}
+      <section id="courses" className="py-12">
+        <div className="mx-auto max-w-7xl px-8">
+          <div className="flex items-end justify-between mb-8">
+            <div>
+              <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+                Popular Practice Cases<span className="text-purple-600">*</span>
+              </h2>
+              <p className="text-sm font-medium text-slate-500 mt-1">Hand-picked consulting cases to build framework readiness</p>
             </div>
-            <span className="text-xs text-muted-foreground">© 2026 CasePilot</span>
+            <Link to="/practice">
+              <button className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#f3ede8] text-purple-700 hover:bg-purple-100 text-xs font-extrabold transition-colors">
+                View All Cases
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </Link>
           </div>
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-            <a href="#" className="hover:text-foreground transition-colors">Terms</a>
+
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {popularCases.map((c) => (
+              <Link
+                key={c.title}
+                to="/cases/case-1"
+                className="rounded-3xl bg-white p-3.5 shadow-xl shadow-slate-200/50 border border-slate-100 flex flex-col justify-between hover:shadow-2xl hover:-translate-y-1 transition-all cursor-pointer"
+              >
+                <div>
+                  <div className={`h-44 rounded-2xl ${c.headerBg} relative overflow-hidden mb-3 border border-slate-100`}>
+                    <span className={`absolute top-3 left-3 text-[10px] font-extrabold px-3 py-1 rounded-full shadow-sm ${c.tagColor}`}>
+                      {c.tag}
+                    </span>
+                    {c.illustration}
+                  </div>
+                  <h3 className="font-extrabold text-base text-slate-900 leading-snug mb-2">{c.title}</h3>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-5 h-5 rounded-full bg-purple-200 text-purple-700 text-[10px] font-bold flex items-center justify-center">
+                      {c.author[0]}
+                    </div>
+                    <span className="text-xs font-semibold text-slate-500">{c.author}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs font-bold text-slate-500 pt-3 border-t border-slate-100">
+                  <div className="flex items-center gap-1 text-amber-500">
+                    <Star className="w-3.5 h-3.5 fill-amber-400" />
+                    <span className="text-slate-900 font-extrabold">{c.rating}</span>
+                    <span className="text-slate-400 font-medium">({c.reviews})</span>
+                  </div>
+                  <div className="flex items-center gap-1 text-slate-400 font-medium">
+                    <Clock className="w-3.5 h-3.5" />
+                    <span>{c.duration}</span>
+                  </div>
+                  <span className="text-slate-400 font-medium">{c.level}</span>
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
-      </footer>
-    </motion.div>
+      </section>
+
+      {/* ── Learn by Topic Section with Interactive Tabs ── */}
+      <section id="topics" className="py-12">
+        <div className="mx-auto max-w-7xl px-8">
+          <div className="mb-8">
+            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
+              Learn by Framework Topic<span className="text-purple-600">*</span>
+            </h2>
+            <p className="text-sm font-medium text-slate-500 mt-1">Browse practice modules by framework category</p>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-12">
+            {/* Topic List */}
+            <div className="lg:col-span-3 rounded-3xl bg-[#f3ede8] p-4 flex flex-col gap-2 shadow-sm">
+              {topics.map((t) => {
+                const isSelected = activeTopic === t.label;
+                return (
+                  <div
+                    key={t.label}
+                    onClick={() => setActiveTopic(t.label)}
+                    className={`flex items-center justify-between px-4 py-3.5 rounded-2xl cursor-pointer transition-all ${isSelected ? "bg-white shadow-sm text-slate-900 font-extrabold" : "text-slate-600 font-semibold hover:bg-white/60"
+                      }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <BookOpen className={`w-4 h-4 ${isSelected ? "text-purple-600" : "text-slate-400"}`} />
+                      <span className="text-sm">{t.label}</span>
+                    </div>
+                    <ChevronRight className={`w-4 h-4 ${isSelected ? "text-purple-600" : "text-slate-400"}`} />
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Green Hero CTA Box */}
+            <div className="lg:col-span-4 rounded-3xl bg-emerald-500 p-8 text-white flex flex-col justify-between relative overflow-hidden shadow-xl min-h-[300px]">
+              <div className="relative z-10">
+                <h3 className="text-3xl font-extrabold leading-tight mb-4">
+                  Unlock <br />
+                  your potential <br />
+                  with targeted <br />
+                  case practice.
+                </h3>
+              </div>
+
+              <div className="absolute bottom-4 right-4 z-0 opacity-90">
+                <div className="w-28 h-20 relative">
+                  <div className="w-16 h-10 bg-purple-600 rounded-sm transform rotate-[15deg] shadow-lg relative flex items-center justify-center">
+                    <div className="w-4 h-4 bg-amber-400 rounded-full"></div>
+                  </div>
+                  <div className="w-20 h-4 bg-amber-400 rounded-sm mt-2 shadow"></div>
+                  <div className="w-22 h-4 bg-purple-300 rounded-sm mt-1 shadow"></div>
+                </div>
+              </div>
+
+              <div className="relative z-10">
+                <Link to="/practice">
+                  <button className="bg-white text-slate-900 font-extrabold px-6 py-3 rounded-full text-xs hover:bg-slate-100 transition-colors shadow-md flex items-center gap-2">
+                    Browse All Topics
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </Link>
+              </div>
+            </div>
+
+            {/* 2x2 Grid Topics */}
+            <div className="lg:col-span-5 grid grid-cols-2 gap-4">
+              {topicGrid.map((t) => {
+                const Icon = t.icon;
+                return (
+                  <Link
+                    key={t.label}
+                    to="/practice"
+                    className="rounded-3xl bg-[#f3ede8] p-5 flex flex-col justify-between hover:bg-[#e8dfd7] transition-all cursor-pointer shadow-sm"
+                  >
+                    <div>
+                      <h4 className="font-extrabold text-base text-slate-900 leading-snug mb-1">{t.label}</h4>
+                      <p className="text-xs font-semibold text-slate-500">{t.count} Modules</p>
+                    </div>
+                    <div className="flex justify-end mt-4">
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${t.color} shadow-sm`}>
+                        <Icon className="w-6 h-6" />
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Value Props Footer Bar ── */}
+      <section className="py-12 my-6">
+        <div className="mx-auto max-w-7xl px-8">
+          <div className="rounded-3xl bg-[#f3ede8] p-8 grid grid-cols-2 lg:grid-cols-4 gap-8">
+            {valueProps.map((v) => {
+              const Icon = v.icon;
+              return (
+                <div key={v.label} className="flex items-center gap-4">
+                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 shadow-md ${v.color}`}>
+                    <Icon className="w-7 h-7" />
+                  </div>
+                  <div>
+                    <h4 className="font-extrabold text-sm text-slate-900">{v.label}</h4>
+                    <p className="text-xs font-medium text-slate-500 leading-tight mt-0.5">{v.desc}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>    </motion.div>
   );
 }

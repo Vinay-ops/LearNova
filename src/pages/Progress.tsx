@@ -1,5 +1,6 @@
+import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { TrendingUp, Flame, BookOpen, Clock, BarChart3 } from "lucide-react";
+import { TrendingUp, Flame, BookOpen, BarChart3 } from "lucide-react";
 import { motion } from "framer-motion";
 import { FadeIn, StaggerList, StaggerItem, AnimatedBar } from "@/components/app/AnimatedSection";
 import {
@@ -11,172 +12,271 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { skillScores, readinessOverTime, userProfile } from "@/data/mock-data";
+import { useAuth } from "@/context/AuthContext";
+import { progressApi, type ProgressSummary, type SkillScore } from "@/features/progress";
+import { Link } from "react-router";
 import { cn } from "@/lib/utils";
 
 const skillColor = (score: number) =>
-  score >= 80 ? "bg-emerald-600" : score >= 65 ? "bg-accent" : "bg-amber-500";
+  score >= 80 ? "bg-emerald-500" : score >= 65 ? "bg-primary" : "bg-amber-500";
+
+const skillTextColor = (score: number) =>
+  score >= 80 ? "text-emerald-600" : score >= 65 ? "text-primary" : "text-amber-600";
 
 export default function Progress() {
-  const strongest = [...skillScores].sort((a, b) => b.score - a.score)[0];
-  const weakest = [...skillScores].sort((a, b) => a.score - b.score)[0];
-  const mostImproved = [...skillScores].sort(
-    (a, b) => b.score - b.previousScore - (a.score - a.previousScore)
-  )[0];
+  const { user } = useAuth();
+  const [summary, setSummary] = useState<ProgressSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const userId = user?.id || "";
+
+  const skillScores: SkillScore[] = summary?.skill_scores?.map((s) => ({
+    name: s.skill,
+    score: s.score,
+    previousScore: s.previous_score ?? 0,
+    trend: (s.trend as SkillScore["trend"]) || "flat",
+    color: s.color || "#1e3a5f",
+  })) || [];
+
+  const readinessScore = summary?.readiness_score ?? 0;
+  const readinessOverTime = summary?.readiness_over_time ?? [];
+  const completedCases = summary?.total_cases_completed ?? 0;
+  const completedAssessments = summary?.total_assessments_completed ?? 0;
+  const completedDrills = summary?.total_drills_completed ?? 0;
+  const averageScore = summary?.average_score ? Math.round(summary.average_score) : 0;
+  const streak = summary?.streak_days ?? 0;
+
+  const loadSummary = async () => {
+    if (!userId) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await progressApi.getSummary(userId);
+      setSummary(data);
+    } catch (e: any) {
+      setError(e?.message || "Failed to load progress");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSummary();
+  }, [userId]);
+
+  const previousReadiness = readinessScore > 12 ? readinessScore - 12 : readinessScore;
+
+  const strongest = skillScores.length > 0
+    ? [...skillScores].sort((a, b) => b.score - a.score)[0]
+    : { name: "N/A", score: 0, previousScore: 0 };
+  const weakest = skillScores.length > 0
+    ? [...skillScores].sort((a, b) => a.score - b.score)[0]
+    : { name: "N/A", score: 0, previousScore: 0 };
+  const mostImproved = skillScores.length > 0
+    ? [...skillScores].sort(
+        (a, b) => (b.score - b.previousScore) - (a.score - a.previousScore)
+      )[0]
+    : { name: "N/A", score: 0, previousScore: 0 };
 
   return (
     <AppLayout>
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold tracking-tight">Progress</h1>
-        <p className="text-muted-foreground mt-1">
+        <p className="text-muted-foreground mt-1 text-sm">
           Track your interview preparation journey.
         </p>
       </div>
 
-      {/* Readiness + Key insights */}
-      <FadeIn delay={0.1} className="flex items-start gap-10 mb-8 pb-8 border-b">
-        <div>
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-1">
-            Interview Readiness
-          </p>
-          <div className="flex items-baseline gap-2">
-            <span className="text-5xl font-bold tracking-tight tabular-nums">
-              {userProfile.readinessScore}
-            </span>
-            <span className="text-xl text-muted-foreground">/ 100</span>
-          </div>
-          <div className="flex items-center gap-1.5 mt-1.5">
-            <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
-            <span className="text-sm text-emerald-600 font-medium">
-              +{userProfile.readinessScore - userProfile.previousReadinessScore} this month
-            </span>
-          </div>
+      {error && (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {error}
         </div>
-        {/* Key insights */}
-        <div className="flex gap-8">
-          {[
-            { label: "Strength", value: strongest.name, sub: `${strongest.score}/100`, color: "text-emerald-600" },
-            { label: "Focus Area", value: weakest.name, sub: `${weakest.score}/100`, color: "text-amber-600" },
-            { label: "Most Improved", value: mostImproved.name, sub: `+${mostImproved.score - mostImproved.previousScore}`, color: "text-accent" },
-          ].map((item) => (
-            <div key={item.label} className="min-w-0">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1">
-                {item.label}
-              </p>
-              <p className="text-sm font-semibold">{item.value}</p>
-              <p className={cn("text-xs font-medium tabular-nums", item.color)}>
-                {item.sub}
-              </p>
-            </div>
-          ))}
-        </div>
-      </FadeIn>
+      )}
 
-      {/* Chart */}
-      <FadeIn delay={0.2} className="mb-8">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
-          Performance Over Time
-        </p>
-        <div className="rounded-xl border bg-card p-6">
-          <div className="h-56">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={readinessOverTime}>
-                <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.92 0.004 260)" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 11, fill: "oklch(0.48 0.01 260)" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  domain={[0, 100]}
-                  tick={{ fontSize: 11, fill: "oklch(0.48 0.01 260)" }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: "8px",
-                    border: "1px solid oklch(0.905 0.004 260)",
-                    fontSize: "12px",
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="score"
-                  stroke="oklch(0.48 0.14 245)"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4, strokeWidth: 2 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
+      {loading ? (
+        <div className="rounded-3xl border border-slate-100 bg-white p-12 text-center text-muted-foreground shadow-xl shadow-slate-200/50">
+          Loading progress...
         </div>
-      </FadeIn>
-
-      {/* Skill Development — dense rows */}
-      <div className="mb-8">
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
-          Skill Development
-        </p>
-        <div className="rounded-xl border bg-card p-5">
-          <StaggerList className="space-y-3">
-            {skillScores.map((skill) => (
-              <StaggerItem key={skill.name}>
-                <div className="flex items-center gap-3">
-                <span className="text-sm w-40 text-muted-foreground shrink-0">
-                  {skill.name}
+      ) : (
+        <>
+          {/* Readiness + Key insights */}
+          <FadeIn delay={0.1} className="grid lg:grid-cols-[auto_1fr] gap-6 mb-8">
+            {/* Big readiness number */}
+            <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/50 flex flex-col justify-center min-w-[220px]">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">
+                Interview Readiness
+              </p>
+              <div className="flex items-baseline gap-2">
+                <span className="text-6xl font-extrabold tracking-tight tabular-nums text-primary">
+                  {readinessScore}
                 </span>
-                <div className="flex-1 h-2 rounded-full bg-muted">
-                  <div
-                    className={cn("h-full rounded-full transition-all duration-700", skillColor(skill.score))}
-                    style={{ width: `${skill.score}%` }}
-                  />
-                </div>
-                <div className="flex items-center gap-2 w-20 justify-end">
-                  <span className="text-sm font-semibold tabular-nums">{skill.score}</span>
-                  <span className="text-[11px] text-emerald-600 tabular-nums">
-                    +{skill.score - skill.previousScore}
-                  </span>
-                </div>
-                </div>
-              </StaggerItem>
-            ))}
-          </StaggerList>
-        </div>
-      </div>
+                <span className="text-xl text-muted-foreground">/ 100</span>
+              </div>
+              <div className="flex items-center gap-1.5 mt-2">
+                <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="text-sm text-emerald-600 font-semibold">
+                  +{readinessScore - previousReadiness} this month
+                </span>
+              </div>
+            </div>
 
-      {/* Key Metrics */}
-      <FadeIn delay={0.4}>
-        <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
-          Key Metrics
-        </p>
-        <div className="rounded-xl border bg-card">
-          <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-border">
-            {[
-              { icon: BookOpen, value: userProfile.totalCasesCompleted, label: "Cases completed" },
-              { icon: BarChart3, value: `${userProfile.averageScore}%`, label: "Average score" },
-              { icon: Clock, value: `${userProfile.averageCaseTime}m`, label: "Avg case time" },
-              { icon: Flame, value: `${userProfile.streak}`, label: "Day streak" },
-            ].map((m) => {
-              const Icon = m.icon;
-              return (
-                <div key={m.label} className="px-5 py-4">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-                    <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                      {m.label}
-                    </span>
-                  </div>
-                  <p className="text-xl font-bold tabular-nums">{m.value}</p>
+            {/* Key insights */}
+            <div className="grid grid-cols-3 gap-4">
+              {[
+                { label: "Strength", value: strongest.name, sub: `${strongest.score}/100`, color: "text-emerald-600", bgColor: "bg-emerald-50", borderColor: "border-emerald-200/60" },
+                { label: "Focus Area", value: weakest.name, sub: `${weakest.score}/100`, color: "text-amber-600", bgColor: "bg-amber-50", borderColor: "border-amber-200/60" },
+                { label: "Most Improved", value: mostImproved.name, sub: `+${mostImproved.score - mostImproved.previousScore}`, color: "text-primary", bgColor: "bg-purple-50", borderColor: "border-purple-200/60" },
+              ].map((item) => (
+                <div key={item.label} className={`rounded-3xl border ${item.borderColor} ${item.bgColor} p-5 shadow-xl shadow-slate-200/30`}>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
+                    {item.label}
+                  </p>
+                  <p className="text-sm font-bold">{item.value}</p>
+                  <p className={cn("text-base font-extrabold tabular-nums mt-1", item.color)}>
+                    {item.sub}
+                  </p>
                 </div>
-              );
-            })}
+              ))}
+            </div>
+          </FadeIn>
+
+          {/* Chart */}
+          <FadeIn delay={0.2} className="mb-8">
+            <p className="text-sm font-bold text-foreground mb-4">
+              Performance Over Time
+            </p>
+            <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/50">
+              <div className="h-56">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={readinessOverTime}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0edfb" />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 11, fill: "#7a7a8a" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      domain={[0, 100]}
+                      tick={{ fontSize: 11, fill: "#7a7a8a" }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: "12px",
+                        border: "1px solid #e8e2dc",
+                        fontSize: "12px",
+                        boxShadow: "0 4px 12px rgba(108,92,231,0.08)",
+                      }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="score"
+                      stroke="#6c5ce7"
+                      strokeWidth={2.5}
+                      dot={false}
+                      activeDot={{ r: 5, strokeWidth: 2, fill: "#6c5ce7" }}
+                      animationDuration={1200}
+                      animationEasing="ease-out"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </FadeIn>
+
+          {/* Skill Development */}
+          <div className="mb-8">
+            <p className="text-sm font-bold text-foreground mb-4">
+              Skill Development
+            </p>
+            <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/50">
+              <StaggerList className="space-y-4">
+                {skillScores.map((skill, i) => (
+                  <StaggerItem key={skill.name}>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm w-44 text-muted-foreground shrink-0 font-medium">
+                        {skill.name}
+                      </span>
+                      <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
+                        <AnimatedBar
+                          width={skill.score}
+                          className={cn("h-full rounded-full", skillColor(skill.score))}
+                          delay={0.15 + i * 0.07}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2 w-20 justify-end">
+                        <span className={cn("text-sm font-bold tabular-nums", skillTextColor(skill.score))}>
+                          {skill.score}
+                        </span>
+                        <span className="text-[11px] text-emerald-600 font-semibold tabular-nums">
+                          +{skill.score - skill.previousScore}
+                        </span>
+                      </div>
+                    </div>
+                  </StaggerItem>
+                ))}
+              </StaggerList>
+            </div>
           </div>
-        </div>
-      </FadeIn>
+
+          {/* Key Metrics */}
+          <FadeIn delay={0.4}>
+            <p className="text-sm font-bold text-foreground mb-4">Key Metrics</p>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { icon: BookOpen, value: completedCases, label: "Cases completed", color: "bg-blue-100 text-blue-600" },
+                { icon: BarChart3, value: `${averageScore}%`, label: "Average score", color: "bg-purple-100 text-purple-600" },
+                { icon: BookOpen, value: completedDrills, label: "Drills completed", color: "bg-teal-100 text-teal-600" },
+                { icon: Flame, value: `${streak}`, label: "Day streak", color: "bg-amber-100 text-amber-600" },
+              ].map((m) => {
+                const Icon = m.icon;
+                return (
+                  <motion.div
+                    key={m.label}
+                    whileHover={{ y: -2, scale: 1.01 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                    className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/50 hover:shadow-md transition-all"
+                  >
+                    <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${m.color} mb-3`}>
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <p className="text-2xl font-bold tabular-nums">{m.value}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{m.label}</p>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </FadeIn>
+
+          {/* Practice Weakest + View History Links */}
+          <FadeIn delay={0.5} className="mt-8">
+            <div className="grid grid-cols-3 gap-4">
+              <Link to="/practice">
+                <motion.div whileHover={{ y: -2 }} className="rounded-3xl border border-slate-100 bg-white p-5 shadow-xl shadow-slate-200/50 hover:shadow-md transition-all h-full">
+                  <p className="text-sm font-bold text-slate-900">Practice Weakest Skill</p>
+                  <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">Focus on {weakest.name} ({weakest.score}/100)</p>
+                </motion.div>
+              </Link>
+              <Link to="/practice">
+                <motion.div whileHover={{ y: -2 }} className="rounded-3xl border border-slate-100 bg-white p-5 shadow-xl shadow-slate-200/50 hover:shadow-md transition-all h-full">
+                  <p className="text-sm font-bold text-slate-900">View Case History</p>
+                  <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">{completedCases} cases completed</p>
+                </motion.div>
+              </Link>
+              <Link to="/assessments">
+                <motion.div whileHover={{ y: -2 }} className="rounded-3xl border border-slate-100 bg-white p-5 shadow-xl shadow-slate-200/50 hover:shadow-md transition-all h-full">
+                  <p className="text-sm font-bold text-slate-900">View Assessment History</p>
+                  <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">{completedAssessments} assessments taken</p>
+                </motion.div>
+              </Link>
+            </div>
+          </FadeIn>
+        </>
+      )}
     </AppLayout>
   );
 }

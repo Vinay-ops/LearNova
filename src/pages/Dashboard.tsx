@@ -6,7 +6,6 @@ import {
   ArrowRight,
   BookOpen,
   CheckCircle2,
-  Clock,
   Flame,
   Play,
   TrendingUp,
@@ -23,12 +22,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import {
-  userProfile,
-  skillScores,
-  readinessOverTime,
-  todayTraining,
-} from "@/data/mock-data";
+import { useData } from "@/context/DataContext";
+import { useAuth } from "@/context/AuthContext";
 import { Link } from "react-router";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -40,7 +35,8 @@ function getGreeting() {
   return "Good evening";
 }
 
-function getDaysUntilInterview(dateStr: string) {
+function getDaysUntilInterview(dateStr: string | null) {
+  if (!dateStr) return null;
   const interview = new Date(dateStr);
   const now = new Date();
   const diff = Math.ceil((interview.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -54,9 +50,47 @@ const skillTextColor = (score: number) =>
   score >= 80 ? "text-emerald-600" : score >= 65 ? "text-primary" : "text-amber-600";
 
 export default function Dashboard() {
-  const daysLeft = getDaysUntilInterview(userProfile.interviewDate);
-  const weakestSkill = [...skillScores].sort((a, b) => a.score - b.score)[0];
-  const scoreDiff = userProfile.readinessScore - userProfile.previousReadinessScore;
+  const { user, profile } = useAuth();
+  const {
+    getSkillScores,
+    getReadinessScore,
+    getReadinessOverTime,
+    getCompletedCasesCount,
+    getCompletedAssessmentsCount,
+    getCompletedDrillsCount,
+    getAverageScore,
+    getStreak,
+    getCaseAttempts,
+    drills,
+  } = useData();
+
+  const userId = user?.id || "";
+  const skillScores = getSkillScores(userId);
+  const readinessScore = getReadinessScore(userId);
+  const readinessOverTime = getReadinessOverTime(userId);
+  const completedCases = getCompletedCasesCount(userId);
+  const completedAssessments = getCompletedAssessmentsCount(userId);
+  const completedDrills = getCompletedDrillsCount(userId);
+  const averageScore = getAverageScore(userId);
+  const streak = getStreak(userId);
+  const daysLeft = getDaysUntilInterview(profile?.interviewDate || null);
+  const displayName = profile?.name?.split(" ")[0] || user?.name?.split(" ")[0] || "User";
+  const weakestSkill = skillScores.length > 0
+    ? [...skillScores].sort((a, b) => a.score - b.score)[0]
+    : { name: "Structuring", score: 50 };
+  const previousReadiness = readinessScore > 12 ? readinessScore - 12 : readinessScore;
+  const scoreDiff = readinessScore - previousReadiness;
+
+  // Recent case attempts for activity
+  const recentAttempts = getCaseAttempts(userId)
+    .filter((a) => a.status === "completed")
+    .slice(-3)
+    .reverse();
+
+  // Recommended drill
+  const recommendedDrill = drills.find((d) =>
+    d.skills.includes(weakestSkill.name)
+  ) || drills[0];
 
   return (
     <AppLayout>
@@ -68,62 +102,68 @@ export default function Dashboard() {
         className="flex items-start justify-between mb-8"
       >
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            {getGreeting()}, <span className="text-primary">{userProfile.name}</span>
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
+            {getGreeting()}, <span className="text-purple-600">{displayName}</span> 👋
           </h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Your interview is in{" "}
-            <span className="font-bold text-foreground">{daysLeft} days</span>.
-            Keep up the momentum! 💪
+          <p className="text-slate-500 mt-1 text-sm font-semibold">
+            {daysLeft != null && daysLeft > 0 ? (
+              <>
+                Your interview is in{" "}
+                <span className="font-extrabold text-slate-900">{daysLeft} days</span>.
+                Keep up the momentum! 💪
+              </>
+            ) : (
+              <>Keep practicing to improve your readiness! 💪</>
+            )}
           </p>
         </div>
-        <Link to="/cases/case-1">
-          <Button className="gap-2 rounded-xl">
+        <Link to="/practice">
+          <Button className="gap-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold rounded-full px-6 py-5 shadow-lg shadow-purple-200">
             <Target className="h-4 w-4" />
-            Start Mock Interview
-            <ArrowRight className="h-3.5 w-3.5" />
+            Start Practice
+            <ArrowRight className="h-4 w-4" />
           </Button>
         </Link>
       </motion.div>
 
-      {/* Stat cards row */}
-      <FadeIn delay={0.1} className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {/* Stat cards */}
+      <FadeIn delay={0.1} className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         {[
           {
             icon: Target,
-            value: userProfile.readinessScore,
+            value: readinessScore,
             suffix: "/100",
             label: "Interview Readiness",
-            color: "bg-primary/10 text-primary",
+            color: "bg-purple-100 text-purple-600",
             trend: `+${scoreDiff} this month`,
             trendColor: "text-emerald-600",
           },
           {
             icon: Flame,
-            value: userProfile.streak,
-            suffix: "",
+            value: streak,
+            suffix: " days",
             label: "Day Streak",
-            color: "bg-orange/10 text-orange",
+            color: "bg-amber-100 text-amber-600",
             trend: "Keep it going!",
-            trendColor: "text-orange",
+            trendColor: "text-amber-600",
           },
           {
             icon: BookOpen,
-            value: userProfile.totalCasesCompleted,
+            value: completedCases,
             suffix: "",
             label: "Cases Done",
-            color: "bg-purple/10 text-purple",
-            trend: "24 total",
-            trendColor: "text-purple",
+            color: "bg-blue-100 text-blue-600",
+            trend: `${completedCases} total`,
+            trendColor: "text-blue-600",
           },
           {
             icon: Trophy,
-            value: `${userProfile.averageScore}`,
+            value: `${averageScore}`,
             suffix: "%",
             label: "Avg Score",
-            color: "bg-teal/10 text-teal",
+            color: "bg-emerald-100 text-emerald-600",
             trend: "Solid progress",
-            trendColor: "text-teal",
+            trendColor: "text-emerald-600",
           },
         ].map((stat, i) => {
           const Icon = stat.icon;
@@ -133,17 +173,17 @@ export default function Dashboard() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 + i * 0.08, duration: 0.4 }}
-              whileHover={{ y: -2, scale: 1.01 }}
-              className="rounded-2xl border border-border/50 bg-card p-5 shadow-sm hover:shadow-md transition-shadow"
+              whileHover={{ y: -3 }}
+              className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/50"
             >
-              <div className={`inline-flex h-10 w-10 items-center justify-center rounded-xl ${stat.color} mb-3`}>
-                <Icon className="h-5 w-5" />
+              <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${stat.color} mb-4 shadow-sm`}>
+                <Icon className="h-6 w-6" />
               </div>
-              <p className="text-2xl font-bold tabular-nums">
-                {stat.value}<span className="text-base font-normal text-muted-foreground">{stat.suffix}</span>
+              <p className="text-3xl font-extrabold text-slate-900 tabular-nums">
+                {stat.value}<span className="text-base font-semibold text-slate-400">{stat.suffix}</span>
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">{stat.label}</p>
-              <p className={`text-[11px] font-semibold mt-1.5 ${stat.trendColor}`}>{stat.trend}</p>
+              <p className="text-xs font-semibold text-slate-500 mt-1">{stat.label}</p>
+              <p className={`text-xs font-extrabold mt-2 ${stat.trendColor}`}>{stat.trend}</p>
             </motion.div>
           );
         })}
@@ -154,29 +194,27 @@ export default function Dashboard() {
         {/* Skills */}
         <div className="lg:col-span-3">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-              Skill Performance
-            </p>
+            <p className="text-base font-extrabold text-slate-900">Skill Performance</p>
             <Link to="/progress">
-              <Button variant="ghost" size="sm" className="text-xs gap-1 text-primary">
-                View Details <ArrowRight className="h-3 w-3" />
+              <Button variant="ghost" size="sm" className="text-xs font-bold text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-full">
+                View Details <ArrowRight className="h-3.5 w-3.5 ml-1" />
               </Button>
             </Link>
           </div>
-          <div className="rounded-2xl border border-border/50 bg-card p-5 shadow-sm">
-            <StaggerList className="space-y-3.5">
+          <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/50">
+            <StaggerList className="space-y-4">
               {skillScores.map((skill, i) => (
                 <StaggerItem key={skill.name}>
                   <div className="flex items-center gap-3">
                     <span className={cn(
-                      "text-sm w-40 shrink-0",
+                      "text-sm w-40 shrink-0 font-semibold",
                       skill.name === weakestSkill.name
-                        ? "font-bold text-foreground"
-                        : "text-muted-foreground"
+                        ? "font-extrabold text-slate-900"
+                        : "text-slate-600"
                     )}>
                       {skill.name}
                     </span>
-                    <div className="flex-1 h-2.5 rounded-full bg-muted overflow-hidden">
+                    <div className="flex-1 h-3 rounded-full bg-slate-100 overflow-hidden">
                       <AnimatedBar
                         width={skill.score}
                         className={cn("h-full rounded-full", skillColor(skill.score))}
@@ -188,7 +226,7 @@ export default function Dashboard() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.3 + i * 0.08 }}
-                        className={cn("text-sm font-bold tabular-nums", skillTextColor(skill.score))}
+                        className={cn("text-sm font-extrabold tabular-nums", skillTextColor(skill.score))}
                       >
                         {skill.score}
                       </motion.span>
@@ -197,7 +235,7 @@ export default function Dashboard() {
                           initial={{ opacity: 0, x: -4 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: 0.5 + i * 0.08 }}
-                          className="text-[11px] text-emerald-600 font-semibold tabular-nums"
+                          className="text-[11px] text-emerald-600 font-bold tabular-nums"
                         >
                           +{skill.score - skill.previousScore}
                         </motion.span>
@@ -209,16 +247,16 @@ export default function Dashboard() {
             </StaggerList>
 
             {/* Weakness callout */}
-            <FadeIn delay={0.6} className="mt-5">
-              <div className="rounded-xl bg-amber-50 border border-amber-200/60 px-4 py-3 flex items-start gap-2.5">
-                <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0 mt-0.5">
-                  <Target className="h-4 w-4 text-amber-600" />
+            <FadeIn delay={0.6} className="mt-6">
+              <div className="rounded-2xl bg-amber-50 border border-amber-200/60 p-4 flex items-start gap-3">
+                <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 text-amber-600 shadow-sm">
+                  <Target className="h-5 w-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-amber-800">
+                  <p className="text-sm font-extrabold text-amber-900">
                     Focus: {weakestSkill.name}
                   </p>
-                  <p className="text-xs text-amber-700 mt-0.5">
+                  <p className="text-xs text-amber-700 font-medium mt-0.5">
                     This is your lowest skill ({weakestSkill.score}/100). Targeted drills can improve it fastest.
                   </p>
                 </div>
@@ -231,31 +269,28 @@ export default function Dashboard() {
         <div className="lg:col-span-2 space-y-5">
           {/* Recommended next */}
           <div>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">
-              Recommended Next
-            </p>
+            <p className="text-base font-extrabold text-slate-900 mb-4">Recommended Next</p>
             <motion.div
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3, duration: 0.4 }}
               whileHover={{ y: -2 }}
-              className="rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/5 to-primary/[0.02] p-5 shadow-sm hover:shadow-md transition-shadow"
+              className="rounded-3xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-purple-50/30 p-6 shadow-xl shadow-slate-200/50"
             >
-              <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange/10 text-orange shrink-0">
-                  <Zap className="h-5 w-5" />
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 shrink-0 shadow-sm">
+                  <Zap className="h-6 w-6" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <Badge className="bg-orange/10 text-orange border-0 rounded-full text-[10px] font-semibold mb-2">
-                    10 min drill
+                  <Badge className="bg-amber-400 text-amber-950 border-0 rounded-full text-[10px] font-extrabold mb-2 px-3 py-0.5">
+                    {recommendedDrill.durationMinutes} min drill
                   </Badge>
-                  <p className="font-bold text-sm">Business Judgment Drill</p>
-                  <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                    Practice identifying the most important business implications
-                    from limited information.
+                  <p className="font-extrabold text-slate-900 text-base">{recommendedDrill.title}</p>
+                  <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">
+                    {recommendedDrill.description}
                   </p>
                   <Link to="/practice">
-                    <Button className="mt-3 gap-1.5 rounded-xl" size="sm">
+                    <Button className="mt-4 gap-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold rounded-full px-5 py-2 text-xs shadow-md shadow-purple-200" size="sm">
                       Start Drill
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Button>
@@ -265,47 +300,71 @@ export default function Dashboard() {
             </motion.div>
           </div>
 
-          {/* Today's training */}
+          {/* Recent Activity / Today's training */}
           <div>
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">
-              Today&apos;s Training
-            </p>
-            <div className="rounded-2xl border border-border/50 bg-card shadow-sm overflow-hidden">
-              <StaggerList>
-                {todayTraining.map((item) => (
-                  <StaggerItem key={item.id}>
-                    <motion.div
-                      whileHover={{ x: 2, backgroundColor: "oklch(0.97 0.006 80 / 0.5)" }}
-                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                      className="flex items-center gap-3 px-4 py-3 border-b border-border/30 last:border-0 cursor-pointer"
-                    >
-                      {item.completed ? (
-                        <div className="h-6 w-6 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                        </div>
-                      ) : (
-                        <div className="h-6 w-6 rounded-full border-2 border-muted-foreground/20 shrink-0" />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <p className={cn(
-                          "text-sm font-medium",
-                          item.completed && "text-muted-foreground line-through"
-                        )}>
-                          {item.title}
-                        </p>
-                      </div>
-                      <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-                        {item.duration} min
-                      </span>
-                      {!item.completed && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-primary">
-                          <Play className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </motion.div>
-                  </StaggerItem>
-                ))}
-              </StaggerList>
+            <p className="text-base font-extrabold text-slate-900 mb-4">Recent Activity</p>
+            <div className="rounded-3xl border border-slate-100 bg-white shadow-xl shadow-slate-200/50 overflow-hidden p-2">
+              {recentAttempts.length > 0 ? (
+                <StaggerList>
+                  {recentAttempts.map((attempt) => {
+                    const caseData = useData().cases.find((c) => c.id === attempt.caseId);
+                    return (
+                      <StaggerItem key={attempt.id}>
+                        <motion.div
+                          whileHover={{ x: 3, backgroundColor: "rgb(248 245 242)" }}
+                          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                          className="flex items-center gap-3 px-4 py-3.5 rounded-2xl cursor-pointer"
+                        >
+                          <div className="h-7 w-7 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 text-emerald-600">
+                            <CheckCircle2 className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-bold text-slate-800">
+                              {caseData?.title || "Case"}
+                            </p>
+                          </div>
+                          <span className={cn(
+                            "text-sm font-bold tabular-nums shrink-0",
+                            (attempt.overallScore || 0) >= 70 ? "text-emerald-600" : "text-amber-600"
+                          )}>
+                            {attempt.overallScore}
+                          </span>
+                        </motion.div>
+                      </StaggerItem>
+                    );
+                  })}
+                </StaggerList>
+              ) : (
+                <div className="py-8 text-center text-sm text-slate-400">
+                  No activity yet. Start your first case!
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div>
+            <p className="text-base font-extrabold text-slate-900 mb-4">Quick Actions</p>
+            <div className="space-y-2">
+              {[
+                { to: "/practice", label: "Start Case", icon: BookOpen, color: "bg-purple-100 text-purple-600" },
+                { to: "/assessments", label: "Take Assessment", icon: Target, color: "bg-blue-100 text-blue-600" },
+                { to: "/progress", label: "View Progress", icon: TrendingUp, color: "bg-emerald-100 text-emerald-600" },
+                { to: "/applications", label: "View Applications", icon: BookOpen, color: "bg-amber-100 text-amber-600" },
+              ].map((action) => (
+                <Link key={action.to} to={action.to}>
+                  <motion.div
+                    whileHover={{ x: 3 }}
+                    className="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-slate-50 cursor-pointer transition-colors"
+                  >
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${action.color}`}>
+                      <action.icon className="h-4 w-4" />
+                    </div>
+                    <span className="text-sm font-semibold text-slate-700">{action.label}</span>
+                    <ArrowRight className="h-3.5 w-3.5 text-slate-400 ml-auto" />
+                  </motion.div>
+                </Link>
+              ))}
             </div>
           </div>
         </div>
@@ -313,41 +372,41 @@ export default function Dashboard() {
 
       {/* Readiness chart */}
       <FadeIn delay={0.4}>
-        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4">
+        <p className="text-base font-extrabold text-slate-900 mb-4">
           Readiness Over Time
         </p>
-        <div className="rounded-2xl border border-border/50 bg-card p-6 shadow-sm">
-          <div className="h-56">
+        <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/50">
+          <div className="h-60">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={readinessOverTime}>
-                <CartesianGrid strokeDasharray="3 3" stroke="oklch(0.92 0.006 80)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3ede8" />
                 <XAxis
                   dataKey="date"
-                  tick={{ fontSize: 11, fill: "oklch(0.50 0.01 260)" }}
+                  tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   domain={[0, 100]}
-                  tick={{ fontSize: 11, fill: "oklch(0.50 0.01 260)" }}
+                  tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <Tooltip
                   contentStyle={{
-                    borderRadius: "12px",
-                    border: "1px solid oklch(0.92 0.006 80)",
+                    borderRadius: "16px",
+                    border: "none",
                     fontSize: "12px",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.06)",
+                    boxShadow: "0 10px 25px -5px rgba(108,92,231,0.15)",
                   }}
                 />
                 <Line
                   type="monotone"
                   dataKey="score"
-                  stroke="oklch(0.55 0.20 30)"
-                  strokeWidth={2.5}
+                  stroke="#6c5ce7"
+                  strokeWidth={3}
                   dot={false}
-                  activeDot={{ r: 5, strokeWidth: 2, fill: "oklch(0.55 0.20 30)" }}
+                  activeDot={{ r: 6, strokeWidth: 2, fill: "#6c5ce7" }}
                   animationDuration={1200}
                   animationEasing="ease-out"
                 />

@@ -1,272 +1,305 @@
-## Overview
+# CasePilot
 
-This project uses the following tech stack:
-- Vite
-- Typescript
-- React Router v7 (all imports from `react-router` instead of `react-router-dom`)
-- React 19 (for frontend components)
-- Tailwind v4 (for styling)
-- Shadcn UI (for UI components library)
-- Lucide Icons (for icons)
-- Convex (for backend & database)
-- Convex Auth (for authentication)
-- Framer Motion (for animations)
-- Three js (for 3d models)
+AI-powered consulting recruitment training platform — case interview practice with cases, assessments, skill drills, AI case interviewer, AI rubric-based evaluation, personalized recommendations, applications tracking, and readiness scoring.
 
-All relevant files live in the 'src' directory.
+CasePilot is **also an academic Prompt Engineering project**, so prompt architecture is intentionally first-class, versioned, and fully documented.
 
-Use bun for the package manager.
+---
 
-## Setup
-
-This project is set up already and running on a cloud environment, as well as a convex development in the sandbox.
-
-## Environment Variables
-
-The project is set up with project specific CONVEX_DEPLOYMENT and VITE_CONVEX_URL environment variables on the client side.
-
-The convex server has a separate set of environment variables that are accessible by the convex backend.
-
-Currently, these variables include auth-specific keys: JWKS, JWT_PRIVATE_KEY, and SITE_URL.
-
-
-# Using Authentication (Important!)
-
-You must follow these conventions when using authentication.
-
-## Auth is already set up.
-
-All convex authentication functions are already set up. The auth currently uses email OTP and anonymous users, but can support more.
-
-The email OTP configuration is defined in `src/convex/auth/emailOtp.ts`. DO NOT MODIFY THIS FILE.
-
-Also, DO NOT MODIFY THESE AUTH FILES: `src/convex/auth.config.ts` and `src/convex/auth.ts`.
-
-## Using Convex Auth on the backend
-
-On the `src/convex/users.ts` file, you can use the `getCurrentUser` function to get the current user's data.
-
-## Using Convex Auth on the frontend
-
-The `/auth` page is already set up to use auth. Navigate to `/auth` for all log in / sign up sequences.
-
-You MUST use this hook to get user data. Never do this yourself without the hook:
-```typescript
-import { useAuth } from "@/hooks/use-auth";
-
-const { isLoading, isAuthenticated, user, signIn, signOut } = useAuth();
-```
-
-## Protected Routes
-
-The starter `/dashboard` route is protected with `RequireAuth`, which sends
-signed-out users to `/auth?returnTo=<current route>`. Extend that page for the
-product's authenticated experience, and reuse `RequireAuth` when adding another
-protected route.
-
-## Auth Page
-
-The auth page is defined in `src/pages/Auth.tsx`. Send sign-in and sign-up actions
-to `/auth`.
-
-## Authorization
-
-You can perform authorization checks on the frontend and backend.
-
-On the frontend, you can use the `useAuth` hook to get the current user's data and authentication state.
-
-You should also be protecting queries, mutations, and actions at the base level, checking for authorization securely.
-
-## Adding a redirect after auth
-
-The `/auth` route in `src/main.tsx` redirects to `/dashboard` by default. If the
-product's main authenticated route is different, update `redirectAfterAuth` to
-that route. A validated same-origin `returnTo` query parameter takes priority so
-users can resume the protected page they originally requested. Never leave an
-authenticated product redirecting back to the public landing page.
-
-## Complete authenticated products
-
-When the requested product implies accounts, a workspace, a dashboard, or other
-signed-in functionality, the task is not complete with only a landing page and
-auth form. Build the main authenticated experience, protect its route, and verify
-that signing in reaches it.
-
-# Frontend Conventions
-
-You will be using the Vite frontend with React 19, Tailwind v4, and Shadcn UI.
-
-Generally, pages should be in the `src/pages` folder, and components should be in the `src/components` folder.
-
-Shadcn primitives are located in the `src/components/ui` folder and should be used by default.
-
-## Page routing
-
-Your page component should go under the `src/pages` folder.
-
-When adding a page, update the react router configuration in `src/main.tsx` to include the new route you just added.
-
-## Shad CN conventions
-
-Follow these conventions when using Shad CN components, which you should use by default.
-- Remember to use "cursor-pointer" to make the element clickable
-- For title text, use the "tracking-tight font-bold" class to make the text more readable
-- Always make apps MOBILE RESPONSIVE. This is important
-- AVOID NESTED CARDS. Try and not to nest cards, borders, components, etc. Nested cards add clutter and make the app look messy.
-- AVOID SHADOWS. Avoid adding any shadows to components. stick with a thin border without the shadow.
-- Avoid skeletons; instead, use the loader2 component to show a spinning loading state when loading data.
-
-
-## Landing Pages
-
-You must always create good-looking designer-level styles to your application. 
-- Make it well animated and fit a certain "theme", ie neo brutalist, retro, neumorphism, glass morphism, etc
-
-Use known images and emojis from online.
-
-If the user is logged in already, show the get started button to say "Dashboard" or "Profile" instead to take them there.
-
-## Responsiveness and formatting
-
-Make sure pages are wrapped in a container to prevent the width stretching out on wide screens. Always make sure they are centered aligned and not off-center.
-
-Always make sure that your designs are mobile responsive. Verify the formatting to ensure it has correct max and min widths as well as mobile responsiveness.
-
-- Always create sidebars for protected dashboard pages and navigate between pages
-- Always create navbars for landing pages
-- On these bars, the created logo should be clickable and redirect to the index page
-
-## Animating with Framer Motion
-
-You must add animations to components using Framer Motion. It is already installed and configured in the project.
-
-To use it, import the `motion` component from `framer-motion` and use it to wrap the component you want to animate.
-
-
-### Other Items to animate
-- Fade in and Fade Out
-- Slide in and Slide Out animations
-- Rendering animations
-- Button clicks and UI elements
-
-Animate for all components, including on landing page and app pages.
-
-## Three JS Graphics
-
-Your app comes with three js by default. You can use it to create 3D graphics for landing pages, games, etc.
-
-
-## Colors
-
-You can override colors in: `src/index.css`
-
-This uses the oklch color format for tailwind v4.
-
-Always use these color variable names.
-
-Make sure all ui components are set up to be mobile responsive and compatible with both light and dark mode.
-
-Set theme using `dark` or `light` variables at the parent className.
-
-## Styling and Theming
-
-When changing the theme, always change the underlying theme of the shad cn components app-wide under `src/components/ui` and the colors in the index.css file.
-
-Avoid hardcoding in colors unless necessary for a use case, and properly implement themes through the underlying shad cn ui components.
-
-When styling, ensure buttons and clickable items have pointer-click on them (don't by default).
-
-Always follow a set theme style and ensure it is tuned to the user's liking.
-
-## Toasts
-
-You should always use toasts to display results to the user, such as confirmations, results, errors, etc.
-
-Use the shad cn Sonner component as the toaster. For example:
+## Architecture Overview (Phase 2 architecture established)
 
 ```
-import { toast } from "sonner"
-
-import { Button } from "@/components/ui/button"
-export function SonnerDemo() {
-  return (
-    <Button
-      variant="outline"
-      onClick={() =>
-        toast("Event has been created", {
-          description: "Sunday, December 03, 2023 at 9:00 AM",
-          action: {
-            label: "Undo",
-            onClick: () => console.log("Undo"),
-          },
-        })
-      }
-    >
-      Show Toast
-    </Button>
-  )
-}
+┌──────────────────────────────────────────────────────────────────┐
+│                       Frontend                                    │
+│  React 19 + TS + Vite + Tailwind v4 + shadcn/ui + Router v7       │
+│                                                                    │
+│  pages/  →  features/*/api  →  lib/api-client  →  Axios (JWT)    │
+│    │                                                                │
+│    └─ Repository pattern per feature:                              │
+│         USE_API=false → Mock*Repository (seed data / localStorage)│
+│         USE_API=true  → Api*Repository  (/api/* REST)             │
+└───────────────────────────────┬──────────────────────────────────┘
+                                │ HTTP JSON
+┌───────────────────────────────▼──────────────────────────────────┐
+│                       Backend (FastAPI)                           │
+│                                                                    │
+│  api/*         (thin routes, delegate to services)                │
+│      │                                                             │
+│  services/*    (business logic, no HTTP)                          │
+│      │                                                             │
+│      ├─ ai/*        AI pipelines + PromptRegistry + StubLLMClient │
+│      └─ models/*    ORM → PostgreSQL (Supabase)                   │
+│         schemas/*   Pydantic v2 validation                        │
+│                                                                    │
+│  core/  (config, security, typed exceptions, structured logging)  │
+│  db/    (engine, SessionLocal, Alembic auto-metadata)             │
+│  utils/ (enums, validators, helpers)                              │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-Remember to import { toast } from "sonner". Usage: `toast("Event has been created.")`
+- **Frontend:** React 19, TypeScript, Vite, Tailwind v4, shadcn/ui, React Router v7, Framer Motion, Axios, Sonner, Lucide
+- **Backend:** Python 3.11+, FastAPI, SQLAlchemy 2.x, Alembic, Pydantic v2, Argon2, JWT (python-jose)
+- **Database:** PostgreSQL hosted on Supabase (NOT Supabase Auth — JWT auth is custom)
+- **AI layer:** Dedicated prompt-engineered template system with versioning, registry, context builder → template → LLM → validator → DB pipeline. Uses `StubLLMClient` today; plug in OpenAI/Anthropic by implementing `LLMClientProtocol` and setting `OPENAI_API_KEY`.
 
-## Dialogs
+---
 
-Always ensure your larger dialogs have a scroll in its content to ensure that its content fits the screen size. Make sure that the content is not cut off from the screen.
+## Documentation
 
-Ideally, instead of using a new page, use a Dialog instead. 
+- [ARCHITECTURE.md](./ARCHITECTURE.md) — full backend/frontend layered architecture, entity graph, design rationale.
+- [PROMPT_ENGINEERING.md](./PROMPT_ENGINEERING.md) — prompts inventory, 10 named prompting techniques with examples + explanation, prompt versioning workflow, validation pipeline.
+- [API.md](./API.md) — every endpoint: auth, profile, applications, progress, cases, assessments, drills, AI, prompts.
 
-# Using the Convex backend
+---
 
-You will be implementing the convex backend. Follow your knowledge of convex and the documentation to implement the backend.
+## Project layout
 
-## The Convex Schema
-
-You must correctly follow the convex schema implementation.
-
-The schema is defined in `src/convex/schema.ts`.
-
-Do not include the `_id` and `_creationTime` fields in your queries (it is included by default for each table).
-Do not index `_creationTime` as it is indexed for you. Never have duplicate indexes.
-
-
-## Convex Actions: Using CRUD operations
-
-When running anything that involves external connections, you must use a convex action with "use node" at the top of the file.
-
-You cannot have queries or mutations in the same file as a "use node" action file. Thus, you must use pre-built queries and mutations in other files.
-
-You can also use the pre-installed internal crud functions for the database:
-
-```ts
-// in convex/users.ts
-import { crud } from "convex-helpers/server/crud";
-import schema from "./schema.ts";
-
-export const { create, read, update, destroy } = crud(schema, "users");
-
-// in some file, in an action:
-const user = await ctx.runQuery(internal.users.read, { id: userId });
-
-await ctx.runMutation(internal.users.update, {
-  id: userId,
-  patch: {
-    status: "inactive",
-  },
-});
+```
+case-prep-pro/
+├── src/
+│   ├── main.tsx
+│   ├── app/                        # App-level wiring: providers.tsx, router.tsx, _loading
+│   ├── pages/                      # Route-level components (THIN — no business logic)
+│   ├── components/                 # layout / ui / app widgets / RequireAuth
+│   ├── context/                    # AuthContext (API-backed), DataContext (mock — legacy)
+│   ├── features/
+│   │   ├── auth/api.ts             # AuthRepository + features/auth convenience API
+│   │   ├── cases/api.ts            # CaseRepository  Mock  vs  Api  + USE_API flag
+│   │   ├── assessments/api.ts      # AssessmentRepository Mock/Api
+│   │   ├── drills/api.ts           # DrillRepository Mock/Api
+│   │   ├── applications/api.ts     # ApplicationRepository Mock/Api
+│   │   ├── progress/api.ts         # ProgressRepository Mock/Api
+│   │   └── ai-interview/api.ts     # AIInterviewRepository + /api/prompts wrappers
+│   ├── hooks/                      # use-auth, use-mobile
+│   ├── lib/                        # api-client.ts (Axios singleton + Bearer + 401 handling), utils.ts
+│   ├── types/index.ts              # Centralized TS interfaces for ALL entities
+│   └── data/
+│       ├── mock-data.ts            # Original seed data (kept working until migrated)
+│       └── seed-data.ts            # Re-export gateway for mock data
+│
+├── backend/
+│   ├── requirements.txt
+│   ├── .env.example
+│   ├── alembic.ini
+│   ├── alembic/
+│   │   ├── env.py                  # Imports ALL models for autogenerate
+│   │   ├── script.py.mako
+│   │   └── versions/
+│   │       └── 0001_initial.py
+│   ├── app/
+│   │   ├── main.py                 # Startup: logging + bootstrap_prompts() + all routers
+│   │   ├── core/
+│   │   │   ├── config.py           # Settings (DB, JWT, LLM, CORS, logging level)
+│   │   │   ├── security.py         # Argon2, JWT, get_current_user, get_db
+│   │   │   ├── exceptions.py       # Typed AppError hierarchy (Auth, Authz, 404, 409, AI, DB, …)
+│   │   │   └── logging.py          # Structured JSON logging + event helpers (log_auth_event, etc.)
+│   │   ├── db/
+│   │   │   ├── database.py         # Engine, SessionLocal, Base
+│   │   │   ├── session.py          # get_db + db_session context mgr (auto rollback on exception)
+│   │   │   └── base.py             # All models imported → Alembic auto-discovery
+│   │   ├── models/                 # 17 SQLAlchemy 2.x models, UUID PKs, FK + cascade
+│   │   │   ├── user.py  profile.py  skill.py
+│   │   │   ├── case.py             # Case, CaseQuestion, CaseAttempt, CaseAnswer
+│   │   │   ├── assessment.py       # Assessment, AssessmentQuestion, AssessmentAttempt, AssessmentAnswer
+│   │   │   ├── drill.py            # Drill, DrillQuestion, DrillAttempt
+│   │   │   ├── application.py
+│   │   │   ├── ai_session.py       # AISession, AIMessage
+│   │   │   └── prompt.py
+│   │   ├── schemas/                # Pydantic v2 request/response for every domain
+│   │   ├── api/                    # 11 route modules (thin, delegate to services)
+│   │   │   ├── auth.py  profiles.py  users.py
+│   │   │   ├── applications.py  progress.py      (Phase 2 — fully functional)
+│   │   │   ├── cases.py  assessments.py  drills.py (Phase 3/4/5 — 501 stubs)
+│   │   │   ├── ai_interview.py     (Phase 6-9 stubs)
+│   │   │   └── prompts.py          (Phase 6 — READ side fully working via registry)
+│   │   ├── services/
+│   │   │   ├── auth_service.py
+│   │   │   ├── application_service.py  progress_service.py
+│   │   │   ├── case_service.py assessment_service.py drill_service.py (stubs)
+│   │   │   ├── scoring_service.py  recommendation_service.py
+│   │   ├── ai/
+│   │   │   ├── client.py           # LLMClientProtocol + StubLLMClient + validate_structured_output
+│   │   │   ├── interviewer.py  evaluator.py  case_generator.py
+│   │   │   ├── feedback_generator.py  recommender.py
+│   │   │   └── prompts/
+│   │   │       ├── base.py         # PromptTemplate / PromptTechniques / PromptRegistry / build_context
+│   │   │       ├── interviewer.py  evaluator.py  case_generation.py
+│   │   │       ├── feedback.py  recommendations.py
+│   │   │       └── versions/       # v1 templates for interviewer/evaluator/case_generation/feedback/recommendations
+│   │   ├── utils/
+│   │   │   ├── enums.py            # CaseType, Difficulty, ApplicationStage, SkillName, Trend, …
+│   │   │   ├── validators.py       # Email, password, score, UUID, length, not-empty
+│   │   │   └── helpers.py          # now_utc, clamp, weighted_avg, update_model_fields, generate_uuid
+│   │   └── tests/
+│   │       ├── conftest.py
+│   │       ├── test_auth.py  test_profiles.py
+│   │       ├── test_cases.py  test_assessments.py  test_drills.py
+│   │       ├── test_applications.py
+│   │       ├── test_ai.py  test_prompts.py
+│
+├── ARCHITECTURE.md
+├── PROMPT_ENGINEERING.md
+├── API.md
+├── index.html
+├── package.json
+├── vite.config.ts
+├── tailwind.config.ts
+└── tsconfig.json
 ```
 
+---
 
-## Common Convex Mistakes To Avoid
+## Frontend Conventions
 
-When using convex, make sure:
-- Document IDs are referenced as `_id` field, not `id`.
-- Document ID types are referenced as `Id<"TableName">`, not `string`.
-- Document object types are referenced as `Doc<"TableName">`.
-- Keep schemaValidation to false in the schema file.
-- You must correctly type your code so that it passes the type checker.
-- You must handle null / undefined cases of your convex queries for both frontend and backend, or else it will throw an error that your data could be null or undefined.
-- Always use the `@/folder` path, with `@/convex/folder/file.ts` syntax for importing convex files.
-- This includes importing generated files like `@/convex/_generated/server`, `@/convex/_generated/api`
-- Remember to import functions like useQuery, useMutation, useAction, etc. from `convex/react`
-- NEVER have return type validators.
+- **Pages** go in `src/pages/`, components in `src/components/`, Shadcn primitives in `src/components/ui/`
+- **Routing:** React Router v7 config in `src/main.tsx`. Lazy-load pages with `React.lazy`
+- **Auth hook:**
+  ```ts
+  import { useAuth } from "@/hooks/use-auth"; // or from "@/context/AuthContext"
+
+  const { isLoading, isAuthenticated, user, profile, signIn, signUp, signOut, updateProfile, refreshProfile } = useAuth();
+  ```
+- **Protected routes:** Wrap JSX in `<RequireAuth>…</RequireAuth>` inside the route element (already done in `main.tsx` for all app routes)
+- **UI:** Shadcn UI + Tailwind, Lucide icons, Framer Motion animations, Sonner toasts
+  - Mobile responsive first
+  - Avoid nested cards and heavy shadows
+  - Buttons/interactive elements: `cursor-pointer`, animated on action
+  - Headings: `tracking-tight font-bold` or `font-extrabold`
+- **Colors/them:** Color variables in `src/index.css` (oklch). Stick to purple + amber/orange theme gradient used on Landing/Auth pages.
+
+---
+
+## Backend API
+
+### Health
+- `GET /api/health` → `{"status": "ok"}`
+
+### Auth (public)
+| Method | Path | Request | Response |
+|---|---|---|---|
+| POST | `/api/auth/signup` | `{ full_name, email, password }` | `{ access_token, token_type, user, profile }` |
+| POST | `/api/auth/login` | `{ email, password }` | `{ access_token, token_type, user, profile }` |
+| POST | `/api/auth/logout` | — | `{ detail }` |
+| GET  | `/api/auth/me` | Bearer token | `{ user, profile }` |
+
+Auth status codes:
+- 400 invalid body (validated by Pydantic)
+- 401 invalid credentials / invalid or missing token
+- 409 email already registered on signup
+
+### Profile (requires Bearer token)
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/profile` | Returns authenticated user's profile. Ownership via JWT — never trust a client-supplied user_id |
+| PUT | `/api/profile` | Updates `full_name`, `avatar_url`, `experience_level`, `target_firms`, `interview_date`. Blocks readiness_score & user_id changes |
+
+Docs (in dev):
+- Swagger UI: `http://localhost:8000/docs`
+- ReDoc: `http://localhost:8000/redoc`
+
+### Security
+- Passwords hashed with **Argon2** (`argon2-cffi`). **Never stored/returned as plaintext.**
+- JWT `sub = str(user.id)`, HS256 signed with `JWT_SECRET` (env-only, NO hardcoded fallbacks)
+- Token expiry configurable via `ACCESS_TOKEN_EXPIRE_MINUTES`
+- 401 clears the frontend token automatically via the axios interceptor
+- CORS origin(s) loaded from `FRONTEND_URL` env (comma-separated supported); defaults NOT `"*"`
+
+---
+
+## Setup & Run
+
+### Frontend
+
+```bash
+# from project root
+npm install            # install deps
+npm run dev            # start Vite on http://localhost:5173
+npm run build          # production build
+npx tsc -b             # TypeScript check only
+```
+
+**Frontend env (optional):**
+Create `.env` at project root if backend isn't on default port `8000`:
+```
+VITE_API_BASE_URL=http://localhost:8000
+```
+
+### Backend
+
+```bash
+cd backend
+
+# 1. Install
+python -m venv .venv
+# Windows:  .venv\Scripts\activate
+# macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+
+# 2. Configure env — copy from example and fill in
+cp .env.example .env
+# edit .env:
+#   DATABASE_URL=postgres://user:pass@host:port/dbname?sslmode=require   (from Supabase)
+#   JWT_SECRET=<strong random string>
+#   JWT_ALGORITHM=HS256
+#   ACCESS_TOKEN_EXPIRE_MINUTES=60
+#   FRONTEND_URL=http://localhost:5173
+
+# 3. Run migrations against Supabase PostgreSQL
+alembic upgrade head
+
+# 4. Start API (auto-reload)
+uvicorn app.main:app --reload --port 8000
+```
+
+Open `http://localhost:8000/docs` to verify the API is up and test signup/login/me/profile endpoints interactively.
+
+---
+
+## Migration command reference
+
+```bash
+cd backend
+
+# Apply all migrations
+alembic upgrade head
+
+# Roll back one migration
+alembic downgrade -1
+
+# Create a NEW auto-migration (after editing SQLAlchemy models)
+alembic revision --autogenerate -m "add_table_xyz"
+```
+
+---
+
+## Phase Roadmap (10-phase, mandatory sequence per architecture)
+
+- **Phase 1 ✅** — Auth + Profiles. FastAPI, Supabase PostgreSQL, Argon2, JWT. Frontend AuthContext wired. Pages still use mock data for everything else.
+- **Phase 2 ✅** (backend architecture established) — Applications CRUD API + Progress/readiness API live at `/api/applications` and `/api/progress`. Services layer exists. Typed exceptions + structured logging. Frontend repository abstraction (Mock* + Api* + USE_API toggle per feature) established across all domains so future phases can migrate pages individually without breaking.
+- **Phase 3** — Cases: DB tables, CaseService, full CRUD + attempt/answer APIs. Flip `USE_API=true` in `src/features/cases/api.ts`, update pages to use `casesApi.list/get/...` instead of DataContext.
+- **Phase 4** — Assessments tables + service + routes + flip USE_API in assessments feature.
+- **Phase 5** — Drills tables + service + routes + flip USE_API in drills feature.
+- **Phase 6** — Prompt architecture DB persistence (prompts table + prompt versions + compare endpoints). Already scaffolded: read-side is live via in-memory PromptRegistry; remaining work is write-side + DB persistence.
+- **Phase 7** — AI Case Interviewer end-to-end (real LLM client plugged in, AISession/AIMessage persisted, interview turns flow).
+- **Phase 8** — AI Evaluation + Feedback. Evaluator pipeline + scoring already designed; plug in LLM and validate StructuredOutput → CaseAttempt.
+- **Phase 9** — Adaptive Recommendations. RecommendationService stubs exist; flesh out with real LLM/repository data.
+- **Phase 10** — Voice / real-time interview.
+- **Later** — Payments (Stripe).
+
+---
+
+## NOT included (out of scope for Phase 1)
+
+Cases, case attempts/answers, assessments, assessment attempts/answers, skill drills, drill attempts, applications DB, AI feedback, voice, embeddings/RAG, vector DB, payments. All of these remain in the existing frontend's mock-data / localStorage layer until explicitly migrated in later phases.
+
+---
+
+## Auth flow (end-to-end)
+
+1. User lands at `/auth` → fills sign up form.
+2. `AuthContext.signUp()` → `POST /api/auth/signup` → backend hashes password, inserts user + profile rows, returns `access_token`.
+3. Frontend saves token to `localStorage.access_token`.
+4. Redirects to `/setup` (ProfileSetup), updates `target_firms`, `experience_level`, `interview_date` via `PUT /api/profile`.
+5. Dashboard and all app pages protected by `<RequireAuth>`: if no valid token, redirect to `/auth`.
+6. On page refresh: `AuthContext` calls `GET /api/auth/me` with stored Bearer token → restores `user` + `profile` or logs out on 401.
+7. Logout: deletes localStorage token, clears React state, redirects to `/auth`.

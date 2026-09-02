@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router";
+import { NavLink, useLocation, Link } from "react-router";
 import {
   LayoutDashboard,
   Target,
@@ -6,17 +6,24 @@ import {
   BarChart3,
   ClipboardList,
   Settings,
-  ChevronLeft,
-  ChevronRight,
+  Bell,
+  Search,
+  Menu,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { notifications } from "@/data/mock-data";
 
 const mainNav = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -27,13 +34,10 @@ const mainNav = [
   { to: "/applications", label: "Applications", icon: ClipboardList },
 ];
 
-const bottomNav = [
-  { to: "/settings", label: "Settings", icon: Settings },
-];
-
 export function AppSidebar() {
   const location = useLocation();
-  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   const isActive = (path: string) => {
     if (path === "/dashboard") return location.pathname === "/dashboard";
@@ -41,121 +45,147 @@ export function AppSidebar() {
   };
 
   return (
-    <motion.aside
-      animate={{ width: collapsed ? 68 : 240 }}
-      transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-      className="relative flex h-screen flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground overflow-hidden"
-    >
-      {/* Logo */}
-      <div className="flex h-14 items-center gap-2.5 px-4 shrink-0">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-sm">
-          CP
-        </div>
-        {!collapsed && (
-          <span className="font-bold text-sm tracking-tight">CasePilot</span>
-        )}
-      </div>
+    <>
+      {/* Top Navbar */}
+      <header className="sticky top-0 z-50 bg-white border-b border-border/60 shadow-sm">
+        <div className="mx-auto max-w-[1400px] flex h-16 items-center justify-between px-6">
+          {/* Logo */}
+          <Link to="/dashboard" className="flex items-center gap-2 shrink-0">
+            <span className="text-2xl font-extrabold text-indigo-950 tracking-tight">Learnova</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
+          </Link>
 
-      <Separator className="bg-sidebar-border" />
-
-      {/* Main navigation */}
-      <ScrollArea className="flex-1 px-2 py-3">
-        <nav className="flex flex-col gap-0.5">
-          {mainNav.map((item) => {
-            const Icon = item.icon;
-            const active = isActive(item.to);
-            const link = (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-                )}
-              >
-                <Icon className="h-4 w-4 shrink-0" />
-                {!collapsed && <span>{item.label}</span>}
-              </NavLink>
-            );
-
-            if (collapsed) {
+          {/* Center Nav — desktop */}
+          <nav className="hidden lg:flex items-center gap-1">
+            {mainNav.map((item) => {
+              const active = isActive(item.to);
               return (
-                <Tooltip key={item.to} delayDuration={0}>
-                  <TooltipTrigger asChild>{link}</TooltipTrigger>
-                  <TooltipContent side="right">{item.label}</TooltipContent>
-                </Tooltip>
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-medium transition-all",
+                    active
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground/60 hover:text-foreground hover:bg-muted/60"
+                  )}
+                >
+                  <item.icon className="h-3.5 w-3.5" />
+                  {item.label}
+                </NavLink>
               );
-            }
-            return link;
-          })}
-        </nav>
-      </ScrollArea>
+            })}
+          </nav>
 
-      <Separator className="bg-sidebar-border" />
+          {/* Right actions */}
+          <div className="flex items-center gap-2">
+            {/* Search */}
+            <div className="relative hidden md:block">
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <input
+                type="text"
+                placeholder="Search cases, drills..."
+                className="h-9 w-52 rounded-xl border border-border bg-muted/40 pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
+              />
+            </div>
 
-      {/* Bottom section */}
-      <div className="flex flex-col gap-0.5 px-2 py-3">
-        {bottomNav.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(item.to);
-          const link = (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={cn(
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all",
-                active
-                  ? "bg-primary/15 text-primary-foreground"
-                  : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-              )}
+            {/* Notifications */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative h-9 w-9 rounded-xl hover:bg-muted/60">
+                  <Bell className="h-4 w-4 text-foreground/70" />
+                  {unreadCount > 0 && (
+                    <Badge
+                      variant="destructive"
+                      className="absolute -right-1 -top-1 h-4 min-w-4 px-1 text-[10px]"
+                    >
+                      {unreadCount}
+                    </Badge>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80">
+                <div className="px-3 py-2">
+                  <p className="text-sm font-semibold">Notifications</p>
+                </div>
+                <DropdownMenuSeparator />
+                {notifications.map((n) => (
+                  <DropdownMenuItem key={n.id} className="flex flex-col items-start gap-1 py-2.5">
+                    <div className="flex w-full items-center justify-between">
+                      <span className="text-sm font-medium">{n.title}</span>
+                      {!n.read && <span className="h-2 w-2 rounded-full bg-primary" />}
+                    </div>
+                    <span className="text-xs text-muted-foreground">{n.message}</span>
+                    <span className="text-[10px] text-muted-foreground/70">{n.time}</span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* User menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-2 rounded-xl hover:bg-muted/60 px-2">
+                  <Avatar className="h-7 w-7">
+                    <AvatarFallback className="bg-primary/15 text-primary text-[11px] font-bold">
+                      AC
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm font-medium hidden md:inline">Alex</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem asChild>
+                  <Link to="/profile">Profile</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/settings">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive">Sign out</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Mobile hamburger */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden h-9 w-9 rounded-xl"
+              onClick={() => setMobileOpen(!mobileOpen)}
             >
-              <Icon className="h-4 w-4 shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
-            </NavLink>
-          );
+              {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+            </Button>
+          </div>
+        </div>
 
-          if (collapsed) {
-            return (
-              <Tooltip key={item.to} delayDuration={0}>
-                <TooltipTrigger asChild>{link}</TooltipTrigger>
-                <TooltipContent side="right">{item.label}</TooltipContent>
-              </Tooltip>
-            );
-          }
-          return link;
-        })}
-
-        <NavLink
-          to="/profile"
-          className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-            isActive("/profile")
-              ? "bg-sidebar-accent text-sidebar-accent-foreground"
-              : "text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground"
-          )}
-        >
-          <Avatar className="h-6 w-6">
-            <AvatarFallback className="bg-primary/20 text-primary text-[10px] font-bold">
-              AC
-            </AvatarFallback>
-          </Avatar>
-          {!collapsed && <span>Alex Chen</span>}
-        </NavLink>
-      </div>
-
-      {/* Collapse toggle */}
-      <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3 top-16 z-10 flex h-6 w-6 items-center justify-center rounded-full border bg-background text-muted-foreground hover:text-foreground transition-colors"
-      >
-        {collapsed ? (
-          <ChevronRight className="h-3 w-3" />
-        ) : (
-          <ChevronLeft className="h-3 w-3" />
+        {/* Mobile nav drawer */}
+        {mobileOpen && (
+          <div className="lg:hidden border-t border-border bg-white px-4 py-3 space-y-1 shadow-lg">
+            {mainNav.map((item) => {
+              const active = isActive(item.to);
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setMobileOpen(false)}
+                  className={cn(
+                    "flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-medium transition-all",
+                    active
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground/70 hover:bg-muted/50 hover:text-foreground"
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </NavLink>
+              );
+            })}
+          </div>
         )}
-      </button>
-    </motion.aside>
+      </header>
+    </>
   );
 }

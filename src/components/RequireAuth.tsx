@@ -1,29 +1,33 @@
-import { useAuth } from "@/hooks/use-auth";
-import { Loader2 } from "lucide-react";
-import type { ReactNode } from "react";
+import React, { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router";
+import { useAuth } from "@/hooks/use-auth";
 
-export function RequireAuth({ children }: { children: ReactNode }) {
-  const { isLoading, isAuthenticated } = useAuth();
+export function RequireAuth({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
+  const [mounted, setMounted] = useState(false);
 
-  if (isLoading) {
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 50);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (isLoading || !mounted) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" />
-      </main>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-8 w-8 rounded-xl bg-primary/20 flex items-center justify-center animate-pulse">
+            <div className="h-4 w-4 rounded-lg bg-primary/60" />
+          </div>
+          <p className="text-sm text-muted-foreground animate-pulse">Loading...</p>
+        </div>
+      </div>
     );
   }
 
   if (!isAuthenticated) {
-    const returnTo = `${location.pathname}${location.search}`;
-    return (
-      <Navigate
-        to={`/auth?returnTo=${encodeURIComponent(returnTo)}`}
-        replace
-      />
-    );
+    return <Navigate to="/auth" state={{ from: location.pathname + location.search }} replace />;
   }
 
-  return children;
+  return <>{children}</>;
 }

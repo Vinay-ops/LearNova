@@ -1,4 +1,4 @@
-/* CasePilot — LearNova-style warm theme */
+/* CasePilot — Learnova-style purple & warm cream theme */
 @import "tailwindcss";
 @import "tw-animate-css";
 @custom-variant dark (&:is(.dark *));
@@ -48,44 +48,48 @@
 }
 
 :root {
-  --radius: 1rem;
+  --radius: 0.875rem;
+  /* Learnova warm cream background */
   --background: #faf8f5;
   --foreground: #1a1a2e;
   --card: #ffffff;
   --card-foreground: #1a1a2e;
   --popover: #ffffff;
   --popover-foreground: #1a1a2e;
-  --primary: #e86c3a;
+  /* Purple primary — Learnova signature */
+  --primary: #6c5ce7;
   --primary-foreground: #ffffff;
-  --secondary: #f3ede8;
+  --secondary: #f0edfb;
   --secondary-foreground: #4a4a5a;
-  --muted: #f3ede8;
+  --muted: #f3f0f8;
   --muted-foreground: #7a7a8a;
-  --accent: #e86c3a;
+  --accent: #6c5ce7;
   --accent-foreground: #ffffff;
   --destructive: #dc3545;
   --border: #e8e2dc;
   --input: #e8e2dc;
-  --ring: #e86c3a;
-  --chart-1: #e86c3a;
-  --chart-2: #6c5ce7;
+  --ring: #6c5ce7;
+  --chart-1: #6c5ce7;
+  --chart-2: #f59e0b;
   --chart-3: #00b894;
-  --chart-4: #fdcb6e;
-  --chart-5: #e17055;
-  --sidebar: #2d2d44;
-  --sidebar-foreground: #e8e2dc;
-  --sidebar-primary: #e86c3a;
+  --chart-4: #e17055;
+  --chart-5: #fd79a8;
+  /* Light sidebar/navbar */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1a1a2e;
+  --sidebar-primary: #6c5ce7;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #3d3d5c;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #3d3d5c;
-  --sidebar-ring: #e86c3a;
+  --sidebar-accent: #f0edfb;
+  --sidebar-accent-foreground: #6c5ce7;
+  --sidebar-border: #e8e2dc;
+  --sidebar-ring: #6c5ce7;
+  /* Semantic */
   --success: #00b894;
-  --warning: #fdcb6e;
-  --orange: #e86c3a;
+  --warning: #f59e0b;
+  --orange: #f59e0b;
   --purple: #6c5ce7;
   --teal: #00b894;
-  --coral: #ff7675;
+  --coral: #e17055;
 }
 
 .dark {
@@ -95,37 +99,37 @@
   --card-foreground: #f0ece8;
   --popover: #242442;
   --popover-foreground: #f0ece8;
-  --primary: #ff8c5a;
-  --primary-foreground: #ffffff;
+  --primary: #a29bfe;
+  --primary-foreground: #1a1a2e;
   --secondary: #2a2a4a;
   --secondary-foreground: #c0c0d0;
   --muted: #2a2a4a;
   --muted-foreground: #8888a0;
-  --accent: #ff8c5a;
-  --accent-foreground: #ffffff;
+  --accent: #a29bfe;
+  --accent-foreground: #1a1a2e;
   --destructive: #ff6b6b;
   --border: #2e2e50;
   --input: #2e2e50;
-  --ring: #ff8c5a;
-  --chart-1: #ff8c5a;
-  --chart-2: #a29bfe;
+  --ring: #a29bfe;
+  --chart-1: #a29bfe;
+  --chart-2: #ffeaa7;
   --chart-3: #55efc4;
-  --chart-4: #ffeaa7;
-  --chart-5: #fab1a0;
+  --chart-4: #fab1a0;
+  --chart-5: #fd79a8;
   --sidebar: #16162b;
   --sidebar-foreground: #e0dcd8;
-  --sidebar-primary: #ff8c5a;
-  --sidebar-primary-foreground: #ffffff;
+  --sidebar-primary: #a29bfe;
+  --sidebar-primary-foreground: #1a1a2e;
   --sidebar-accent: #222240;
-  --sidebar-accent-foreground: #ffffff;
+  --sidebar-accent-foreground: #a29bfe;
   --sidebar-border: #222240;
-  --sidebar-ring: #ff8c5a;
+  --sidebar-ring: #a29bfe;
   --success: #55efc4;
   --warning: #ffeaa7;
-  --orange: #ff8c5a;
+  --orange: #ffeaa7;
   --purple: #a29bfe;
   --teal: #55efc4;
-  --coral: #ff7675;
+  --coral: #fab1a0;
 }
 
 @layer base {
@@ -134,6 +138,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, sans-serif;
   }
   button:not([disabled]),
   [role="button"]:not([disabled]) {
