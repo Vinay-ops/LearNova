@@ -84,7 +84,7 @@ class ProgressService:
         readiness_over_time = self._build_readiness_history(profile.readiness_score)
 
         return ProgressSummary(
-            user_id=UUID(str(user_id)),
+            user_id=str(user_id),
             readiness_score=clamp_score(profile.readiness_score),
             previous_readiness_score=None,
             streak_days=0,
@@ -97,7 +97,7 @@ class ProgressService:
             average_score=avg_score,
             best_score=best_score,
             skill_scores=skill_breakdown,
-            readiness_over_time=readiness_over_time,
+            readiness_history=readiness_over_time,
         )
 
     def _build_readiness_history(self, current_score: int) -> List[ReadinessEntry]:

@@ -30,7 +30,7 @@ class ProgressSummary(BaseModel):
     average_score: float = 0.0
     best_score: Optional[int] = None
     skill_scores: List[SkillScoreBreakdown] = Field(default_factory=list)
-    readiness_over_time: List[ReadinessEntry] = Field(default_factory=list)
+    readiness_history: List[ReadinessEntry] = Field(default_factory=list)
 
 
 class SkillScoreCreate(BaseModel):
