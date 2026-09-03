@@ -7,6 +7,7 @@ import {
   BookOpen,
   CheckCircle2,
   Flame,
+  GraduationCap,
   Play,
   TrendingUp,
   Target,
@@ -363,10 +364,10 @@ export default function Dashboard() {
             <p className="text-base font-extrabold text-slate-900 mb-4">Quick Actions</p>
             <div className="space-y-2">
               {[
-                { to: "/practice", label: "Start Case", icon: BookOpen, color: "bg-purple-100 text-purple-600" },
-                { to: "/assessments", label: "Take Assessment", icon: Target, color: "bg-blue-100 text-blue-600" },
-                { to: "/progress", label: "View Progress", icon: TrendingUp, color: "bg-emerald-100 text-emerald-600" },
-                { to: "/applications", label: "View Applications", icon: BookOpen, color: "bg-amber-100 text-amber-600" },
+                { to: "/learn", label: "Learn a Topic", icon: GraduationCap, color: "bg-purple-100 text-purple-600" },
+                { to: "/assessments", label: "Take Quiz / Assessment", icon: Target, color: "bg-blue-100 text-blue-600" },
+                { to: "/practice", label: "Start Practice", icon: BookOpen, color: "bg-emerald-100 text-emerald-600" },
+                { to: "/progress", label: "View Progress", icon: TrendingUp, color: "bg-amber-100 text-amber-600" },
               ].map((action) => (
                 <Link key={action.to} to={action.to}>
                   <motion.div

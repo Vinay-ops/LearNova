@@ -17,10 +17,14 @@ def bootstrap_prompts() -> None:
         from .versions.interviewer_v1 import register_interviewer_v1
         from .versions.evaluator_v1 import register_evaluator_v1
         from .versions.case_generation_v1 import register_case_generation_v1
+        from .versions.learning_tutor_v1 import register_learning_tutor_v1
+        from .versions.quiz_generator_v1 import register_quiz_generator_v1
 
         register_interviewer_v1(_prompt_registry)
         register_evaluator_v1(_prompt_registry)
         register_case_generation_v1(_prompt_registry)
+        register_learning_tutor_v1(_prompt_registry)
+        register_quiz_generator_v1(_prompt_registry)
 
         try:
             from .versions import register_feedback_v1, register_recommendations_v1

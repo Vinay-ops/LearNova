@@ -1,10 +1,11 @@
 import { Link, useLocation, useNavigate } from "react-router";
-import { LayoutDashboard, BookOpen, ClipboardList, TrendingUp, Briefcase, Settings, User, Menu, X, Target, LogOut } from "lucide-react";
+import { LayoutDashboard, BookOpen, ClipboardList, TrendingUp, Briefcase, Settings, User, Menu, X, Target, LogOut, GraduationCap } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 
 const navLinks = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/learn", label: "Learn", icon: GraduationCap },
   { to: "/practice", label: "Practice", icon: BookOpen },
   { to: "/assessments", label: "Assessments", icon: ClipboardList },
   { to: "/progress", label: "Progress", icon: TrendingUp },
@@ -45,7 +46,7 @@ export function AppTopNav() {
           <div className="w-8 h-8 rounded-xl bg-purple-600 flex items-center justify-center shadow-md shadow-purple-200">
             <Target className="w-4 h-4 text-white" />
           </div>
-          <span className="text-xl font-extrabold text-slate-900 tracking-tight">CasePilot</span>
+          <span className="text-xl font-extrabold text-slate-900 tracking-tight">Learnova</span>
         </Link>
 
         {/* Desktop Nav Links */}

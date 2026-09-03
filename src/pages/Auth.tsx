@@ -85,7 +85,7 @@ export default function Auth() {
           <div className="w-10 h-10 rounded-2xl bg-white/15 backdrop-blur flex items-center justify-center ring-1 ring-white/20">
             <Target className="w-5 h-5 text-white" />
           </div>
-          <span className="text-xl font-extrabold tracking-tight">CasePilot</span>
+          <span className="text-xl font-extrabold tracking-tight">Learnova</span>
         </div>
 
         <motion.div
@@ -139,7 +139,7 @@ export default function Auth() {
             <div className="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center">
               <Target className="w-4 h-4 text-white" />
             </div>
-            <span className="text-xl font-extrabold tracking-tight text-slate-900">CasePilot</span>
+            <span className="text-xl font-extrabold tracking-tight text-slate-900">Learnova</span>
           </div>
 
           <div className="flex items-center justify-between mb-6">
@@ -292,7 +292,7 @@ export default function Auth() {
           </p>
 
           <div className="lg:hidden mt-10 text-center text-xs text-slate-400">
-            <Link to="/" className="hover:text-slate-600">&larr; Back to CasePilot home</Link>
+            <Link to="/" className="hover:text-slate-600">&larr; Back to Learnova home</Link>
           </div>
         </motion.div>
       </div>

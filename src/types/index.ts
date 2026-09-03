@@ -202,6 +202,25 @@ export interface AssessmentAnswer {
   time_spent_seconds?: number;
 }
 
+export interface AssessmentQuestionReview {
+  question_id: ID;
+  assessment_id: ID;
+  question_type: QuestionType;
+  question_text: string;
+  options?: any[];
+  correct_option_index?: number;
+  correct_answer?: string;
+  explanation?: string;
+  display_order: number;
+  points: number;
+  difficulty: Difficulty;
+  skill_tag?: string;
+  selected_option_index?: number;
+  free_text_answer?: string;
+  is_correct?: boolean;
+  answered: boolean;
+}
+
 export interface DrillData {
   id: ID;
   title: string;

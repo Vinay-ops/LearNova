@@ -4,6 +4,7 @@ import type {
   AssessmentAttempt,
   AssessmentAnswer,
   AssessmentQuestion,
+  AssessmentQuestionReview,
   ID,
 } from "@/types";
 import { assessments } from "@/data/mock-data";
@@ -18,6 +19,7 @@ export interface AssessmentRepository {
   completeAttempt(userId: ID, attemptId: ID): Promise<AssessmentAttempt>;
   listQuestions(assessmentId: ID): Promise<AssessmentQuestion[]>;
   listAnswers(attemptId: ID): Promise<AssessmentAnswer[]>;
+  getReview(attemptId: ID): Promise<AssessmentQuestionReview[]>;
   saveAnswer(
     attemptId: ID,
     questionId: ID,
@@ -91,6 +93,10 @@ export class MockAssessmentRepository implements AssessmentRepository {
     return this.answers.filter((a) => a.attempt_id === attemptId);
   }
 
+  async getReview(_attemptId: ID): Promise<AssessmentQuestionReview[]> {
+    return [];
+  }
+
   async saveAnswer(
     attemptId: ID,
     questionId: ID,
@@ -148,7 +154,8 @@ export class ApiAssessmentRepository implements AssessmentRepository {
   }
 
   async listAttempts(_userId: ID): Promise<AssessmentAttempt[]> {
-    return [];
+    const { data } = await api.get<AssessmentAttempt[]>("/api/assessments/attempts");
+    return data;
   }
 
   async updateAttempt(
@@ -163,19 +170,36 @@ export class ApiAssessmentRepository implements AssessmentRepository {
     return data;
   }
 
-  async completeAttempt(userId: ID, attemptId: ID): Promise<AssessmentAttempt> {
-    return this.updateAttempt(userId, attemptId, {
-      status: "completed",
-      completed_at: new Date().toISOString(),
-    });
+  async completeAttempt(_userId: ID, attemptId: ID): Promise<AssessmentAttempt> {
+    // POST .../complete — the backend scores the attempt server-side
+    // (correct_count, total_questions, score) from stored answers.
+    const { data } = await api.post<AssessmentAttempt>(
+      `/api/assessments/attempts/${attemptId}/complete`,
+    );
+    return data;
   }
 
-  async listQuestions(_assessmentId: ID): Promise<AssessmentQuestion[]> {
-    return [];
+  async listQuestions(assessmentId: ID): Promise<AssessmentQuestion[]> {
+    const { data } = await api.get<AssessmentQuestion[]>(
+      `/api/assessments/${assessmentId}/questions`,
+    );
+    return data;
   }
 
-  async listAnswers(_attemptId: ID): Promise<AssessmentAnswer[]> {
-    return [];
+  async listAnswers(attemptId: ID): Promise<AssessmentAnswer[]> {
+    const { data } = await api.get<AssessmentAnswer[]>(
+      `/api/assessments/attempts/${attemptId}/answers`,
+    );
+    return data;
+  }
+
+  async getReview(attemptId: ID): Promise<AssessmentQuestionReview[]> {
+    // Completion-gated: the backend only reveals the answer key + explanations
+    // for an attempt owned by the current user that is already completed.
+    const { data } = await api.get<AssessmentQuestionReview[]>(
+      `/api/assessments/attempts/${attemptId}/review`,
+    );
+    return data;
   }
 
   async saveAnswer(
@@ -211,6 +235,7 @@ export const assessmentsApi = {
   listQuestions: (assessmentId: ID) =>
     assessmentRepository.listQuestions(assessmentId),
   listAnswers: (attemptId: ID) => assessmentRepository.listAnswers(attemptId),
+  getReview: (attemptId: ID) => assessmentRepository.getReview(attemptId),
   saveAnswer: (
     attemptId: ID,
     questionId: ID,

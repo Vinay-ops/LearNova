@@ -11,6 +11,7 @@ const Landing = lazy(() => import("./pages/Landing.tsx"));
 const Auth = lazy(() => import("./pages/Auth.tsx"));
 const ProfileSetup = lazy(() => import("./pages/ProfileSetup.tsx"));
 const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
+const Learn = lazy(() => import("./pages/Learn.tsx"));
 const Practice = lazy(() => import("./pages/Practice.tsx"));
 const CaseDetails = lazy(() => import("./pages/CaseDetails.tsx"));
 const CaseSimulator = lazy(() => import("./pages/CaseSimulator.tsx"));
@@ -134,6 +135,14 @@ function AnimatedRoutes() {
             element={
               <RequireAuth>
                 <Practice />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/learn"
+            element={
+              <RequireAuth>
+                <Learn />
               </RequireAuth>
             }
           />

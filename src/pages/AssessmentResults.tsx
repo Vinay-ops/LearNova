@@ -1,71 +1,145 @@
-import { useParams, Link } from "react-router";
+import { useParams, Link, useNavigate } from "react-router";
+import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/context/AuthContext";
-import { useAssessments, useAssessmentQuestions, useAssessmentAttempts } from "@/hooks/use-assessments";
+import { useAssessments, useAssessmentAttempts } from "@/hooks/use-assessments";
+import { assessmentsApi } from "@/features/assessments";
 import { motion } from "framer-motion";
 import { FadeIn, AnimatedBar } from "@/components/app/AnimatedSection";
 import {
   CheckCircle2,
   XCircle,
+  MinusCircle,
   RotateCcw,
   ArrowRight,
   Target,
-  Clock,
+  Sparkles,
+  BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { AssessmentQuestionReview } from "@/types";
+
+interface SubtopicStat {
+  subtopic: string;
+  total: number;
+  correct: number;
+}
+
+const letter = (i?: number) => (typeof i === "number" ? String.fromCharCode(65 + i) : "—");
 
 export default function AssessmentResults() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { assessments } = useAssessments();
-  const { attempts } = useAssessmentAttempts(user?.id);
-
+  const { attempts, loading: attemptsLoading } = useAssessmentAttempts(user?.id);
   const assessment = assessments.find((a) => a.id === id);
-  const assessmentAttempts = attempts.filter((a) => a.assessment_id === id);
-  const latestAttempt = assessmentAttempts[assessmentAttempts.length - 1];
 
-  if (!assessment || !latestAttempt) {
+  const latestAttempt = [...attempts]
+    .filter((a) => a.assessment_id === id && a.status === "completed")
+    .sort((a, b) => (a.completed_at || a.started_at) < (b.completed_at || b.started_at) ? 1 : -1)[0];
+
+  // The review endpoint is completion-gated by the backend — the answer key
+  // and explanations only come back once the attempt is completed.
+  const [review, setReview] = useState<AssessmentQuestionReview[]>([]);
+  const [reviewLoading, setReviewLoading] = useState(false);
+
+  useEffect(() => {
+    if (!latestAttempt) return;
+    setReviewLoading(true);
+    assessmentsApi
+      .getReview(latestAttempt.id)
+      .then(setReview)
+      .catch(() => setReview([]))
+      .finally(() => setReviewLoading(false));
+  }, [latestAttempt?.id]);
+
+  if (attemptsLoading) {
     return (
       <AppLayout>
-        <div className="text-center py-16">
-          <h2 className="text-xl font-bold">No completed attempt found</h2>
+        <div className="max-w-3xl mx-auto py-24 text-center">
+          <div className="h-8 w-8 rounded-xl bg-primary/20 flex items-center justify-center animate-pulse mx-auto mb-4">
+            <div className="h-4 w-4 rounded-lg bg-primary/60" />
+          </div>
+          <p className="text-sm text-muted-foreground animate-pulse">Loading results…</p>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!latestAttempt) {
+    return (
+      <AppLayout>
+        <div className="text-center py-24">
+          <h2 className="text-xl font-bold text-slate-900">No completed attempt found</h2>
           <Link to="/assessments">
-            <Button className="mt-4">Back to Assessments</Button>
+            <Button className="mt-4 rounded-xl">Back to Assessments</Button>
           </Link>
         </div>
       </AppLayout>
     );
   }
 
-  const { questions } = useAssessmentQuestions(assessment?.id);
+  if (reviewLoading) {
+    return (
+      <AppLayout>
+        <div className="max-w-3xl mx-auto py-24 text-center">
+          <div className="h-8 w-8 rounded-xl bg-primary/20 flex items-center justify-center animate-pulse mx-auto mb-4">
+            <div className="h-4 w-4 rounded-lg bg-primary/60" />
+          </div>
+          <p className="text-sm text-muted-foreground animate-pulse">Loading review…</p>
+        </div>
+      </AppLayout>
+    );
+  }
 
   const correctCount = latestAttempt.correct_count;
-  const totalQuestions = latestAttempt.total_questions;
-  const score = Number(latestAttempt.score) || 0;
-  const avgTimePerQuestion = totalQuestions > 0
-    ? Math.round(((new Date(latestAttempt.completed_at || latestAttempt.started_at).getTime() - new Date(latestAttempt.started_at).getTime()) / 1000) / totalQuestions)
-    : 0;
+  const totalQuestions = latestAttempt.total_questions || review.length || 0;
+  const score = Math.round(Number(latestAttempt.score) || 0);
 
-  // Category breakdown
-  const categoryBreakdown = [
-    {
-      name: assessment.category,
-      score: score || 0,
-      correct: correctCount,
-      total: totalQuestions,
-    },
-  ];
+  // Review rows are server-ordered by display_order and server-graded.
+  const rows = review.slice().sort((a, b) => a.display_order - b.display_order);
+  const answeredCount = rows.filter((r) => r.answered).length;
+  const unansweredCount = Math.max(0, totalQuestions - answeredCount);
+
+  // Subtopic performance (deterministic arithmetic over server-graded rows).
+  const bySubtopic = new Map<string, SubtopicStat>();
+  rows.forEach((row) => {
+    const tag = row.skill_tag || assessment?.category || "General";
+    const bucket = bySubtopic.get(tag) || { subtopic: tag, total: 0, correct: 0 };
+    if (row.answered) {
+      bucket.total += 1;
+      if (row.is_correct) bucket.correct += 1;
+    }
+    bySubtopic.set(tag, bucket);
+  });
+  const subtopics = Array.from(bySubtopic.values())
+    .filter((s) => s.total > 0)
+    .sort((a, b) => a.correct / a.total - b.correct / b.total);
+  const weakSubtopics = subtopics
+    .filter((s) => s.correct / s.total < 0.7)
+    .map((s) => s.subtopic);
+
+  const practiceWeak = () => {
+    const topic = encodeURIComponent(assessment?.category || assessment?.title || "");
+    const focus = encodeURIComponent(weakSubtopics.join(","));
+    navigate(`/learn?topic=${topic}&focus=${focus}&quiz=1`);
+  };
 
   return (
     <AppLayout>
       <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <Badge variant="secondary" className="mb-3 text-xs">Assessment Complete</Badge>
-          <h1 className="text-2xl font-bold tracking-tight">{assessment.title}</h1>
-          <p className="text-muted-foreground mt-1">{assessment.difficulty} · {assessment.time_limit_minutes || assessment.time_minutes} min</p>
+          <Badge variant="secondary" className="mb-3 text-xs">
+            Assessment Complete
+          </Badge>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">{assessment?.title}</h1>
+          <p className="text-muted-foreground mt-1">
+            {assessment?.category} · {assessment?.difficulty}
+          </p>
         </div>
 
         {/* Score */}
@@ -79,10 +153,12 @@ export default function AssessmentResults() {
             Your Score
           </p>
           <div className="flex items-baseline justify-center gap-2">
-            <span className={cn(
-              "text-6xl font-bold tracking-tight tabular-nums",
-              score >= 80 ? "text-emerald-600" : score >= 65 ? "text-primary" : "text-amber-600"
-            )}>
+            <span
+              className={cn(
+                "text-6xl font-bold tracking-tight tabular-nums",
+                score >= 80 ? "text-emerald-600" : score >= 65 ? "text-primary" : "text-amber-600",
+              )}
+            >
               {score}%
             </span>
           </div>
@@ -97,104 +173,199 @@ export default function AssessmentResults() {
           </div>
           <div className="rounded-3xl bg-red-50 border border-red-200/60 p-5 text-center shadow-xl shadow-slate-200/30">
             <XCircle className="h-6 w-6 text-red-500 mx-auto mb-2" />
-            <p className="text-2xl font-extrabold text-red-900 tabular-nums">{totalQuestions - correctCount}</p>
+            <p className="text-2xl font-extrabold text-red-900 tabular-nums">
+              {Math.max(0, totalQuestions - correctCount - unansweredCount)}
+            </p>
             <p className="text-xs text-red-700 font-medium">Incorrect</p>
           </div>
           <div className="rounded-3xl bg-blue-50 border border-blue-200/60 p-5 text-center shadow-xl shadow-slate-200/30">
-            <Clock className="h-6 w-6 text-blue-600 mx-auto mb-2" />
-            <p className="text-2xl font-extrabold text-blue-900 tabular-nums">{avgTimePerQuestion}s</p>
-            <p className="text-xs text-blue-700 font-medium">Avg per question</p>
+            <MinusCircle className="h-6 w-6 text-blue-600 mx-auto mb-2" />
+            <p className="text-2xl font-extrabold text-blue-900 tabular-nums">{unansweredCount}</p>
+            <p className="text-xs text-blue-700 font-medium">Unanswered</p>
           </div>
         </FadeIn>
 
-        {/* Topic Breakdown */}
+        {/* Weak areas → practice */}
+        {weakSubtopics.length > 0 && (
+          <FadeIn delay={0.35} className="mb-8">
+            <div className="rounded-3xl border border-amber-200/60 bg-gradient-to-br from-amber-50 via-white to-amber-50/40 p-6 shadow-xl shadow-slate-200/40">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 shrink-0">
+                  <Target className="h-5 w-5" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-extrabold text-slate-900">
+                    Needs practice: {weakSubtopics.join(", ")}
+                  </p>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">
+                    Generate a focused quiz on just these subtopics to improve them.
+                  </p>
+                </div>
+                <Button
+                  onClick={practiceWeak}
+                  className="gap-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold rounded-full px-5 text-xs shadow-md shadow-purple-200 shrink-0"
+                  size="sm"
+                >
+                  Practice Weak Areas
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          </FadeIn>
+        )}
+
+        {/* Subtopic breakdown */}
         <FadeIn delay={0.4} className="mb-8">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
-            Topic Breakdown
+            Subtopic Performance
           </p>
-          <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/50">
-            {categoryBreakdown.map((cat) => (
-              <div key={cat.name} className="flex items-center gap-3">
-                <span className="text-sm w-40 text-muted-foreground shrink-0">{cat.name}</span>
-                <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-                  <AnimatedBar
-                    width={cat.score}
-                    className={cn(
-                      "h-full rounded-full",
-                      cat.score >= 80 ? "bg-emerald-600" : cat.score >= 65 ? "bg-primary" : "bg-amber-500"
-                    )}
-                    delay={0.3}
-                  />
+          <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/50 space-y-4">
+            {subtopics.length === 0 && (
+              <p className="text-sm text-slate-400 text-center py-4">No answered subtopics yet.</p>
+            )}
+            {subtopics.map((s) => {
+              const percent = Math.round((s.correct / s.total) * 100);
+              return (
+                <div key={s.subtopic} className="flex items-center gap-3">
+                  <span className="text-sm w-44 text-muted-foreground shrink-0 font-medium">
+                    {s.subtopic}
+                  </span>
+                  <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                    <AnimatedBar
+                      width={percent}
+                      className={cn(
+                        "h-full rounded-full",
+                        percent >= 80
+                          ? "bg-emerald-500"
+                          : percent >= 70
+                            ? "bg-primary"
+                            : "bg-amber-500",
+                      )}
+                    />
+                  </div>
+                  <span className="text-sm font-bold tabular-nums w-24 text-right text-slate-700">
+                    {s.correct}/{s.total}
+                  </span>
                 </div>
-                <span className="text-sm font-semibold tabular-nums w-16 text-right">
-                  {cat.correct}/{cat.total}
-                </span>
-                <span className="text-sm font-bold tabular-nums w-12 text-right">
-                  {cat.score}%
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </FadeIn>
 
-        {/* Question Review */}
-        <FadeIn delay={0.5} className="mb-8">
+        {/* Question review */}
+        <FadeIn delay={0.45}>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
-            Question Review
+            Review Answers
           </p>
-          <div className="space-y-3">
-            {questions.map((q, i) => {
+          <div className="space-y-4 mb-10">
+            {rows.length === 0 && (
+              <p className="text-sm text-slate-400 text-center py-4">
+                No question details available.
+              </p>
+            )}
+            {rows.map((q, i) => {
+              const options = Array.isArray(q.options) ? (q.options as string[]) : [];
+              const picked = q.selected_option_index;
+              const isCorrect = q.answered && !!q.is_correct;
               return (
-                <motion.div
-                  key={q.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 + i * 0.05 }}
-                  className="rounded-xl border border-border bg-white p-4"
+                <div
+                  key={q.question_id}
+                  className={cn(
+                    "rounded-3xl border bg-white p-5 shadow-sm",
+                    isCorrect ? "border-emerald-200/70" : "border-red-200/70",
+                  )}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 bg-muted">
-                      <span className="text-xs text-muted-foreground">{i + 1}</span>
-                    </div>
+                    {isCorrect ? (
+                      <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0 mt-0.5" />
+                    ) : (
+                      <XCircle className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                    )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-800 mb-2">{q.question_text}</p>
-                      <div className="space-y-1">
-                        {(q.options || []).map((opt: any, j: number) => (
-                          <p
-                            key={j}
-                            className={cn(
-                              "text-xs px-2 py-1 rounded",
-                              j === q.correct_option_index
-                                ? "bg-emerald-100 text-emerald-800 font-medium"
-                                : "text-muted-foreground"
-                            )}
-                          >
-                            {String.fromCharCode(65 + j)}. {opt}
-                            {j === q.correct_option_index && " ✓"}
-                          </p>
-                        ))}
+                      <p className="text-sm font-bold text-slate-900">
+                        {i + 1}. {q.question_text}
+                      </p>
+                      <div className="mt-2 space-y-1">
+                        {options.map((opt, oi) => {
+                          const isCorrectOption = oi === q.correct_option_index;
+                          const isPicked = oi === picked;
+                          return (
+                            <div
+                              key={oi}
+                              className={cn(
+                                "flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs font-medium",
+                                isCorrectOption
+                                  ? "bg-emerald-50 text-emerald-800"
+                                  : isPicked
+                                    ? "bg-red-50 text-red-700"
+                                    : "text-slate-500",
+                              )}
+                            >
+                              <span
+                                className={cn(
+                                  "flex h-5 w-5 items-center justify-center rounded-md border text-[10px] font-bold shrink-0",
+                                  isCorrectOption
+                                    ? "border-emerald-300 bg-emerald-100 text-emerald-700"
+                                    : isPicked
+                                      ? "border-red-300 bg-red-100 text-red-600"
+                                      : "border-slate-200 text-slate-400",
+                                )}
+                              >
+                                {letter(oi)}
+                              </span>
+                              <span className="flex-1">{opt}</span>
+                              {isCorrectOption && (
+                                <span className="text-emerald-600 font-bold shrink-0">Correct</span>
+                              )}
+                              {isPicked && !isCorrectOption && (
+                                <span className="text-red-500 font-bold shrink-0">Your answer</span>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
+                      {!q.answered && (
+                        <p className="mt-3 text-xs text-slate-400 font-semibold">
+                          Not answered — counted as incorrect.
+                        </p>
+                      )}
+                      {q.explanation && (
+                        <p className="mt-3 text-xs text-slate-500 leading-relaxed bg-slate-50 rounded-xl px-3 py-2.5">
+                          <span className="font-bold text-slate-700">Why: </span>
+                          {q.explanation}
+                        </p>
+                      )}
+                      {q.skill_tag && (
+                        <Badge variant="outline" className="mt-2 text-[10px] border-primary/20 text-primary bg-primary/5">
+                          {q.skill_tag}
+                        </Badge>
+                      )}
                     </div>
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
         </FadeIn>
 
         {/* Actions */}
-        <FadeIn delay={0.6} className="flex flex-col sm:flex-row gap-3">
-          <Link to="/practice" className="flex-1">
-            <Button className="w-full gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-md shadow-purple-200">
-              <Target className="h-4 w-4" />
-              Practice Weak Topics
-              <ArrowRight className="h-4 w-4" />
+        <FadeIn delay={0.5} className="flex flex-wrap gap-3 justify-center mb-12">
+          <Link to="/assessments">
+            <Button variant="outline" className="gap-2 rounded-xl border-border/60">
+              <RotateCcw className="h-4 w-4" />
+              All Assessments
             </Button>
           </Link>
-          <Link to={`/assessments/${id}`} className="flex-1">
-            <Button variant="outline" className="w-full gap-2 rounded-xl font-bold">
-              <RotateCcw className="h-4 w-4" />
-              Try Again
+          <Link to={`/learn?topic=${encodeURIComponent(assessment?.category || "")}`}>
+            <Button className="gap-2 rounded-xl shadow-sm">
+              <Sparkles className="h-4 w-4" />
+              Learn this topic
+            </Button>
+          </Link>
+          <Link to="/practice">
+            <Button variant="ghost" className="gap-2 rounded-xl text-slate-500 font-semibold">
+              <BookOpen className="h-4 w-4" />
+              Practice
             </Button>
           </Link>
         </FadeIn>

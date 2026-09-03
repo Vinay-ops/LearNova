@@ -153,4 +153,20 @@
   .font-tabular {
     font-variant-numeric: tabular-nums;
   }
+
+  /* Settings → Appearance → Compact View: modestly denser spacing */
+  html.compact .p-6 {
+    padding: 1.15rem;
+  }
+  html.compact .px-6 {
+    padding-left: 1.3rem;
+    padding-right: 1.3rem;
+  }
+  html.compact .py-4 {
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+  }
+  html.compact .mb-8 {
+    margin-bottom: 1.4rem;
+  }
 }

@@ -58,6 +58,8 @@ class AIRole(str, Enum):
     INTERVIEWER = "interviewer"
     CANDIDATE = "candidate"
     SYSTEM = "system"
+    USER = "user"
+    ASSISTANT = "assistant"
 
 
 class AISessionType(str, Enum):
@@ -67,6 +69,7 @@ class AISessionType(str, Enum):
     DRILL = "drill"
     RECOMMENDATION = "recommendation"
     CASE_GENERATION = "case_generation"
+    LEARNING = "learning"
 
 
 class SkillName(str, Enum):
@@ -97,6 +100,8 @@ class PromptPurpose(str, Enum):
     RECOMMENDATIONS = "recommendations"
     DRILL_GENERATION = "drill_generation"
     ADAPTIVE_DIFFICULTY = "adaptive_difficulty"
+    LEARNING_TUTOR = "learning_tutor"
+    QUIZ_GENERATION = "quiz_generation"
 
 
 class DrillCategory(str, Enum):

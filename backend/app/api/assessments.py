@@ -9,6 +9,7 @@ from ..models.assessment import AssessmentAttempt
 from ..schemas.assessment import (
     AssessmentResponse,
     AssessmentQuestionResponse,
+    AssessmentQuestionReviewItem,
     AssessmentAttemptCreate,
     AssessmentAttemptUpdate,
     AssessmentAttemptResponse,
@@ -27,6 +28,21 @@ def list_assessments(
 ):
     service = AssessmentService(db)
     return service.list_active()
+
+
+@router.get("/attempts/{attempt_id}/review", response_model=List[AssessmentQuestionReviewItem])
+def review_assessment_attempt(
+    attempt_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Full question review (answer key included) for a COMPLETED attempt.
+
+    Gated on ownership + completion so the correct answers stay hidden while
+    the quiz is being taken.
+    """
+    service = AssessmentService(db)
+    return service.review_attempt(attempt_id, current_user.id)
 
 
 @router.get("/attempts", response_model=List[AssessmentAttemptResponse])

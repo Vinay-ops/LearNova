@@ -8,6 +8,8 @@ from .assessments import router as assessments_router
 from .drills import router as drills_router
 from .ai_interview import router as ai_router
 from .prompts import router as prompts_router
+from .learning import router as learning_router
+from .quizzes import router as quizzes_router
 
 __all__ = [
     "auth_router",
@@ -20,4 +22,6 @@ __all__ = [
     "drills_router",
     "ai_router",
     "prompts_router",
+    "learning_router",
+    "quizzes_router",
 ]

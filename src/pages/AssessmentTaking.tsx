@@ -84,38 +84,26 @@ export default function AssessmentTaking() {
     newAnswers[currentQ] = optionIndex;
     setAnswers(newAnswers);
 
-    // Save immediately
+    // Save immediately. Correctness is intentionally NOT sent: the server
+    // grades the selection against the stored key (is_correct/points_earned
+    // are computed backend-side), and the questions payload never contains
+    // the answer key while the quiz is being taken.
     if (attemptId && questions[currentQ]) {
       assessmentsApi.saveAnswer(attemptId, questions[currentQ].id, {
         attempt_id: attemptId,
         question_id: questions[currentQ].id,
         selected_option_index: optionIndex,
-        is_correct: optionIndex === questions[currentQ].correct_option_index,
-        points_earned: optionIndex === questions[currentQ].correct_option_index ? 1 : 0,
       });
     }
   };
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     if (!attemptId) return;
-
-    // Calculate score
-    let correct = 0;
-    answers.forEach((ans, i) => {
-      if (ans != null && questions[i] && ans === questions[i].correct_option_index) {
-        correct++;
-      }
-    });
-
-    const totalQs = questions.length;
-    const score = totalQs > 0 ? Math.round((correct / totalQs) * 100) : 0;
-
-    assessmentsApi.completeAttempt("", attemptId).then(() => {
-      // Score is already calculated client-side
-    });
-
+    // The backend completes the attempt, scores it from stored answers
+    // (unanswered count as incorrect) and persists the result.
+    await assessmentsApi.completeAttempt("", attemptId);
     navigate(`/assessments/${id}/results`);
-  }, [attemptId, answers, questions, elapsed, id]);
+  }, [attemptId, id, navigate]);
 
   if (!assessment) {
     return (
