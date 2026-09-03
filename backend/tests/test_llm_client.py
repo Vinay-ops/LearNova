@@ -272,6 +272,22 @@ class TestGroqLLMClient:
             call_kwargs = mock_openai_cls.return_value.chat.completions.create.call_args[1]
             assert call_kwargs["model"] == DEFAULT_MODEL
 
+    def test_mistaken_models_url_is_normalized(self):
+        """Regression: setting GROQ_BASE_URL to the model-list URL must not
+        corrupt request paths (404 /openai/v1/models/chat/completions)."""
+        with patch("app.ai.client.settings") as mock_settings:
+            mock_settings.GROQ_API_KEY = "test-key"
+            mock_settings.GROQ_MODEL = DEFAULT_MODEL
+            mock_settings.GROQ_BASE_URL = "https://api.groq.com/openai/v1/models"
+            mock_settings.LLM_TEMPERATURE = 0.7
+            client = GroqLLMClient()
+        assert client.base_url == GROQ_BASE_URL
+
+        # trailing slash and bare value also normalize
+        assert GroqLLMClient._normalize_base_url("https://api.groq.com/openai/v1/") == GROQ_BASE_URL
+        assert GroqLLMClient._normalize_base_url("") == GROQ_BASE_URL
+        assert GroqLLMClient._normalize_base_url(None) == GROQ_BASE_URL
+
     def test_whitespace_only_model_arg_falls_back(self):
         with patch("app.ai.client.settings") as mock_settings:
             mock_settings.GROQ_MODEL = ""

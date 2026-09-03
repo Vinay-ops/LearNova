@@ -105,9 +105,23 @@ class GroqLLMClient(BaseLLMClient):
     # ("") must NOT disable model resolution.
     DEFAULT_MODEL_FALLBACK = "openai/gpt-oss-120b"
 
+    @staticmethod
+    def _normalize_base_url(raw: Optional[str]) -> str:
+        """Sanitize GROQ_BASE_URL before the SDK appends its route paths.
+
+        The OpenAI-compatible endpoint is https://api.groq.com/openai/v1 and
+        the SDK appends 'chat/completions' etc. A trailing slash or a mistaken
+        '/models' suffix (the model-list URL) must not corrupt request paths
+        (would 404 as /openai/v1/models/chat/completions).
+        """
+        url = ((raw or "").strip().rstrip("/")) or "https://api.groq.com/openai/v1"
+        if url.endswith("/models"):
+            url = url[: -len("/models")]
+        return url.rstrip("/") or "https://api.groq.com/openai/v1"
+
     def __init__(self) -> None:
         self.api_key = settings.GROQ_API_KEY or ""
-        self.base_url = settings.GROQ_BASE_URL or "https://api.groq.com/openai/v1"
+        self.base_url = self._normalize_base_url(settings.GROQ_BASE_URL)
         self.default_model = (
             (settings.GROQ_MODEL or "").strip() or self.DEFAULT_MODEL_FALLBACK
         )

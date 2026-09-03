@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate, Link, useLocation } from "react-router";
+import { useRef, useState } from "react";
+import { useNavigate, Link, useLocation, Navigate } from "react-router";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,9 +25,14 @@ export default function Auth() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  // Where the in-flight submit intends to land; the declarative redirect below
+  // reads it so signup → /setup and login → /dashboard without a flash.
+  const intendedPath = useRef<string | null>(null);
 
+  // Declarative redirect — navigating during render would trigger an
+  // infinite re-render loop (React error #185 "Maximum update depth").
   if (!isLoading && isAuthenticated) {
-    navigate(from, { replace: true });
+    return <Navigate to={intendedPath.current ?? from} replace />;
   }
 
   const toggleMode = (next: Mode) => {
@@ -49,6 +54,7 @@ export default function Auth() {
           return;
         }
         setSuccess("Welcome back!");
+        intendedPath.current = "/dashboard";
         setTimeout(() => navigate("/dashboard", { replace: true }), 300);
         return;
       }
@@ -58,6 +64,7 @@ export default function Auth() {
         return;
       }
       setSuccess("Account created successfully");
+      intendedPath.current = "/setup";
       setTimeout(() => navigate("/setup", { replace: true }), 300);
     } finally {
       setSubmitting(false);
