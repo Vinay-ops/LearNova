@@ -227,6 +227,41 @@ class TestOpenRouterLLMClient:
         call_kwargs = mock_openai_cls.return_value.chat.completions.create.call_args[1]
         assert call_kwargs["model"] == "anthropic/claude-3-opus"
 
+    def test_blank_configured_model_still_sends_a_model(self):
+        """Regression: an empty OPENROUTER_MODEL env value ("") must fall back
+        to a valid model — OpenRouter returns 400 'No models provided' when the
+        request carries no model."""
+        with patch("app.ai.client.settings") as mock_settings:
+            mock_settings.OPENROUTER_API_KEY = "test-key"
+            mock_settings.OPENROUTER_MODEL = ""  # explicitly blank in env
+            mock_settings.OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
+            mock_settings.OPENROUTER_APP_NAME = "Learnova"
+            mock_settings.OPENROUTER_SITE_URL = None
+            mock_settings.LLM_TEMPERATURE = 0.7
+            client = OpenRouterLLMClient()
+
+            mock_response = MagicMock()
+            mock_response.choices = [MagicMock()]
+            mock_response.choices[0].message.content = "ok"
+            mock_response.usage.total_tokens = 5
+
+            mock_openai_cls = MagicMock()
+            mock_openai_cls.return_value.chat.completions.create.return_value = mock_response
+
+            with patch.dict("sys.modules", {"openai": MagicMock(OpenAI=mock_openai_cls)}):
+                # No model passed by the caller (templates pass model=None)
+                resp = client.chat("system", "user")
+
+            assert resp.model == "openai/gpt-4o"
+            call_kwargs = mock_openai_cls.return_value.chat.completions.create.call_args[1]
+            assert call_kwargs["model"] == "openai/gpt-4o"
+
+    def test_whitespace_only_model_arg_falls_back(self):
+        with patch("app.ai.client.settings") as mock_settings:
+            mock_settings.OPENROUTER_MODEL = ""
+            assert OpenRouterLLMClient._resolve_model("   ") == "openai/gpt-4o"
+            assert OpenRouterLLMClient._resolve_model("anthropic/claude-3.5-sonnet") == "anthropic/claude-3.5-sonnet"
+
     def test_max_tokens_passed(self):
         client = self._make_client()
 

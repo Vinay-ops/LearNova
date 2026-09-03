@@ -45,3 +45,5 @@
 - Backend: `cd backend && python -m pytest -q` (70 tests; quiz/learning tests in `backend/tests/test_learning_quiz.py` use a fake LLM — no network).
 - Frontend: `npx tsc -b` then `npm run build` from repo root.
 - LLM features 502 locally until `OPENROUTER_API_KEY` is set — that is the expected stub behavior, not a bug.
+- OpenRouter rejects model-less requests with `400 No models provided`. An env var set to an EMPTY string (`OPENROUTER_MODEL=`) overrides the pydantic default, so `OpenRouterLLMClient` resolves model as arg → `settings.OPENROUTER_MODEL` → hard fallback `openai/gpt-4o` (`_resolve_model`). Keep `OPENROUTER_MODEL` set in Vercel.
+

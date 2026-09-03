@@ -97,14 +97,30 @@ class StubLLMClient(BaseLLMClient):
 class OpenRouterLLMClient(BaseLLMClient):
     """Production LLM client that talks to OpenRouter via the OpenAI-compatible API."""
 
+    # Hard fallback so a request is never sent without a model — OpenRouter
+    # rejects model-less requests with 400 "No models provided". A blank
+    # OPENROUTER_MODEL env value ("") must NOT disable model resolution.
+    DEFAULT_MODEL_FALLBACK = "openai/gpt-4o"
+
     def __init__(self) -> None:
         self.api_key = settings.OPENROUTER_API_KEY or ""
         self.base_url = settings.OPENROUTER_BASE_URL
-        self.default_model = settings.OPENROUTER_MODEL
+        self.default_model = (
+            (settings.OPENROUTER_MODEL or "").strip() or self.DEFAULT_MODEL_FALLBACK
+        )
         self.app_name = settings.OPENROUTER_APP_NAME
         self.site_url = settings.OPENROUTER_SITE_URL
         self.default_temperature = settings.LLM_TEMPERATURE
         self._client = None
+
+    @classmethod
+    def _resolve_model(cls, model: Optional[str]) -> str:
+        """Pick a non-empty model: explicit arg → configured default → fallback."""
+        return (
+            (model or "").strip()
+            or (getattr(settings, "OPENROUTER_MODEL", "") or "").strip()
+            or cls.DEFAULT_MODEL_FALLBACK
+        )
 
     def _get_client(self):
         """Lazy-init the OpenAI client pointed at OpenRouter."""
@@ -149,7 +165,7 @@ class OpenRouterLLMClient(BaseLLMClient):
         start = time.perf_counter()
         client = self._get_client()
 
-        resolved_model = model or self.default_model
+        resolved_model = self._resolve_model(model)
         resolved_temp = temperature if temperature is not None else self.default_temperature
 
         messages = []
