@@ -41,13 +41,13 @@ const features = [
 
 const popularCases = [
   {
-    tag: "Bestseller",
+    tag: "Essential",
     tagColor: "bg-amber-400 text-amber-950",
     title: "Technical Interview Fundamentals",
     author: "Learnova",
-    rating: 4.8,
-    reviews: "1.2K",
-    duration: "25h",
+    rating: "Adaptive",
+    reviews: "AI-graded",
+    duration: "Self-paced",
     level: "Beginner",
     headerBg: "bg-gradient-to-br from-amber-100 via-orange-100 to-amber-200",
     illustration: (
@@ -73,9 +73,9 @@ const popularCases = [
     tagColor: "bg-blue-500 text-white",
     title: "Product & Design Interviews",
     author: "Learnova",
-    rating: 4.9,
-    reviews: "856",
-    duration: "15h",
+    rating: "Adaptive",
+    reviews: "AI-graded",
+    duration: "Self-paced",
     level: "All Levels",
     headerBg: "bg-gradient-to-br from-blue-100 via-indigo-100 to-sky-200",
     illustration: (
@@ -93,13 +93,13 @@ const popularCases = [
     ),
   },
   {
-    tag: "Popular",
+    tag: "Recommended",
     tagColor: "bg-pink-500 text-white",
     title: "Business & Strategy Cases",
     author: "Learnova",
-    rating: 4.7,
-    reviews: "2.1K",
-    duration: "18h",
+    rating: "Adaptive",
+    reviews: "AI-graded",
+    duration: "Self-paced",
     level: "Intermediate",
     headerBg: "bg-gradient-to-br from-pink-100 via-rose-100 to-orange-100",
     illustration: (
@@ -121,9 +121,9 @@ const popularCases = [
     tagColor: "bg-blue-500 text-white",
     title: "Data & Analytics Interviews",
     author: "Learnova",
-    rating: 4.8,
-    reviews: "930",
-    duration: "20h",
+    rating: "Adaptive",
+    reviews: "AI-graded",
+    duration: "Self-paced",
     level: "Intermediate",
     headerBg: "bg-gradient-to-br from-teal-100 via-emerald-100 to-cyan-100",
     illustration: (
@@ -145,18 +145,18 @@ const popularCases = [
 ];
 
 const topics = [
-  { label: "Behavioral Questions", count: 120 },
-  { label: "Technical Skills", count: 86 },
-  { label: "Communication", count: 64 },
-  { label: "Problem Solving", count: 45 },
-  { label: "Strategic Thinking", count: 95 },
+  { label: "Behavioral Questions" },
+  { label: "Technical Skills" },
+  { label: "Communication" },
+  { label: "Problem Solving" },
+  { label: "Strategic Thinking" },
 ];
 
 const topicGrid = [
-  { label: "AI Mock Interviews", count: 120, icon: Bot, color: "bg-purple-100 text-purple-600" },
-  { label: "Case Interviews", count: 86, icon: TrendingUp, color: "bg-emerald-100 text-emerald-600" },
-  { label: "Presentation Skills", count: 64, icon: Camera, color: "bg-orange-100 text-orange-600" },
-  { label: "Written Responses", count: 95, icon: PenTool, color: "bg-blue-100 text-blue-600" },
+  { label: "AI Mock Interviews", subtitle: "Text or voice practice", icon: Bot, color: "bg-purple-100 text-purple-600" },
+  { label: "Case Interviews", subtitle: "Adaptive follow-ups", icon: TrendingUp, color: "bg-emerald-100 text-emerald-600" },
+  { label: "Presentation Skills", subtitle: "Structured evaluation", icon: Camera, color: "bg-orange-100 text-orange-600" },
+  { label: "Written Responses", subtitle: "Instant feedback", icon: PenTool, color: "bg-blue-100 text-blue-600" },
 ];
 
 const valueProps = [
@@ -423,15 +423,15 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Popular Cases Grid with Direct Navigation Links ── */}
+      {/* ── Practice Tracks Grid ── */}
       <section id="courses" className="py-12">
         <div className="mx-auto max-w-7xl px-8">
           <div className="flex items-end justify-between mb-8">
             <div>
               <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                Popular Practice Tracks<span className="text-purple-600">*</span>
+                Practice Tracks<span className="text-purple-600">*</span>
               </h2>
-              <p className="text-sm font-medium text-slate-500 mt-1">Practice tracks for every stage of your interview prep</p>
+              <p className="text-sm font-medium text-slate-500 mt-1">Targeted tracks for every stage of your interview prep</p>
             </div>
             <Link to="/practice">
               <button className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#f3ede8] text-purple-700 hover:bg-purple-100 text-xs font-extrabold transition-colors">
@@ -556,7 +556,7 @@ export default function Landing() {
                   >
                     <div>
                       <h4 className="font-extrabold text-base text-slate-900 leading-snug mb-1">{t.label}</h4>
-                      <p className="text-xs font-semibold text-slate-500">{t.count} Modules</p>
+                      <p className="text-xs font-semibold text-slate-500">{t.subtitle}</p>
                     </div>
                     <div className="flex justify-end mt-4">
                       <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${t.color} shadow-sm`}>
