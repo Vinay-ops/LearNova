@@ -30,7 +30,7 @@ backend/app/
 ├── main.py                  # FastAPI app entry, router registration, bootstrap
 │
 ├── core/                    # Cross-cutting concerns
-│   ├── config.py            # Pydantic settings (DATABASE_URL, JWT, OPENAI, etc.)
+│   ├── config.py            # Pydantic settings (DATABASE_URL, JWT, GROQ, etc.)
 │   ├── security.py          # Password hashing, JWT creation/verification, get_current_user
 │   ├── exceptions.py        # Typed HTTP exceptions (Auth, Authz, NotFound, Conflict, AI, DB, etc.)
 │   └── logging.py           # Structured JSON logging + event helpers

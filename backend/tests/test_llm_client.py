@@ -1,20 +1,23 @@
 """Tests for the LLM client abstraction layer.
 
-All tests use mocks — no real OpenRouter API calls are made.
+All tests use mocks — no real Groq API calls are made.
 """
 import json
 import pytest
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 from app.ai.client import (
     LLMResponse,
     StubLLMClient,
-    OpenRouterLLMClient,
+    GroqLLMClient,
     get_llm_client,
     validate_structured_output,
 )
 from app.schemas.ai import StructuredEvaluation
 from app.core.exceptions import AIError, AIValidationError
+
+GROQ_BASE_URL = "https://api.groq.com/openai/v1"
+DEFAULT_MODEL = "openai/gpt-oss-120b"
 
 
 # ============================================================
@@ -67,44 +70,40 @@ class TestStubLLMClient:
 class TestGetLLMClient:
     def test_returns_stub_when_no_key(self):
         with patch("app.ai.client.settings") as mock_settings:
-            mock_settings.OPENROUTER_API_KEY = None
-            mock_settings.OPENAI_API_KEY = None
+            mock_settings.GROQ_API_KEY = None
             client = get_llm_client()
             assert isinstance(client, StubLLMClient)
 
-    def test_returns_openrouter_when_key_set(self):
+    def test_returns_groq_when_key_set(self):
         with patch("app.ai.client.settings") as mock_settings:
-            mock_settings.OPENROUTER_API_KEY = "test-key-123"
-            mock_settings.OPENROUTER_MODEL = "openai/gpt-4o"
-            mock_settings.OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-            mock_settings.OPENROUTER_APP_NAME = "Learnova"
-            mock_settings.OPENROUTER_SITE_URL = None
+            mock_settings.GROQ_API_KEY = "test-key-123"
+            mock_settings.GROQ_MODEL = DEFAULT_MODEL
+            mock_settings.GROQ_BASE_URL = GROQ_BASE_URL
             mock_settings.LLM_TEMPERATURE = 0.7
             client = get_llm_client()
-            assert isinstance(client, OpenRouterLLMClient)
+            assert isinstance(client, GroqLLMClient)
             assert client.api_key == "test-key-123"
+            assert client.base_url == GROQ_BASE_URL
 
     def test_returns_stub_when_key_empty(self):
         with patch("app.ai.client.settings") as mock_settings:
-            mock_settings.OPENROUTER_API_KEY = ""
+            mock_settings.GROQ_API_KEY = ""
             client = get_llm_client()
             assert isinstance(client, StubLLMClient)
 
 
 # ============================================================
-# OpenRouterLLMClient
+# GroqLLMClient
 # ============================================================
 
-class TestOpenRouterLLMClient:
+class TestGroqLLMClient:
     def _make_client(self, api_key="test-key"):
         with patch("app.ai.client.settings") as mock_settings:
-            mock_settings.OPENROUTER_API_KEY = api_key
-            mock_settings.OPENROUTER_MODEL = "openai/gpt-4o"
-            mock_settings.OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-            mock_settings.OPENROUTER_APP_NAME = "Learnova"
-            mock_settings.OPENROUTER_SITE_URL = None
+            mock_settings.GROQ_API_KEY = api_key
+            mock_settings.GROQ_MODEL = DEFAULT_MODEL
+            mock_settings.GROQ_BASE_URL = GROQ_BASE_URL
             mock_settings.LLM_TEMPERATURE = 0.7
-            return OpenRouterLLMClient()
+            return GroqLLMClient()
 
     def test_is_configured_with_key(self):
         client = self._make_client(api_key="real-key")
@@ -116,7 +115,7 @@ class TestOpenRouterLLMClient:
 
     def test_raises_when_no_key(self):
         client = self._make_client(api_key="")
-        with pytest.raises(AIError, match="OPENROUTER_API_KEY"):
+        with pytest.raises(AIError, match="GROQ_API_KEY"):
             client.chat("system", "user")
 
     def test_raises_when_openai_not_installed(self):
@@ -125,10 +124,9 @@ class TestOpenRouterLLMClient:
             with pytest.raises(AIError, match="openai package is not installed"):
                 client._get_client()
 
-    def test_successful_chat(self):
+    def test_successful_chat_uses_groq_base_url_and_model(self):
         client = self._make_client()
 
-        # Mock the OpenAI client
         mock_response = MagicMock()
         mock_response.choices = [MagicMock()]
         mock_response.choices[0].message.content = "Test response"
@@ -140,9 +138,13 @@ class TestOpenRouterLLMClient:
         with patch.dict("sys.modules", {"openai": MagicMock(OpenAI=mock_openai_cls)}):
             resp = client.chat("system prompt", "user prompt")
 
+        # Client must point at Groq's OpenAI-compatible endpoint.
+        assert mock_openai_cls.call_args[1]["base_url"] == GROQ_BASE_URL
         assert resp.content == "Test response"
         assert resp.tokens_used == 42
-        assert resp.model == "openai/gpt-4o"
+        assert resp.model == DEFAULT_MODEL
+        call_kwargs = mock_openai_cls.return_value.chat.completions.create.call_args[1]
+        assert call_kwargs["model"] == DEFAULT_MODEL
 
     def test_empty_response_raises(self):
         client = self._make_client()
@@ -196,7 +198,7 @@ class TestOpenRouterLLMClient:
         mock_openai_cls.return_value.chat.completions.create.side_effect = Exception("Model not found: fake-model")
 
         with patch.dict("sys.modules", {"openai": MagicMock(OpenAI=mock_openai_cls)}):
-            with pytest.raises(AIError, match="not available"):
+            with pytest.raises(AIError, match="not available on Groq"):
                 client.chat("system", "user")
 
     def test_generic_api_error(self):
@@ -206,7 +208,7 @@ class TestOpenRouterLLMClient:
         mock_openai_cls.return_value.chat.completions.create.side_effect = Exception("Something went wrong")
 
         with patch.dict("sys.modules", {"openai": MagicMock(OpenAI=mock_openai_cls)}):
-            with pytest.raises(AIError, match="OpenRouter API error"):
+            with pytest.raises(AIError, match="Groq API error"):
                 client.chat("system", "user")
 
     def test_model_override(self):
@@ -221,46 +223,11 @@ class TestOpenRouterLLMClient:
         mock_openai_cls.return_value.chat.completions.create.return_value = mock_response
 
         with patch.dict("sys.modules", {"openai": MagicMock(OpenAI=mock_openai_cls)}):
-            resp = client.chat("system", "user", model="anthropic/claude-3-opus")
+            resp = client.chat("system", "user", model="llama-3.1-8b-instant")
 
-        assert resp.model == "anthropic/claude-3-opus"
+        assert resp.model == "llama-3.1-8b-instant"
         call_kwargs = mock_openai_cls.return_value.chat.completions.create.call_args[1]
-        assert call_kwargs["model"] == "anthropic/claude-3-opus"
-
-    def test_blank_configured_model_still_sends_a_model(self):
-        """Regression: an empty OPENROUTER_MODEL env value ("") must fall back
-        to a valid model — OpenRouter returns 400 'No models provided' when the
-        request carries no model."""
-        with patch("app.ai.client.settings") as mock_settings:
-            mock_settings.OPENROUTER_API_KEY = "test-key"
-            mock_settings.OPENROUTER_MODEL = ""  # explicitly blank in env
-            mock_settings.OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
-            mock_settings.OPENROUTER_APP_NAME = "Learnova"
-            mock_settings.OPENROUTER_SITE_URL = None
-            mock_settings.LLM_TEMPERATURE = 0.7
-            client = OpenRouterLLMClient()
-
-            mock_response = MagicMock()
-            mock_response.choices = [MagicMock()]
-            mock_response.choices[0].message.content = "ok"
-            mock_response.usage.total_tokens = 5
-
-            mock_openai_cls = MagicMock()
-            mock_openai_cls.return_value.chat.completions.create.return_value = mock_response
-
-            with patch.dict("sys.modules", {"openai": MagicMock(OpenAI=mock_openai_cls)}):
-                # No model passed by the caller (templates pass model=None)
-                resp = client.chat("system", "user")
-
-            assert resp.model == "openai/gpt-4o"
-            call_kwargs = mock_openai_cls.return_value.chat.completions.create.call_args[1]
-            assert call_kwargs["model"] == "openai/gpt-4o"
-
-    def test_whitespace_only_model_arg_falls_back(self):
-        with patch("app.ai.client.settings") as mock_settings:
-            mock_settings.OPENROUTER_MODEL = ""
-            assert OpenRouterLLMClient._resolve_model("   ") == "openai/gpt-4o"
-            assert OpenRouterLLMClient._resolve_model("anthropic/claude-3.5-sonnet") == "anthropic/claude-3.5-sonnet"
+        assert call_kwargs["model"] == "llama-3.1-8b-instant"
 
     def test_max_tokens_passed(self):
         client = self._make_client()
@@ -278,6 +245,38 @@ class TestOpenRouterLLMClient:
 
         call_kwargs = mock_openai_cls.return_value.chat.completions.create.call_args[1]
         assert call_kwargs["max_tokens"] == 500
+
+    def test_blank_configured_model_still_sends_a_model(self):
+        """Regression: an empty GROQ_MODEL env value ("") must fall back to a
+        valid model — the provider rejects model-less requests with a 400."""
+        with patch("app.ai.client.settings") as mock_settings:
+            mock_settings.GROQ_API_KEY = "test-key"
+            mock_settings.GROQ_MODEL = ""  # explicitly blank in env
+            mock_settings.GROQ_BASE_URL = GROQ_BASE_URL
+            mock_settings.LLM_TEMPERATURE = 0.7
+            client = GroqLLMClient()
+
+            mock_response = MagicMock()
+            mock_response.choices = [MagicMock()]
+            mock_response.choices[0].message.content = "ok"
+            mock_response.usage.total_tokens = 5
+
+            mock_openai_cls = MagicMock()
+            mock_openai_cls.return_value.chat.completions.create.return_value = mock_response
+
+            with patch.dict("sys.modules", {"openai": MagicMock(OpenAI=mock_openai_cls)}):
+                # No model passed by the caller (templates pass model=None)
+                resp = client.chat("system", "user")
+
+            assert resp.model == DEFAULT_MODEL
+            call_kwargs = mock_openai_cls.return_value.chat.completions.create.call_args[1]
+            assert call_kwargs["model"] == DEFAULT_MODEL
+
+    def test_whitespace_only_model_arg_falls_back(self):
+        with patch("app.ai.client.settings") as mock_settings:
+            mock_settings.GROQ_MODEL = ""
+            assert GroqLLMClient._resolve_model("   ") == DEFAULT_MODEL
+            assert GroqLLMClient._resolve_model("llama-3.1-8b-instant") == "llama-3.1-8b-instant"
 
     def test_api_key_not_in_error_messages(self):
         """Security: API key must never appear in error messages."""

@@ -104,6 +104,7 @@ Duration Target: $duration_minutes minutes
         variables=variables,
         model=None,
         temperature=0.9,
+        max_tokens=3000,  # full case JSON (up to 6 questions + model answers)
         techniques=techniques,
         technique_notes={
             "role_prompting": "Positions AI as an experienced case writer rather than a generic assistant.",

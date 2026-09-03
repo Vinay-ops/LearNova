@@ -181,7 +181,7 @@ export class MockAIInterviewRepository implements AIInterviewRepository {
       version,
       system_prompt: "",
       user_prompt_template: "",
-      model: "gpt-4o",
+      model: "openai/gpt-oss-120b",
       temperature: 0.7,
     };
   }

@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Optional, Protocol
 
 from pydantic import BaseModel, ValidationError
@@ -12,7 +12,7 @@ from ..core.config import settings
 from ..core.exceptions import AIError, AIValidationError
 from ..core.logging import log_ai_request
 
-logger = logging.getLogger("casepilot.ai.client")
+logger = logging.getLogger("learnova.ai.client")
 
 
 @dataclass
@@ -38,15 +38,19 @@ class LLMClientProtocol(Protocol):
 
 
 class BaseLLMClient:
-    def __init__(self) -> None:
-        self.default_model = getattr(settings, "LLM_MODEL", "gpt-4o")
-        self.default_temperature = 0.7
+    """Shared defaults for all LLM clients.
 
-    def _is_configured(self) -> bool:
-        api_key = getattr(settings, "OPENAI_API_KEY", None) or getattr(
-            settings, "OPENROUTER_API_KEY", None
+    The rest of Learnova talks only to LLMClientProtocol, so switching the
+    provider (Groq today) never touches services, prompts, or routes.
+    """
+
+    DEFAULT_MODEL = "openai/gpt-oss-120b"
+
+    def __init__(self) -> None:
+        self.default_model = (
+            (getattr(settings, "GROQ_MODEL", "") or "").strip() or self.DEFAULT_MODEL
         )
-        return bool(api_key)
+        self.default_temperature = getattr(settings, "LLM_TEMPERATURE", 0.7)
 
     def chat(
         self,
@@ -57,13 +61,8 @@ class BaseLLMClient:
         max_tokens: Optional[int] = None,
         response_format: Optional[Any] = None,
     ) -> LLMResponse:
-        if not self._is_configured():
-            raise AIError(
-                "LLM client is not configured. Set OPENROUTER_API_KEY in environment.",
-                retryable=False,
-            )
         raise AIError(
-            "LLM client placeholder: install and configure the desired provider SDK.",
+            "LLM client is not configured. Set GROQ_API_KEY in environment.",
             retryable=False,
         )
 
@@ -83,7 +82,7 @@ class StubLLMClient(BaseLLMClient):
         start = time.perf_counter()
         content = (
             "STUB RESPONSE: LLM client is not fully integrated. "
-            "Configure OPENROUTER_API_KEY and install the provider SDK to enable AI features."
+            "Configure GROQ_API_KEY to enable AI features."
         )
         latency_ms = int((time.perf_counter() - start) * 1000)
         return LLMResponse(
@@ -94,22 +93,24 @@ class StubLLMClient(BaseLLMClient):
         )
 
 
-class OpenRouterLLMClient(BaseLLMClient):
-    """Production LLM client that talks to OpenRouter via the OpenAI-compatible API."""
+class GroqLLMClient(BaseLLMClient):
+    """Production LLM client that talks to Groq via its OpenAI-compatible API.
 
-    # Hard fallback so a request is never sent without a model — OpenRouter
-    # rejects model-less requests with 400 "No models provided". A blank
-    # OPENROUTER_MODEL env value ("") must NOT disable model resolution.
-    DEFAULT_MODEL_FALLBACK = "openai/gpt-4o"
+    Groq exposes an OpenAI-compatible endpoint, so we reuse the `openai` SDK
+    pointed at https://api.groq.com/openai/v1 — no separate Groq SDK needed.
+    """
+
+    # Hard fallback so a request is never sent without a model — the provider
+    # rejects model-less requests with a 400. A blank GROQ_MODEL env value
+    # ("") must NOT disable model resolution.
+    DEFAULT_MODEL_FALLBACK = "openai/gpt-oss-120b"
 
     def __init__(self) -> None:
-        self.api_key = settings.OPENROUTER_API_KEY or ""
-        self.base_url = settings.OPENROUTER_BASE_URL
+        self.api_key = settings.GROQ_API_KEY or ""
+        self.base_url = settings.GROQ_BASE_URL or "https://api.groq.com/openai/v1"
         self.default_model = (
-            (settings.OPENROUTER_MODEL or "").strip() or self.DEFAULT_MODEL_FALLBACK
+            (settings.GROQ_MODEL or "").strip() or self.DEFAULT_MODEL_FALLBACK
         )
-        self.app_name = settings.OPENROUTER_APP_NAME
-        self.site_url = settings.OPENROUTER_SITE_URL
         self.default_temperature = settings.LLM_TEMPERATURE
         self._client = None
 
@@ -118,17 +119,16 @@ class OpenRouterLLMClient(BaseLLMClient):
         """Pick a non-empty model: explicit arg → configured default → fallback."""
         return (
             (model or "").strip()
-            or (getattr(settings, "OPENROUTER_MODEL", "") or "").strip()
+            or (getattr(settings, "GROQ_MODEL", "") or "").strip()
             or cls.DEFAULT_MODEL_FALLBACK
         )
 
     def _get_client(self):
-        """Lazy-init the OpenAI client pointed at OpenRouter."""
+        """Lazy-init the OpenAI-compatible client pointed at Groq."""
         if self._client is None:
             if not self.api_key:
                 raise AIError(
-                    "OPENROUTER_API_KEY is not configured. "
-                    "AI features are unavailable.",
+                    "GROQ_API_KEY is not configured. AI features are unavailable.",
                     retryable=False,
                 )
             try:
@@ -143,10 +143,6 @@ class OpenRouterLLMClient(BaseLLMClient):
             self._client = OpenAI(
                 api_key=self.api_key,
                 base_url=self.base_url,
-                default_headers={
-                    "HTTP-Referer": self.site_url or "http://localhost:5173",
-                    "X-Title": self.app_name,
-                },
             )
         return self._client
 
@@ -193,16 +189,16 @@ class OpenRouterLLMClient(BaseLLMClient):
 
             if "timeout" in safe_msg.lower() or "timed out" in safe_msg.lower():
                 log_ai_request(
-                    "openrouter_chat",
+                    "groq_chat",
                     model=resolved_model,
                     latency_ms=latency_ms,
                     success=False,
                     error="timeout",
                 )
-                raise AIError("OpenRouter request timed out. Please try again.", retryable=True)
+                raise AIError("Groq request timed out. Please try again.", retryable=True)
             elif "rate" in safe_msg.lower() and "limit" in safe_msg.lower():
                 log_ai_request(
-                    "openrouter_chat",
+                    "groq_chat",
                     model=resolved_model,
                     latency_ms=latency_ms,
                     success=False,
@@ -211,38 +207,38 @@ class OpenRouterLLMClient(BaseLLMClient):
                 raise AIError("Rate limit exceeded. Please wait before retrying.", retryable=True)
             elif "invalid" in safe_msg.lower() and ("key" in safe_msg.lower() or "api" in safe_msg.lower()):
                 log_ai_request(
-                    "openrouter_chat",
+                    "groq_chat",
                     model=resolved_model,
                     latency_ms=latency_ms,
                     success=False,
                     error="invalid_key",
                 )
                 raise AIError(
-                    "Invalid API key. Please check your OPENROUTER_API_KEY configuration.",
+                    "Invalid API key. Please check your GROQ_API_KEY configuration.",
                     retryable=False,
                 )
             elif "model" in safe_msg.lower() and ("not found" in safe_msg.lower() or "does not exist" in safe_msg.lower()):
                 log_ai_request(
-                    "openrouter_chat",
+                    "groq_chat",
                     model=resolved_model,
                     latency_ms=latency_ms,
                     success=False,
                     error="invalid_model",
                 )
                 raise AIError(
-                    f"Model '{resolved_model}' is not available on OpenRouter.",
+                    f"Model '{resolved_model}' is not available on Groq.",
                     retryable=False,
                 )
             else:
                 log_ai_request(
-                    "openrouter_chat",
+                    "groq_chat",
                     model=resolved_model,
                     latency_ms=latency_ms,
                     success=False,
                     error=safe_msg[:200],
                 )
                 raise AIError(
-                    f"OpenRouter API error: {safe_msg[:200]}",
+                    f"Groq API error: {safe_msg[:200]}",
                     retryable=True,
                 )
 
@@ -260,7 +256,7 @@ class OpenRouterLLMClient(BaseLLMClient):
 
         if not content:
             log_ai_request(
-                "openrouter_chat",
+                "groq_chat",
                 model=resolved_model,
                 latency_ms=latency_ms,
                 tokens_used=tokens_used,
@@ -268,12 +264,12 @@ class OpenRouterLLMClient(BaseLLMClient):
                 error="empty_response",
             )
             raise AIError(
-                "OpenRouter returned an empty response. The model may not support this request.",
+                "Groq returned an empty response. The model may not support this request.",
                 retryable=True,
             )
 
         log_ai_request(
-            "openrouter_chat",
+            "groq_chat",
             model=resolved_model,
             latency_ms=latency_ms,
             tokens_used=tokens_used,
@@ -293,12 +289,11 @@ def get_llm_client() -> LLMClientProtocol:
     """Factory that returns the appropriate LLM client based on configuration.
 
     Priority:
-    1. If OPENROUTER_API_KEY is set → OpenRouterLLMClient
-    2. If OPENAI_API_KEY is set → BaseLLMClient (will raise helpful error)
-    3. Otherwise → StubLLMClient (safe for tests/development)
+    1. If GROQ_API_KEY is set → GroqLLMClient
+    2. Otherwise → StubLLMClient (safe for tests/development)
     """
-    if getattr(settings, "OPENROUTER_API_KEY", None):
-        return OpenRouterLLMClient()
+    if getattr(settings, "GROQ_API_KEY", None):
+        return GroqLLMClient()
     # Fallback to stub for tests and development without API key
     return StubLLMClient()
 

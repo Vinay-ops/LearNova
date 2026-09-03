@@ -8,7 +8,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from sqlalchemy.orm import Session
 
 from ..ai import bootstrap_prompts, get_llm_client
-from ..ai.client import LLMClientProtocol
+from ..ai.client import LLMClientProtocol, StubLLMClient
 from ..ai.prompts.base import prompt_registry
 from ..core.exceptions import (
     AIError,
@@ -227,13 +227,24 @@ class QuizService:
         if not isinstance(question_count, int) or not (3 <= question_count <= 10):
             raise ValidationError("question_count must be between 3 and 10")
 
+        # Fail fast with a clear message when no real AI provider is configured
+        # (the stub client cannot produce JSON questions — the old generic
+        # "could not produce valid questions" message was misleading here).
+        if isinstance(self.client, StubLLMClient):
+            raise AIError(
+                "AI provider is not configured. Set GROQ_API_KEY to generate quizzes.",
+                retryable=False,
+            )
+
         accepted: List[QuizQuestionDraft] = []
         accepted_texts: List[str] = []
         needed = question_count
+        all_problems: List[str] = []
 
         # Initial generation call
         content = self._request_questions(topic, difficulty, needed, focus_subtopics, [])
-        valid, _problems = self._parse_round(content)
+        valid, problems = self._parse_round(content)
+        all_problems.extend(problems)
         for q in valid:
             if not self._is_duplicate(q.question, accepted_texts):
                 accepted.append(q)
@@ -248,7 +259,8 @@ class QuizService:
                 content = self._request_questions(
                     topic, difficulty, missing, focus_subtopics, accepted_texts
                 )
-                valid, _ = self._parse_round(content)
+                valid, problems = self._parse_round(content)
+                all_problems.extend(problems)
             except Exception:
                 break  # do not hammer the LLM; keep what we have
             added = 0
@@ -261,6 +273,15 @@ class QuizService:
                 break
 
         if not accepted:
+            # Log what the model actually produced so failures are debuggable.
+            if all_problems:
+                log_ai_request(
+                    "quiz_generate_validation",
+                    prompt_name="quiz_generator",
+                    prompt_version="v1",
+                    success=False,
+                    error="; ".join(all_problems[:20]),
+                )
             raise AIValidationError(
                 "The AI could not produce valid quiz questions. Please try a more specific topic or retry."
             )

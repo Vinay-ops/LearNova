@@ -44,6 +44,7 @@
 ## Verification commands
 - Backend: `cd backend && python -m pytest -q` (70 tests; quiz/learning tests in `backend/tests/test_learning_quiz.py` use a fake LLM — no network).
 - Frontend: `npx tsc -b` then `npm run build` from repo root.
-- LLM features 502 locally until `OPENROUTER_API_KEY` is set — that is the expected stub behavior, not a bug.
-- OpenRouter rejects model-less requests with `400 No models provided`. An env var set to an EMPTY string (`OPENROUTER_MODEL=`) overrides the pydantic default, so `OpenRouterLLMClient` resolves model as arg → `settings.OPENROUTER_MODEL` → hard fallback `openai/gpt-4o` (`_resolve_model`). Keep `OPENROUTER_MODEL` set in Vercel.
+- LLM features return stub content locally until `GROQ_API_KEY` is set — that is the expected fallback behavior (`get_llm_client` → `StubLLMClient`), not a bug.
+- Groq model availability changes often: `llama-3.3-70b-versatile` was decommissioned 2026-08-16. Verify ids at console.groq.com/docs/models before setting `GROQ_MODEL` in Vercel (current production default: `openai/gpt-oss-120b`, ~500 tps, $0.15/$0.60 per 1M).
+- AI provider is Groq via its OpenAI-compatible endpoint. `GROQ_API_KEY` / `GROQ_MODEL` (default `openai/gpt-oss-120b`) / `GROQ_BASE_URL` live in `backend/app/core/config.py`. `GroqLLMClient._resolve_model` picks arg → `GROQ_MODEL` → fallback so a blank `GROQ_MODEL=` can never send a model-less request (provider 400s otherwise). Changing `GROQ_MODEL` is all that's needed to switch models.
 

@@ -20,17 +20,14 @@ class Settings(BaseSettings):
 
     LOG_LEVEL: str = "INFO"
 
-    OPENAI_API_KEY: Optional[str] = None
-    LLM_MODEL: str = "gpt-4o"
     LLM_TEMPERATURE: float = 0.7
-    LLM_MAX_TOKENS: Optional[int] = None
 
-    # OpenRouter configuration
-    OPENROUTER_API_KEY: Optional[str] = None
-    OPENROUTER_MODEL: str = "openai/gpt-4o"
-    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
-    OPENROUTER_APP_NAME: str = "Learnova"
-    OPENROUTER_SITE_URL: Optional[str] = None
+    # AI provider: Groq (OpenAI-compatible endpoint)
+    # Default model verified against Groq's supported-model docs (Sept 2026):
+    # openai/gpt-oss-120b is a production model (131k ctx, 65k max completion).
+    GROQ_API_KEY: Optional[str] = None
+    GROQ_MODEL: str = "openai/gpt-oss-120b"
+    GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
 
     ENVIRONMENT: str = "development"
 

@@ -132,6 +132,7 @@ Target: $target_firms
         variables=variables,
         model=None,
         temperature=0.2,
+        max_tokens=2000,  # structured evaluation JSON across 5 skills + evidence
         techniques=techniques,
         technique_notes={
             "role_prompting": "Positions the AI as an objective senior recruiter rather than a friendly tutor, reducing score inflation.",

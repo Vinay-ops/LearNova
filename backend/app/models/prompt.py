@@ -30,7 +30,7 @@ class Prompt(Base):
     user_prompt_template = Column(Text, nullable=True)
     variables = Column(JSON, nullable=True, default=list)
     output_schema = Column(JSON, nullable=True)
-    model = Column(String, nullable=False, default="gpt-4o")
+    model = Column(String, nullable=False, default="openai/gpt-oss-120b")
     temperature = Column(Numeric(precision=3, scale=2), nullable=False, default=0.7)
     top_p = Column(Numeric(precision=3, scale=2), nullable=True)
     max_tokens = Column(Integer, nullable=True)

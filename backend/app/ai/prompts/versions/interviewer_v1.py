@@ -115,6 +115,7 @@ Total questions: $total_questions
         output_schema=None,
         model=None,
         temperature=0.8,
+        max_tokens=1200,  # one interview question + JSON envelope
         techniques=techniques,
         technique_notes={
             "role_prompting": "Sets explicit interviewer role with behavioral constraints to prevent the AI from coaching or giving answers.",

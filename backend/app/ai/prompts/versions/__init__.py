@@ -93,6 +93,7 @@ $drill_catalog
         variables=variables,
         model=None,
         temperature=0.5,
+        max_tokens=1600,  # structured feedback JSON + recommended drill
         techniques=techniques,
     )
     return registry.register(template)
@@ -149,6 +150,7 @@ $upcoming_deadlines
         variables=variables,
         model=None,
         temperature=0.6,
+        max_tokens=1200,  # compact recommendation JSON
         techniques=techniques,
     )
     return registry.register(template)

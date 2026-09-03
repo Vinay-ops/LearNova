@@ -131,6 +131,23 @@ def test_deterministic_question_validation():
     assert any("0..3" in p for p in QuizService._validate_question(out_of_range, 0))
 
 
+def test_quiz_generate_without_provider_key_is_explicit(client, auth_headers, monkeypatch):
+    """When no AI provider is configured the stub must not produce a generic
+    "bad questions" error — the user should see that GROQ_API_KEY is missing."""
+    from app.ai.client import StubLLMClient
+
+    monkeypatch.setattr(
+        "app.services.quiz_service.get_llm_client", lambda: StubLLMClient()
+    )
+    resp = client.post(
+        "/api/quizzes/generate",
+        json={"topic": "Python", "question_count": 3},
+        headers=auth_headers,
+    )
+    assert resp.status_code == 502
+    assert "GROQ_API_KEY" in resp.json()["detail"]
+
+
 def test_request_validation(client, auth_headers):
     resp = client.post("/api/quizzes/generate", json={"topic": "  ", "question_count": 5}, headers=auth_headers)
     assert resp.status_code == 422

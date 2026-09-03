@@ -40,7 +40,7 @@ CasePilot is **also an academic Prompt Engineering project**, so prompt architec
 - **Frontend:** React 19, TypeScript, Vite, Tailwind v4, shadcn/ui, React Router v7, Framer Motion, Axios, Sonner, Lucide
 - **Backend:** Python 3.11+, FastAPI, SQLAlchemy 2.x, Alembic, Pydantic v2, Argon2, JWT (python-jose)
 - **Database:** PostgreSQL hosted on Supabase (NOT Supabase Auth — JWT auth is custom)
-- **AI layer:** Dedicated prompt-engineered template system with versioning, registry, context builder → template → LLM → validator → DB pipeline. Uses `StubLLMClient` today; plug in OpenAI/Anthropic by implementing `LLMClientProtocol` and setting `OPENAI_API_KEY`.
+- **AI layer:** Dedicated prompt-engineered template system with versioning, registry, context builder → template → LLM → validator → DB pipeline. Calls Groq through the OpenAI-compatible endpoint (`GroqLLMClient`, `GROQ_API_KEY`); falls back to `StubLLMClient` when no key is configured. Any provider implementing `LLMClientProtocol` can be swapped in without touching services.
 
 ---
 

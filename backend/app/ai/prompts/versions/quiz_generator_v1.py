@@ -110,6 +110,9 @@ $existing_questions
         variables=variables,
         model=None,
         temperature=0.5,
+        # Budget for the largest case: a 10-question JSON batch (~250-400
+        # tokens/question incl. options + explanation) needs a big ceiling.
+        # Chat/interview/eval prompts use far smaller per-call budgets.
         max_tokens=4096,
         techniques=techniques,
         technique_notes={

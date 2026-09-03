@@ -83,7 +83,7 @@ $user_message
         variables=variables,
         model=None,
         temperature=0.6,
-        max_tokens=1200,
+        max_tokens=1200,  # single tutor reply; history travels in the prompt, not the output
         techniques=techniques,
         technique_notes={
             "role_prompting": "Expert tutor role with explicit teaching method",
