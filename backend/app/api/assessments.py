@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from ..core.security import get_current_user, get_db
 from ..models.user import User
+from ..models.assessment import AssessmentAttempt
 from ..schemas.assessment import (
     AssessmentResponse,
     AssessmentQuestionResponse,
@@ -26,6 +27,21 @@ def list_assessments(
 ):
     service = AssessmentService(db)
     return service.list_active()
+
+
+@router.get("/attempts", response_model=List[AssessmentAttemptResponse])
+def list_assessment_attempts(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    service = AssessmentService(db)
+    attempts = (
+        db.query(AssessmentAttempt)
+        .filter(AssessmentAttempt.user_id == current_user.id)
+        .order_by(AssessmentAttempt.created_at.desc())
+        .all()
+    )
+    return [AssessmentAttemptResponse.model_validate(a) for a in attempts]
 
 
 @router.get("/{assessment_id}", response_model=AssessmentResponse)
@@ -56,21 +72,6 @@ def create_assessment_attempt(
 ):
     service = AssessmentService(db)
     return service.create_attempt(current_user.id, payload.assessment_id)
-
-
-@router.get("/attempts", response_model=List[AssessmentAttemptResponse])
-def list_assessment_attempts(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    service = AssessmentService(db)
-    attempts = (
-        db.query(AssessmentAttempt)
-        .filter(AssessmentAttempt.user_id == current_user.id)
-        .order_by(AssessmentAttempt.created_at.desc())
-        .all()
-    )
-    return [AssessmentAttemptResponse.model_validate(a) for a in attempts]
 
 
 @router.get("/attempts/{attempt_id}", response_model=AssessmentAttemptResponse)

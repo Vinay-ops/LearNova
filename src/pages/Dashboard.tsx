@@ -81,10 +81,10 @@ export default function Dashboard() {
     .slice(-3)
     .reverse();
 
-  // Recommended drill
+  // Recommended drill (null until practice content exists, e.g. fresh DB)
   const recommendedDrill = drills.find((d) =>
     d.skills.includes(weakestSkill.name)
-  ) || drills[0];
+  ) || drills[0] || null;
 
   return (
     <AppLayout>
@@ -271,26 +271,48 @@ export default function Dashboard() {
               whileHover={{ y: -2 }}
               className="rounded-3xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-purple-50/30 p-6 shadow-xl shadow-slate-200/50"
             >
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 shrink-0 shadow-sm">
-                  <Zap className="h-6 w-6" />
+              {recommendedDrill ? (
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 shrink-0 shadow-sm">
+                    <Zap className="h-6 w-6" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <Badge className="bg-amber-400 text-amber-950 border-0 rounded-full text-[10px] font-extrabold mb-2 px-3 py-0.5">
+                      {recommendedDrill.duration_minutes || recommendedDrill.duration} min drill
+                    </Badge>
+                    <p className="font-extrabold text-slate-900 text-base">{recommendedDrill.title}</p>
+                    <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">
+                      {recommendedDrill.description}
+                    </p>
+                    <Link to="/practice">
+                      <Button className="mt-4 gap-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold rounded-full px-5 py-2 text-xs shadow-md shadow-purple-200" size="sm">
+                        Start Drill
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <Badge className="bg-amber-400 text-amber-950 border-0 rounded-full text-[10px] font-extrabold mb-2 px-3 py-0.5">
-                    {recommendedDrill.duration_minutes || recommendedDrill.duration} min drill
-                  </Badge>
-                  <p className="font-extrabold text-slate-900 text-base">{recommendedDrill.title}</p>
-                  <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">
-                    {recommendedDrill.description}
-                  </p>
-                  <Link to="/practice">
-                    <Button className="mt-4 gap-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold rounded-full px-5 py-2 text-xs shadow-md shadow-purple-200" size="sm">
-                      Start Drill
-                      <ArrowRight className="h-3.5 w-3.5" />
-                    </Button>
-                  </Link>
+              ) : (
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 shrink-0 shadow-sm">
+                    <Zap className="h-6 w-6" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-extrabold text-slate-900 text-base">
+                      Pick a practice track to get started
+                    </p>
+                    <p className="text-xs text-slate-500 font-medium mt-1 leading-relaxed">
+                      Once you take assessments and drills, we'll recommend the best next step here.
+                    </p>
+                    <Link to="/practice">
+                      <Button className="mt-4 gap-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold rounded-full px-5 py-2 text-xs shadow-md shadow-purple-200" size="sm">
+                        Browse Practice
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
-              </div>
+              )}
             </motion.div>
           </div>
 

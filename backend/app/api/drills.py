@@ -25,6 +25,15 @@ def list_drills(
     return service.list_active()
 
 
+@router.get("/attempts", response_model=List[DrillAttemptResponse])
+def list_drill_attempts(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    service = DrillService(db)
+    return service.list_attempts(current_user.id)
+
+
 @router.get("/{drill_id}", response_model=DrillResponse)
 def get_drill(
     drill_id: str,
@@ -33,15 +42,6 @@ def get_drill(
 ):
     service = DrillService(db)
     return service.get(drill_id)
-
-
-@router.get("/attempts", response_model=List[DrillAttemptResponse])
-def list_drill_attempts(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    service = DrillService(db)
-    return service.list_attempts(current_user.id)
 
 
 @router.post("/attempts", response_model=DrillAttemptResponse, status_code=status.HTTP_201_CREATED)

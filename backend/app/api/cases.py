@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from ..core.security import get_current_user, get_db
 from ..models.user import User
+from ..models.case import CaseAttempt
 from ..schemas.case import (
     CaseResponse,
     CaseQuestionResponse,
@@ -26,6 +27,20 @@ def list_cases(
 ):
     service = CaseService(db)
     return service.list_active()
+
+
+@router.get("/attempts", response_model=List[CaseAttemptResponse])
+def list_case_attempts(
+    case_id: str | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    service = CaseService(db)
+    query = db.query(CaseAttempt).filter(CaseAttempt.user_id == current_user.id)
+    if case_id:
+        query = query.filter(CaseAttempt.case_id == case_id)
+    attempts = query.order_by(CaseAttempt.created_at.desc()).all()
+    return [CaseAttemptResponse.model_validate(a) for a in attempts]
 
 
 @router.get("/{case_id}", response_model=CaseResponse)
@@ -56,20 +71,6 @@ def create_case_attempt(
 ):
     service = CaseService(db)
     return service.create_attempt(current_user.id, payload.case_id)
-
-
-@router.get("/attempts", response_model=List[CaseAttemptResponse])
-def list_case_attempts(
-    case_id: str | None = None,
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
-):
-    service = CaseService(db)
-    query = db.query(CaseAttempt).filter(CaseAttempt.user_id == current_user.id)
-    if case_id:
-        query = query.filter(CaseAttempt.case_id == case_id)
-    attempts = query.order_by(CaseAttempt.created_at.desc()).all()
-    return [CaseAttemptResponse.model_validate(a) for a in attempts]
 
 
 @router.get("/attempts/{attempt_id}", response_model=CaseAttemptResponse)
