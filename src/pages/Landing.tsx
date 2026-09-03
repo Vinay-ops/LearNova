@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   ArrowRight,
   BookOpen,
@@ -17,11 +16,6 @@ import {
   GraduationCap,
   Award,
   Globe,
-  ShoppingCart,
-  Code,
-  Palette,
-  Megaphone,
-  User,
   Sparkles,
   Bot,
   PieChart,
@@ -36,25 +30,21 @@ const fadeUp = {
   visible: { opacity: 1, y: 0 },
 };
 
-const stagger = {
-  visible: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
-};
-
-const caseTypes = [
-  { label: "Profitability", color: "text-purple-600", bg: "bg-purple-100", icon: TrendingUp },
-  { label: "Market Entry", color: "text-amber-600", bg: "bg-amber-100", icon: Briefcase },
-  { label: "M&A Strategy", color: "text-pink-600", bg: "bg-pink-100", icon: Target },
-  { label: "Growth Strategy", color: "text-emerald-600", bg: "bg-emerald-100", icon: BookOpen },
-  { label: "Operations", color: "text-orange-600", bg: "bg-orange-100", icon: BarChart3 },
-  { label: "Pricing Strategy", color: "text-blue-600", bg: "bg-blue-100", icon: Brain },
+const features = [
+  { label: "Personalized Learning", color: "text-purple-600", bg: "bg-purple-100", icon: BookOpen },
+  { label: "AI Assessments", color: "text-amber-600", bg: "bg-amber-100", icon: BarChart3 },
+  { label: "AI Text Interviews", color: "text-pink-600", bg: "bg-pink-100", icon: Brain },
+  { label: "AI Voice Interviews", color: "text-emerald-600", bg: "bg-emerald-100", icon: Target },
+  { label: "Personalized Feedback", color: "text-orange-600", bg: "bg-orange-100", icon: TrendingUp },
+  { label: "Progress Tracking", color: "text-blue-600", bg: "bg-blue-100", icon: Briefcase },
 ];
 
 const popularCases = [
   {
     tag: "Bestseller",
     tagColor: "bg-amber-400 text-amber-950",
-    title: "Complete Web Development Bootcamp",
-    author: "John Smith",
+    title: "Technical Interview Fundamentals",
+    author: "Learnova",
     rating: 4.8,
     reviews: "1.2K",
     duration: "25h",
@@ -81,8 +71,8 @@ const popularCases = [
   {
     tag: "New",
     tagColor: "bg-blue-500 text-white",
-    title: "UI/UX Design Fundamentals",
-    author: "Sarah Johnson",
+    title: "Product & Design Interviews",
+    author: "Learnova",
     rating: 4.9,
     reviews: "856",
     duration: "15h",
@@ -105,8 +95,8 @@ const popularCases = [
   {
     tag: "Popular",
     tagColor: "bg-pink-500 text-white",
-    title: "Digital Marketing Masterclass",
-    author: "Michael Lee",
+    title: "Business & Strategy Cases",
+    author: "Learnova",
     rating: 4.7,
     reviews: "2.1K",
     duration: "18h",
@@ -129,8 +119,8 @@ const popularCases = [
   {
     tag: "New",
     tagColor: "bg-blue-500 text-white",
-    title: "Data Analysis with Python",
-    author: "Emily Davis",
+    title: "Data & Analytics Interviews",
+    author: "Learnova",
     rating: 4.8,
     reviews: "930",
     duration: "20h",
@@ -155,30 +145,30 @@ const popularCases = [
 ];
 
 const topics = [
-  { label: "Profitability", count: 120 },
-  { label: "Market Entry", count: 86 },
-  { label: "Operations", count: 64 },
-  { label: "M&A Strategy", count: 45 },
-  { label: "Growth Strategy", count: 95 },
+  { label: "Behavioral Questions", count: 120 },
+  { label: "Technical Skills", count: 86 },
+  { label: "Communication", count: 64 },
+  { label: "Problem Solving", count: 45 },
+  { label: "Strategic Thinking", count: 95 },
 ];
 
 const topicGrid = [
-  { label: "Artificial Intelligence", count: 120, icon: Bot, color: "bg-purple-100 text-purple-600" },
-  { label: "Finance & Investing", count: 86, icon: TrendingUp, color: "bg-emerald-100 text-emerald-600" },
-  { label: "Photography", count: 64, icon: Camera, color: "bg-orange-100 text-orange-600" },
-  { label: "Writing & Communication", count: 95, icon: PenTool, color: "bg-blue-100 text-blue-600" },
+  { label: "AI Mock Interviews", count: 120, icon: Bot, color: "bg-purple-100 text-purple-600" },
+  { label: "Case Interviews", count: 86, icon: TrendingUp, color: "bg-emerald-100 text-emerald-600" },
+  { label: "Presentation Skills", count: 64, icon: Camera, color: "bg-orange-100 text-orange-600" },
+  { label: "Written Responses", count: 95, icon: PenTool, color: "bg-blue-100 text-blue-600" },
 ];
 
 const valueProps = [
-  { icon: Globe, label: "Learn Anywhere", desc: "Access courses on any device, anytime.", color: "bg-purple-500 text-white" },
-  { icon: Users, label: "Expert Instructors", desc: "Learn from industry professionals.", color: "bg-orange-500 text-white" },
-  { icon: Award, label: "Get Certified", desc: "Earn certificates to boost your career.", color: "bg-emerald-500 text-white" },
-  { icon: GraduationCap, label: "Join Community", desc: "Connect with learners from around the world.", color: "bg-pink-500 text-pink-600" },
+  { icon: Globe, label: "Text & Voice Interviews", desc: "Practice through chat or your voice.", color: "bg-purple-500 text-white" },
+  { icon: Users, label: "Adaptive Questions", desc: "Follow-ups that adapt to your responses.", color: "bg-orange-500 text-white" },
+  { icon: Award, label: "Structured Evaluation", desc: "Performance scored against clear rubrics.", color: "bg-emerald-500 text-white" },
+  { icon: GraduationCap, label: "Personalized Feedback", desc: "Actionable advice on what to improve next.", color: "bg-pink-500 text-pink-600" },
 ];
 
 export default function Landing() {
-  const [activeCategory, setActiveCategory] = useState("Profitability");
-  const [activeTopic, setActiveTopic] = useState("Profitability");
+  const [activeCategory, setActiveCategory] = useState("Behavioral Questions");
+  const [activeTopic, setActiveTopic] = useState("Behavioral Questions");
 
   return (
     <motion.div
@@ -206,16 +196,17 @@ export default function Landing() {
             </div>
             <input
               type="text"
-              placeholder="Search for cases, skills, frameworks..."
+              placeholder="Search skills, interviews, and topics..."
               className="w-full bg-[#f3ede8] border-none rounded-full py-2.5 pl-11 pr-4 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-purple-400"
             />
           </div>
 
           {/* Center Links */}
-          <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-700">                <a href="#courses" className="hover:text-purple-600 transition-colors">Cases</a>
-            <a href="#topics" className="hover:text-purple-600 transition-colors">Categories</a>
+          <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-700">
+            <Link to="/" className="hover:text-purple-600 transition-colors">Home</Link>
             <a href="#how-it-works" className="hover:text-purple-600 transition-colors">How It Works</a>
-            <Link to="/practice" className="hover:text-purple-600 transition-colors">Practice</Link>
+            <a href="#features" className="hover:text-purple-600 transition-colors">Features</a>
+            <a href="#ai-interviews" className="hover:text-purple-600 transition-colors">AI Interviews</a>
           </div>
 
           {/* Right Actions */}
@@ -244,14 +235,17 @@ export default function Landing() {
                 transition={{ duration: 0.5 }}
                 className="text-5xl lg:text-[4rem] font-extrabold tracking-tight leading-[1.08] text-slate-900"
               >
-                Train for cases. <br />
+                Learn Smarter.
+                <br />
+                Practice Better.
+                <br />
+                Interview With{" "}
                 <span className="text-purple-600 relative inline-block">
-                  Shape
+                  Confidence.
                   <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 160 14" fill="none">
                     <path d="M3 10 Q 80 2, 157 8" stroke="#f59e0b" strokeWidth="5" strokeLinecap="round" />
                   </svg>
-                </span>{" "}
-                your career.
+                </span>
               </motion.h1>
 
               <motion.p
@@ -259,7 +253,7 @@ export default function Landing() {
                 transition={{ duration: 0.5, delay: 0.1 }}
                 className="text-lg text-slate-600 max-w-md font-medium leading-relaxed"
               >
-                Practice realistic consulting cases, build framework mastery, and track your progress.
+                Learnova combines personalized learning, AI-powered assessments, targeted practice, and realistic mock interviews to help you identify your weaknesses, build your skills, and become interview-ready.
               </motion.p>
 
               <motion.div
@@ -269,20 +263,20 @@ export default function Landing() {
               >
                 <Link to="/practice">
                   <Button size="lg" className="bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-full px-8 py-6 shadow-lg shadow-purple-200 gap-3 text-base">
-                    Explore Cases
+                    Start Learning Free
                     <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
                       <ArrowRight className="w-4 h-4" />
                     </div>
                   </Button>
                 </Link>
-                <Link to="/cases/case-1">
+                <a href="#how-it-works">
                   <button className="flex items-center gap-3 px-6 py-3 rounded-full hover:bg-[#f3ede8] transition-colors font-bold text-slate-700 text-base">
                     <div className="w-10 h-10 rounded-full border border-purple-300 flex items-center justify-center text-purple-600 bg-white shadow-sm">
                       <Play className="w-4 h-4 fill-purple-600 ml-0.5" />
                     </div>
-                    Start Case Simulator
+                    Explore How It Works
                   </button>
-                </Link>
+                </a>
               </motion.div>
 
               {/* Stat Chips */}
@@ -296,8 +290,8 @@ export default function Landing() {
                     <BarChart3 className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-xl font-extrabold text-slate-900">100+</p>
-                    <p className="text-xs font-semibold text-slate-500">Cases</p>
+                    <p className="text-xl font-extrabold text-slate-900">Assess</p>
+                    <p className="text-xs font-semibold text-slate-500">AI assessments</p>
                   </div>
                 </div>
 
@@ -306,8 +300,8 @@ export default function Landing() {
                     <Users className="w-6 h-6" />
                   </div>
                   <div>
-                    <p className="text-xl font-extrabold text-slate-900">50K+</p>
-                    <p className="text-xs font-semibold text-slate-500">Candidates</p>
+                    <p className="text-xl font-extrabold text-slate-900">Practice</p>
+                    <p className="text-xs font-semibold text-slate-500">Text & voice</p>
                   </div>
                 </div>
 
@@ -316,8 +310,8 @@ export default function Landing() {
                     <Star className="w-6 h-6 fill-amber-400" />
                   </div>
                   <div>
-                    <p className="text-xl font-extrabold text-slate-900">4.9</p>
-                    <p className="text-xs font-semibold text-slate-500">(2.3K reviews)</p>
+                    <p className="text-xl font-extrabold text-slate-900">Improve</p>
+                    <p className="text-xs font-semibold text-slate-500">Instant feedback</p>
                   </div>
                 </div>
               </motion.div>
@@ -339,7 +333,7 @@ export default function Landing() {
                     </div>
                     <div className="w-56 h-52 bg-emerald-700 rounded-t-[50px] shadow-inner flex flex-col items-center pt-4">
                       <div className="w-full h-20 bg-amber-900/40 mt-auto rounded-t-xl flex items-center justify-center text-white text-xs font-bold">
-                        [ Case Simulator Ready ]
+                        [ AI Interview Ready ]
                       </div>
                     </div>
                   </div>
@@ -351,8 +345,8 @@ export default function Landing() {
                   <Clock className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-extrabold text-slate-900">Practice at your pace</h4>
-                  <p className="text-[11px] text-slate-500 font-medium">Access cases & drills anytime.</p>
+                  <h4 className="text-xs font-extrabold text-slate-900">AI Mock Interviews</h4>
+                  <p className="text-[11px] text-slate-500 font-medium">Practice through text or voice, anytime.</p>
                 </div>
               </div>
 
@@ -361,8 +355,8 @@ export default function Landing() {
                   <Award className="w-5 h-5" />
                 </div>
                 <div>
-                  <h4 className="text-xs font-extrabold text-slate-900">Readiness Report</h4>
-                  <p className="text-[11px] text-slate-500 font-medium">Detailed skill feedback.</p>
+                  <h4 className="text-xs font-extrabold text-slate-900">Interview Readiness</h4>
+                  <p className="text-[11px] text-slate-500 font-medium">Know exactly where you stand.</p>
                 </div>
               </div>
 
@@ -376,36 +370,36 @@ export default function Landing() {
       <section id="how-it-works" className="py-12">
         <div className="mx-auto max-w-7xl px-8">
           <div className="rounded-3xl bg-purple-600 p-8 text-white text-center">
-            <h2 className="text-2xl font-extrabold mb-4">How It Works</h2>
+            <h2 className="text-2xl font-extrabold mb-4">One Platform. One Continuous Learning Loop.</h2>
             <p className="text-purple-100 font-medium max-w-2xl mx-auto">
-              Practice realistic consulting cases, get scored on key skills, track your readiness over time, and ace your interviews.
+              Assess → Diagnose → Practice → Simulate → Improve — one continuous loop that gets you interview-ready.
             </p>
             <div className="grid grid-cols-3 gap-6 mt-8">
               <div className="bg-white/10 rounded-2xl p-5">
                 <div className="text-2xl font-extrabold mb-2">1</div>
-                <p className="text-sm font-semibold">Pick a Case</p>
-                <p className="text-xs text-purple-200 mt-1">Choose from 8+ realistic consulting scenarios</p>
+                <p className="text-sm font-semibold">Assess & Diagnose</p>
+                <p className="text-xs text-purple-200 mt-1">Measure your skills with AI assessments and pinpoint what to improve</p>
               </div>
               <div className="bg-white/10 rounded-2xl p-5">
                 <div className="text-2xl font-extrabold mb-2">2</div>
-                <p className="text-sm font-semibold">Practice</p>
-                <p className="text-xs text-purple-200 mt-1">Simulate the interview with timed responses</p>
+                <p className="text-sm font-semibold">Practice & Simulate</p>
+                <p className="text-xs text-purple-200 mt-1">Target your gaps with practice and realistic AI mock interviews</p>
               </div>
               <div className="bg-white/10 rounded-2xl p-5">
                 <div className="text-2xl font-extrabold mb-2">3</div>
-                <p className="text-sm font-semibold">Get Feedback</p>
-                <p className="text-xs text-purple-200 mt-1">Detailed skill scoring and improvement tips</p>
+                <p className="text-sm font-semibold">Improve</p>
+                <p className="text-xs text-purple-200 mt-1">Get actionable feedback and track your readiness as you grow</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Category Bar with Click Handlers ── */}
-      <section className="py-6">
+      {/* ── Features Strip ── */}
+      <section id="features" className="py-6">
         <div className="mx-auto max-w-7xl px-8">
           <div className="flex items-center gap-4 overflow-x-auto pb-2 scrollbar-none justify-between">
-            {caseTypes.map((ct) => {
+            {features.map((ct) => {
               const Icon = ct.icon;
               const isSelected = activeCategory === ct.label;
               return (
@@ -435,13 +429,13 @@ export default function Landing() {
           <div className="flex items-end justify-between mb-8">
             <div>
               <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                Popular Practice Cases<span className="text-purple-600">*</span>
+                Popular Practice Tracks<span className="text-purple-600">*</span>
               </h2>
-              <p className="text-sm font-medium text-slate-500 mt-1">Hand-picked consulting cases to build framework readiness</p>
+              <p className="text-sm font-medium text-slate-500 mt-1">Practice tracks for every stage of your interview prep</p>
             </div>
             <Link to="/practice">
               <button className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#f3ede8] text-purple-700 hover:bg-purple-100 text-xs font-extrabold transition-colors">
-                View All Cases
+                View All Practice
                 <ArrowRight className="w-4 h-4" />
               </button>
             </Link>
@@ -493,9 +487,9 @@ export default function Landing() {
         <div className="mx-auto max-w-7xl px-8">
           <div className="mb-8">
             <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-              Learn by Framework Topic<span className="text-purple-600">*</span>
+              Practice by Skill Area<span className="text-purple-600">*</span>
             </h2>
-            <p className="text-sm font-medium text-slate-500 mt-1">Browse practice modules by framework category</p>
+            <p className="text-sm font-medium text-slate-500 mt-1">Targeted practice mapped to your assessment results</p>
           </div>
 
           <div className="grid gap-6 lg:grid-cols-12">
@@ -524,10 +518,9 @@ export default function Landing() {
             <div className="lg:col-span-4 rounded-3xl bg-emerald-500 p-8 text-white flex flex-col justify-between relative overflow-hidden shadow-xl min-h-[300px]">
               <div className="relative z-10">
                 <h3 className="text-3xl font-extrabold leading-tight mb-4">
-                  Unlock <br />
-                  your potential <br />
-                  with targeted <br />
-                  case practice.
+                  Preparing Isn't Enough. <br />
+                  You Need to Know <br />
+                  What to Improve.
                 </h3>
               </div>
 
@@ -544,7 +537,7 @@ export default function Landing() {
               <div className="relative z-10">
                 <Link to="/practice">
                   <button className="bg-white text-slate-900 font-extrabold px-6 py-3 rounded-full text-xs hover:bg-slate-100 transition-colors shadow-md flex items-center gap-2">
-                    Browse All Topics
+                    Start Practicing
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 </Link>
@@ -578,8 +571,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Value Props Footer Bar ── */}
-      <section className="py-12 my-6">
+      {/* ── AI Interview Highlights ── */}
+      <section id="ai-interviews" className="py-12 my-6">
         <div className="mx-auto max-w-7xl px-8">
           <div className="rounded-3xl bg-[#f3ede8] p-8 grid grid-cols-2 lg:grid-cols-4 gap-8">
             {valueProps.map((v) => {
