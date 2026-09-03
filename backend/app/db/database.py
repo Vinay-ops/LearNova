@@ -12,7 +12,14 @@ from ..core.config import settings
 connect_args = {}
 pool_kwargs = {}
 
-if settings.DATABASE_URL.startswith("sqlite"):
+# 'postgresql://' URLs default to the psycopg2 dialect in SQLAlchemy, but this
+# project uses psycopg (v3). Normalize so both 'postgresql://...' and
+# 'postgresql+psycopg://...' formats work with the installed driver.
+database_url = settings.DATABASE_URL
+if database_url.startswith("postgresql://"):
+    database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+
+if database_url.startswith("sqlite"):
     connect_args["check_same_thread"] = False
 else:
     # PostgreSQL — use a small pool suitable for serverless
@@ -22,7 +29,7 @@ else:
     pool_kwargs["pool_recycle"] = 1800  # Recycle connections every 30 min
 
 engine = create_engine(
-    settings.DATABASE_URL,
+    database_url,
     pool_pre_ping=True,
     connect_args=connect_args,
     **pool_kwargs,

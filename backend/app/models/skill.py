@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Column, DateTime, Integer, String, Text, func, ForeignKey, Float
+from sqlalchemy import Column, DateTime, Integer, String, Text, UniqueConstraint, func, ForeignKey, Float
 from sqlalchemy.orm import relationship
 
 from ..db.database import Base
@@ -10,9 +10,10 @@ from ..utils.enums import Trend
 
 class Skill(Base):
     __tablename__ = "skills"
+    __table_args__ = (UniqueConstraint("name", name="uq_skills_name"),)
 
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()), index=True)
-    name = Column(String, unique=True, nullable=False, index=True)
+    name = Column(String, nullable=False, index=True)
     description = Column(Text, nullable=True)
     color = Column(String, nullable=True)
     weight = Column(Float, nullable=False, default=1.0)

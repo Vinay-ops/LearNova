@@ -2,7 +2,7 @@ from .database import Base
 
 from ..models.user import User
 from ..models.profile import Profile
-from ..models.skill import Skill
+from ..models.skill import Skill, UserSkill
 from ..models.case import Case, CaseQuestion, CaseAttempt, CaseAnswer
 from ..models.assessment import (
     Assessment,
@@ -20,6 +20,7 @@ __all__ = [
     "User",
     "Profile",
     "Skill",
+    "UserSkill",
     "Case",
     "CaseQuestion",
     "CaseAttempt",

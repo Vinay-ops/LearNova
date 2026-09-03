@@ -1,9 +1,14 @@
 import axios from "axios";
 
-export const API_BASE_URL =
-  (import.meta as any).env?.VITE_API_URL ||
-  (import.meta as any).env?.VITE_API_BASE_URL ||
-  "http://localhost:8000";
+// VITE_API_URL is optional: when unset, requests go to the same origin
+// (relative /api paths), which is how the Vercel services setup routes
+// /api/* to the FastAPI backend. Set it locally to point at the dev backend.
+const env = (import.meta as any).env ?? {};
+const configuredUrl: string = env.VITE_API_URL || env.VITE_API_BASE_URL || "";
+// Never ship a localhost API URL in a production build: ignore it and fall
+// back to same-origin /api calls (the Vercel services rewrite handles routing).
+const isLocalUrl = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?($|\/)/.test(configuredUrl);
+export const API_BASE_URL = env.PROD && isLocalUrl ? "" : configuredUrl;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
