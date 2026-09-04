@@ -11,7 +11,10 @@ def test_progress_summary(client: TestClient, auth_headers):
     assert "readiness_score" in body
     assert 0 <= body["readiness_score"] <= 100
     assert "skill_scores" in body
-    assert "readiness_history" in body
+    assert "readiness_over_time" in body
+    # History must never be synthesized — an empty series is the honest state
+    # until readiness snapshots are actually persisted over time.
+    assert body["readiness_over_time"] == []
 
 
 def test_set_skill_score_and_recalculate(client: TestClient, auth_headers):

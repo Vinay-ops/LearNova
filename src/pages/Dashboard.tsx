@@ -13,6 +13,7 @@ import {
   Target,
   Trophy,
   Zap,
+  Mic,
 } from "lucide-react";
 import {
   LineChart,
@@ -70,11 +71,13 @@ export default function Dashboard() {
   const streak = summary?.streak_days ?? 0;
   const daysLeft = getDaysUntilInterview(profile?.interviewDate || null);
   const displayName = profile?.name?.split(" ")[0] || user?.name?.split(" ")[0] || "User";
+  // Only ever surface real, measured skills — never a fabricated "weakest".
   const weakestSkill = skillScores.length > 0
     ? [...skillScores].sort((a, b) => a.score - b.score)[0]
-    : { name: "Structuring", score: 50 };
-  const previousReadiness = readinessScore > 12 ? readinessScore - 12 : readinessScore;
-  const scoreDiff = readinessScore - previousReadiness;
+    : null;
+  const previousReadiness = summary?.previous_readiness_score ?? null;
+  const readinessDelta =
+    previousReadiness != null ? readinessScore - previousReadiness : null;
 
   // Recent case attempts for activity
   const recentAttempts = caseAttempts
@@ -82,10 +85,10 @@ export default function Dashboard() {
     .slice(-3)
     .reverse();
 
-  // Recommended drill (null until practice content exists, e.g. fresh DB)
-  const recommendedDrill = drills.find((d) =>
-    d.skills.includes(weakestSkill.name)
-  ) || drills[0] || null;
+  // Recommended drill (null until a real weakest skill has been measured)
+  const recommendedDrill = weakestSkill
+    ? drills.find((d) => d.skills.includes(weakestSkill.name)) || drills[0] || null
+    : null;
 
   return (
     <AppLayout>
@@ -130,7 +133,10 @@ export default function Dashboard() {
             suffix: "/100",
             label: "Interview Readiness",
             color: "bg-purple-100 text-purple-600",
-            trend: `+${scoreDiff} this month`,
+            trend:
+              readinessDelta != null
+                ? `${readinessDelta >= 0 ? "+" : ""}${readinessDelta} vs last check`
+                : "Updated after each evaluation",
             trendColor: "text-emerald-600",
           },
           {
@@ -203,7 +209,7 @@ export default function Dashboard() {
                   <div className="flex items-center gap-3">
                     <span className={cn(
                       "text-sm w-40 shrink-0 font-semibold",
-                      skill.name === weakestSkill.name
+                      weakestSkill !== null && skill.name === weakestSkill.name
                         ? "font-extrabold text-slate-900"
                         : "text-slate-600"
                     )}>
@@ -241,21 +247,35 @@ export default function Dashboard() {
               ))}
             </StaggerList>
 
-            {/* Weakness callout */}
+            {/* Weakness callout — only from real measured skill scores */}
             <FadeIn delay={0.6} className="mt-6">
-              <div className="rounded-2xl bg-amber-50 border border-amber-200/60 p-4 flex items-start gap-3">
-                <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 text-amber-600 shadow-sm">
-                  <Target className="h-5 w-5" />
+              {weakestSkill ? (
+                <div className="rounded-2xl bg-amber-50 border border-amber-200/60 p-4 flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 text-amber-600 shadow-sm">
+                    <Target className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-extrabold text-amber-900">
+                      Focus: {weakestSkill.name}
+                    </p>
+                    <p className="text-xs text-amber-700 font-medium mt-0.5">
+                      This is your lowest measured skill ({weakestSkill.score}/100). Targeted drills can improve it fastest.
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-extrabold text-amber-900">
-                    Focus: {weakestSkill.name}
-                  </p>
-                  <p className="text-xs text-amber-700 font-medium mt-0.5">
-                    This is your lowest skill ({weakestSkill.score}/100). Targeted drills can improve it fastest.
-                  </p>
+              ) : (
+                <div className="rounded-2xl bg-muted/50 border border-dashed p-4 flex items-start gap-3">
+                  <div className="h-10 w-10 rounded-xl bg-white flex items-center justify-center shrink-0 text-slate-400 shadow-sm">
+                    <Target className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-extrabold text-slate-700">No skills measured yet</p>
+                    <p className="text-xs text-slate-500 font-medium mt-0.5">
+                      Complete a case, interview, or assessment and your skill scores will appear here.
+                    </p>
+                  </div>
                 </div>
-              </div>
+              )}
             </FadeIn>
           </div>
         </div>
@@ -365,6 +385,7 @@ export default function Dashboard() {
             <div className="space-y-2">
               {[
                 { to: "/learn", label: "Learn a Topic", icon: GraduationCap, color: "bg-purple-100 text-purple-600" },
+                { to: "/interview", label: "AI Mock Interview", icon: Mic, color: "bg-pink-100 text-pink-600" },
                 { to: "/assessments", label: "Take Quiz / Assessment", icon: Target, color: "bg-blue-100 text-blue-600" },
                 { to: "/practice", label: "Start Practice", icon: BookOpen, color: "bg-emerald-100 text-emerald-600" },
                 { to: "/progress", label: "View Progress", icon: TrendingUp, color: "bg-amber-100 text-amber-600" },
@@ -387,50 +408,61 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Readiness chart */}
+      {/* Readiness chart — real snapshots only, never a synthesized trend */}
       <FadeIn delay={0.4}>
         <p className="text-base font-extrabold text-slate-900 mb-4">
           Readiness Over Time
         </p>
-        <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/50">
-          <div className="h-60">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={readinessOverTime}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3ede8" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  domain={[0, 100]}
-                  tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: "16px",
-                    border: "none",
-                    fontSize: "12px",
-                    boxShadow: "0 10px 25px -5px rgba(108,92,231,0.15)",
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="score"
-                  stroke="#6c5ce7"
-                  strokeWidth={3}
-                  dot={false}
-                  activeDot={{ r: 6, strokeWidth: 2, fill: "#6c5ce7" }}
-                  animationDuration={1200}
-                  animationEasing="ease-out"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+        {readinessOverTime.length > 0 ? (
+          <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/50">
+            <div className="h-60">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={readinessOverTime}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3ede8" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    domain={[0, 100]}
+                    tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: "16px",
+                      border: "none",
+                      fontSize: "12px",
+                      boxShadow: "0 10px 25px -5px rgba(108,92,231,0.15)",
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="score"
+                    stroke="#6c5ce7"
+                    strokeWidth={3}
+                    dot={false}
+                    activeDot={{ r: 6, strokeWidth: 2, fill: "#6c5ce7" }}
+                    animationDuration={1200}
+                    animationEasing="ease-out"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="rounded-3xl border border-slate-100 bg-white p-8 shadow-xl shadow-slate-200/50 text-center">
+            <p className="text-sm text-slate-500">
+              Your readiness trend will appear here as you complete evaluations.
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              Only real snapshots are shown — no estimated history.
+            </p>
+          </div>
+        )}
       </FadeIn>
     </AppLayout>
   );

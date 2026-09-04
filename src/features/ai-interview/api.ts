@@ -7,7 +7,6 @@ import type {
   AIEvaluationResponse,
   AIFeedbackResponse,
   Recommendations,
-  StructuredEvaluation,
   PromptVersionInfo,
 } from "@/types";
 
@@ -16,175 +15,35 @@ export interface AIInterviewRepository {
     userId: ID,
     caseId?: ID,
     caseAttemptId?: ID,
+    metadata?: Record<string, unknown>,
   ): Promise<AISession>;
-  getSession(sessionId: ID): Promise<AISession | undefined>;
+  getSession(sessionId: ID): Promise<AISession>;
   listSessions(userId: ID): Promise<AISession[]>;
+  deleteSession(sessionId: ID): Promise<void>;
   listMessages(sessionId: ID): Promise<AIMessage[]>;
   appendMessage(
     sessionId: ID,
-    role: "interviewer" | "candidate" | "system",
+    role: "interviewer" | "candidate" | "system" | "user" | "assistant",
     content: string,
     structured?: any,
   ): Promise<AIMessage>;
-  sendMessage(
-    sessionId: ID | undefined,
-    caseId: ID | undefined,
-    caseAttemptId: ID | undefined,
-    message: string,
-    history?: AIMessage[],
-  ): Promise<AIChatResponse>;
+  sendMessage(params: {
+    sessionId?: ID;
+    caseId?: ID;
+    caseAttemptId?: ID;
+    topic?: string;
+    difficulty?: string;
+    message: string;
+  }): Promise<AIChatResponse>;
+  completeInterview(sessionId: ID): Promise<AISession>;
   evaluateCase(caseAttemptId: ID): Promise<AIEvaluationResponse>;
+  evaluateSession(sessionId: ID): Promise<AIEvaluationResponse>;
   generateFeedback(caseId: ID, attemptId: ID): Promise<AIFeedbackResponse>;
-  generateRecommendations(): Promise<Recommendations>;
+  generateFeedbackForSession(sessionId: ID): Promise<AIFeedbackResponse>;
+  generateRecommendations(sessionId?: ID): Promise<Recommendations>;
   listPrompts(purpose?: string, name?: string): Promise<any[]>;
   listPromptVersions(name: string): Promise<any[]>;
   getPrompt(name: string, version?: string): Promise<PromptVersionInfo | undefined>;
-}
-
-export class MockAIInterviewRepository implements AIInterviewRepository {
-  private sessions = new Map<string, AISession>();
-  private messages: AIMessage[] = [];
-
-  private uid() {
-    return `id-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  }
-
-  async createSession(
-    userId: ID,
-    caseId?: ID,
-    _caseAttemptId?: ID,
-  ): Promise<AISession> {
-    const now = new Date().toISOString();
-    const session: AISession = {
-      id: this.uid(),
-      user_id: userId,
-      session_type: "case_interview",
-      related_resource_id: caseId,
-      related_resource_type: caseId ? "case" : undefined,
-      status: "active",
-      started_at: now,
-      total_tokens: 0,
-      total_latency_ms: 0,
-    };
-    this.sessions.set(session.id, session);
-    return session;
-  }
-
-  async getSession(sessionId: ID): Promise<AISession | undefined> {
-    return this.sessions.get(sessionId);
-  }
-
-  async listSessions(userId: ID): Promise<AISession[]> {
-    return Array.from(this.sessions.values()).filter((s) => s.user_id === userId);
-  }
-
-  async listMessages(sessionId: ID): Promise<AIMessage[]> {
-    return this.messages.filter((m) => m.session_id === sessionId);
-  }
-
-  async appendMessage(
-    sessionId: ID,
-    role: "interviewer" | "candidate" | "system",
-    content: string,
-    structured?: any,
-  ): Promise<AIMessage> {
-    const msg: AIMessage = {
-      id: this.uid(),
-      session_id: sessionId,
-      role,
-      content,
-      structured_output: structured,
-      sequence_number:
-        this.messages.filter((m) => m.session_id === sessionId).length + 1,
-      created_at: new Date().toISOString(),
-    };
-    this.messages.push(msg);
-    return msg;
-  }
-
-  async sendMessage(
-    _sessionId: ID | undefined,
-    _caseId: ID | undefined,
-    _caseAttemptId: ID | undefined,
-    _message: string,
-    _history?: AIMessage[],
-  ): Promise<AIChatResponse> {
-    return {
-      session_id: this.uid(),
-      message:
-        "AI interviewer stub. Configure LLM provider in Phase 7 to enable real responses.",
-      next_question: undefined,
-      structured_output: undefined,
-    };
-  }
-
-  async evaluateCase(
-    caseAttemptId: ID,
-  ): Promise<AIEvaluationResponse> {
-    const evaluation: StructuredEvaluation = {
-      overall_score: 0,
-      skills: [],
-      strengths: [],
-      improvements: [],
-      recommendations: [],
-    };
-    return {
-      case_attempt_id: caseAttemptId,
-      evaluation,
-      ai_session_id: undefined,
-    };
-  }
-
-  async generateFeedback(
-    _caseId: ID,
-    _attemptId: ID,
-  ): Promise<AIFeedbackResponse> {
-    return {
-      overall_score: 0,
-      max_score: 100,
-      skill_breakdown: [],
-      strengths: [],
-    };
-  }
-
-  async generateRecommendations(): Promise<Recommendations> {
-    return {
-      recommended_cases: [],
-      recommended_drills: [],
-      next_best_action:
-        "Complete a practice case this session to maintain momentum.",
-      reasoning: "AI recommendations coming in Phase 9.",
-    };
-  }
-
-  async listPrompts(): Promise<any[]> {
-    return [
-      { name: "interviewer", versions: ["v1"] },
-      { name: "evaluator", versions: ["v1"] },
-      { name: "case_generation", versions: ["v1"] },
-      { name: "feedback", versions: ["v1"] },
-      { name: "recommendations", versions: ["v1"] },
-    ];
-  }
-
-  async listPromptVersions(_name: string): Promise<any[]> {
-    return [];
-  }
-
-  async getPrompt(
-    name: string,
-    version = "v1",
-  ): Promise<PromptVersionInfo | undefined> {
-    return {
-      name,
-      purpose: name,
-      version,
-      system_prompt: "",
-      user_prompt_template: "",
-      model: "openai/gpt-oss-120b",
-      temperature: 0.7,
-    };
-  }
 }
 
 export class ApiAIInterviewRepository implements AIInterviewRepository {
@@ -192,16 +51,18 @@ export class ApiAIInterviewRepository implements AIInterviewRepository {
     _userId: ID,
     caseId?: ID,
     _caseAttemptId?: ID,
+    metadata?: Record<string, unknown>,
   ): Promise<AISession> {
     const { data } = await api.post<AISession>("/api/ai/sessions", {
       session_type: "case_interview",
       related_resource_id: caseId,
       related_resource_type: caseId ? "case" : undefined,
+      metadata_: metadata || {},
     });
     return data;
   }
 
-  async getSession(sessionId: ID): Promise<AISession | undefined> {
+  async getSession(sessionId: ID): Promise<AISession> {
     const { data } = await api.get<AISession>(`/api/ai/sessions/${sessionId}`);
     return data;
   }
@@ -209,6 +70,10 @@ export class ApiAIInterviewRepository implements AIInterviewRepository {
   async listSessions(_userId: ID): Promise<AISession[]> {
     const { data } = await api.get<AISession[]>("/api/ai/sessions");
     return data;
+  }
+
+  async deleteSession(sessionId: ID): Promise<void> {
+    await api.delete(`/api/ai/sessions/${sessionId}`);
   }
 
   async listMessages(sessionId: ID): Promise<AIMessage[]> {
@@ -220,7 +85,7 @@ export class ApiAIInterviewRepository implements AIInterviewRepository {
 
   async appendMessage(
     sessionId: ID,
-    role: "interviewer" | "candidate" | "system",
+    role: "interviewer" | "candidate" | "system" | "user" | "assistant",
     content: string,
     structured?: any,
   ): Promise<AIMessage> {
@@ -236,26 +101,43 @@ export class ApiAIInterviewRepository implements AIInterviewRepository {
     return data;
   }
 
-  async sendMessage(
-    _sessionId: ID | undefined,
-    caseId: ID | undefined,
-    caseAttemptId: ID | undefined,
-    message: string,
-    _history?: AIMessage[],
-  ): Promise<AIChatResponse> {
+  async sendMessage(params: {
+    sessionId?: ID;
+    caseId?: ID;
+    caseAttemptId?: ID;
+    topic?: string;
+    difficulty?: string;
+    message: string;
+  }): Promise<AIChatResponse> {
     const { data } = await api.post<AIChatResponse>("/api/ai/interview/chat", {
-      case_id: caseId,
-      case_attempt_id: caseAttemptId,
-      message,
+      session_id: params.sessionId,
+      case_id: params.caseId,
+      case_attempt_id: params.caseAttemptId,
+      topic: params.topic,
+      difficulty: params.difficulty,
+      message: params.message,
+    });
+    return data;
+  }
+
+  async completeInterview(sessionId: ID): Promise<AISession> {
+    const { data } = await api.post<AISession>("/api/ai/interview/complete", {
+      session_id: sessionId,
     });
     return data;
   }
 
   async evaluateCase(caseAttemptId: ID): Promise<AIEvaluationResponse> {
-    const { data } = await api.post<AIEvaluationResponse>(
-      "/api/ai/evaluation",
-      { case_attempt_id: caseAttemptId },
-    );
+    const { data } = await api.post<AIEvaluationResponse>("/api/ai/evaluation", {
+      case_attempt_id: caseAttemptId,
+    });
+    return data;
+  }
+
+  async evaluateSession(sessionId: ID): Promise<AIEvaluationResponse> {
+    const { data } = await api.post<AIEvaluationResponse>("/api/ai/evaluation", {
+      session_id: sessionId,
+    });
     return data;
   }
 
@@ -270,11 +152,17 @@ export class ApiAIInterviewRepository implements AIInterviewRepository {
     return data;
   }
 
-  async generateRecommendations(): Promise<Recommendations> {
-    const { data } = await api.post<Recommendations>(
-      "/api/ai/recommendations",
-      {},
-    );
+  async generateFeedbackForSession(sessionId: ID): Promise<AIFeedbackResponse> {
+    const { data } = await api.post<AIFeedbackResponse>("/api/ai/feedback", {
+      session_id: sessionId,
+    });
+    return data;
+  }
+
+  async generateRecommendations(sessionId?: ID): Promise<Recommendations> {
+    const { data } = await api.post<Recommendations>("/api/ai/recommendations", {
+      session_id: sessionId,
+    });
     return data;
   }
 
@@ -300,43 +188,46 @@ export class ApiAIInterviewRepository implements AIInterviewRepository {
   }
 }
 
-const USE_API = false;
-export const aiInterviewRepository: AIInterviewRepository = USE_API
-  ? new ApiAIInterviewRepository()
-  : new MockAIInterviewRepository();
+export const aiInterviewRepository: AIInterviewRepository =
+  new ApiAIInterviewRepository();
 
 export const aiInterviewApi = {
-  createSession: (userId: ID, caseId?: ID, caseAttemptId?: ID) =>
-    aiInterviewRepository.createSession(userId, caseId, caseAttemptId),
+  createSession: (
+    userId: ID,
+    caseId?: ID,
+    caseAttemptId?: ID,
+    metadata?: Record<string, unknown>,
+  ) => aiInterviewRepository.createSession(userId, caseId, caseAttemptId, metadata),
   getSession: (sessionId: ID) => aiInterviewRepository.getSession(sessionId),
   listSessions: (userId: ID) => aiInterviewRepository.listSessions(userId),
+  deleteSession: (sessionId: ID) => aiInterviewRepository.deleteSession(sessionId),
   listMessages: (sessionId: ID) => aiInterviewRepository.listMessages(sessionId),
   appendMessage: (
     sessionId: ID,
-    role: "interviewer" | "candidate" | "system",
+    role: "interviewer" | "candidate" | "system" | "user" | "assistant",
     content: string,
     structured?: any,
   ) => aiInterviewRepository.appendMessage(sessionId, role, content, structured),
-  sendMessage: (
-    sessionId: ID | undefined,
-    caseId: ID | undefined,
-    caseAttemptId: ID | undefined,
-    message: string,
-    history?: AIMessage[],
-  ) =>
-    aiInterviewRepository.sendMessage(
-      sessionId,
-      caseId,
-      caseAttemptId,
-      message,
-      history,
-    ),
+  sendMessage: (params: {
+    sessionId?: ID;
+    caseId?: ID;
+    caseAttemptId?: ID;
+    topic?: string;
+    difficulty?: string;
+    message: string;
+  }) => aiInterviewRepository.sendMessage(params),
+  completeInterview: (sessionId: ID) =>
+    aiInterviewRepository.completeInterview(sessionId),
   evaluateCase: (caseAttemptId: ID) =>
     aiInterviewRepository.evaluateCase(caseAttemptId),
+  evaluateSession: (sessionId: ID) =>
+    aiInterviewRepository.evaluateSession(sessionId),
   generateFeedback: (caseId: ID, attemptId: ID) =>
     aiInterviewRepository.generateFeedback(caseId, attemptId),
-  generateRecommendations: () =>
-    aiInterviewRepository.generateRecommendations(),
+  generateFeedbackForSession: (sessionId: ID) =>
+    aiInterviewRepository.generateFeedbackForSession(sessionId),
+  generateRecommendations: (sessionId?: ID) =>
+    aiInterviewRepository.generateRecommendations(sessionId),
   listPrompts: (purpose?: string, name?: string) =>
     aiInterviewRepository.listPrompts(purpose, name),
   listPromptVersions: (name: string) =>

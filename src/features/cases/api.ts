@@ -25,6 +25,7 @@ export interface CaseRepository {
     questionId: ID,
     answer: Partial<CaseAnswer>,
   ): Promise<CaseAnswer>;
+  evaluateAttempt(attemptId: ID): Promise<CaseAttempt>;
 }
 
 const uid = () => `id-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -130,14 +131,18 @@ export class MockCaseRepository implements CaseRepository {
       attempt_id: attemptId,
       question_id: questionId,
       answer_text: answer.answer_text,
-      score: answer.score,
-      ai_feedback: answer.ai_feedback,
+      score: undefined,
+      ai_feedback: undefined,
       duration_seconds: answer.duration_seconds,
       created_at: now,
       updated_at: now,
     };
     this.answers.push(a);
     return a;
+  }
+
+  async evaluateAttempt(_attemptId: ID): Promise<CaseAttempt> {
+    throw new Error("Mock repository cannot evaluate — use the API implementation.");
   }
 }
 
@@ -209,11 +214,17 @@ export class ApiCaseRepository implements CaseRepository {
   }
 
   async listQuestions(caseId: ID): Promise<CaseQuestion[]> {
-    return [];
+    const { data } = await api.get<CaseQuestion[]>(
+      `/api/cases/${caseId}/questions`,
+    );
+    return data;
   }
 
   async listAnswers(attemptId: ID): Promise<CaseAnswer[]> {
-    return [];
+    const { data } = await api.get<CaseAnswer[]>(
+      `/api/cases/attempts/${attemptId}/answers`,
+    );
+    return data;
   }
 
   async saveAnswer(
@@ -224,8 +235,16 @@ export class ApiCaseRepository implements CaseRepository {
     const { data } = await api.post<CaseAnswer>("/api/cases/answers", {
       attempt_id: attemptId,
       question_id: questionId,
-      ...answer,
+      answer_text: answer.answer_text,
+      duration_seconds: answer.duration_seconds,
     });
+    return data;
+  }
+
+  async evaluateAttempt(attemptId: ID): Promise<CaseAttempt> {
+    const { data } = await api.post<CaseAttempt>(
+      `/api/cases/attempts/${attemptId}/evaluate`,
+    );
     return data;
   }
 }
@@ -257,4 +276,5 @@ export const casesApi = {
     questionId: ID,
     answer: Partial<CaseAnswer>,
   ) => caseRepository.saveAnswer(attemptId, questionId, answer),
+  evaluateAttempt: (attemptId: ID) => caseRepository.evaluateAttempt(attemptId),
 };

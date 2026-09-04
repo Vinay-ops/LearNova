@@ -1,7 +1,7 @@
-from typing import List, Optional
-from uuid import UUID
-from datetime import datetime, timedelta, timezone
+from typing import Dict, List, Optional
+from datetime import datetime, timezone
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..core.exceptions import NotFoundError
@@ -97,23 +97,18 @@ class ProgressService:
             average_score=avg_score,
             best_score=best_score,
             skill_scores=skill_breakdown,
-            readiness_history=readiness_over_time,
+            readiness_over_time=readiness_over_time,
         )
 
     def _build_readiness_history(self, current_score: int) -> List[ReadinessEntry]:
-        entries: List[ReadinessEntry] = []
-        today = datetime.now(timezone.utc).date()
-        for i in range(10, -1, -1):
-            d = today - timedelta(days=i * 3)
-            progress_ratio = (10 - i) / 10 if i > 0 else 1.0
-            projected_score = max(0, min(100, int(current_score * progress_ratio)))
-            entries.append(
-                ReadinessEntry(
-                    date=d.strftime("%b") + f" {d.day}",
-                    score=projected_score,
-                )
-            )
-        return entries
+        """Real readiness-over-time series.
+
+        Readiness history requires persisting each readiness snapshot with a
+        timestamp. Until that persistence exists we return an empty series
+        rather than synthesizing points — a fabricated "trend" ending at the
+        current score would misrepresent the learner's actual history.
+        """
+        return []
 
     def set_skill_score(
         self, user_id: str, payload: SkillScoreCreate
@@ -145,6 +140,62 @@ class ProgressService:
         self.db.commit()
         self.db.refresh(new_us)
         return SkillScoreResponse.model_validate(new_us)
+
+    def record_skill_scores(self, user_id: str, scores: Dict[str, int]) -> None:
+        """Persist measured skill scores (e.g. from AI evaluations).
+
+        Upserts a UserSkill row per skill (creating the Skill row by name when
+        missing), keeps the previous score so deltas shown to the learner are
+        real, and refreshes the readiness score from the measured data.
+        """
+        now = datetime.now(timezone.utc)
+        for name, raw_score in scores.items():
+            if not name or raw_score is None:
+                continue
+            score = clamp_score(int(raw_score))
+            skill = (
+                self.db.query(Skill)
+                .filter(func.lower(Skill.name) == name.strip().lower())
+                .first()
+            )
+            if not skill:
+                skill = Skill(
+                    name=name.strip(),
+                    description="Measured via AI evaluation",
+                    weight=1.0,
+                )
+                self.db.add(skill)
+                self.db.flush()
+
+            user_skill = (
+                self.db.query(UserSkill)
+                .filter(
+                    UserSkill.user_id == user_id,
+                    UserSkill.skill_id == skill.id,
+                )
+                .first()
+            )
+            if user_skill:
+                previous = user_skill.current_score
+                user_skill.previous_score = previous
+                user_skill.current_score = score
+                user_skill.trend = (
+                    "up" if score > previous else "down" if score < previous else "flat"
+                )
+                user_skill.last_practiced_at = now
+            else:
+                user_skill = UserSkill(
+                    user_id=user_id,
+                    skill_id=skill.id,
+                    current_score=score,
+                    previous_score=None,
+                    trend="flat",
+                    last_practiced_at=now,
+                )
+                self.db.add(user_skill)
+
+        self.db.commit()
+        self.recalculate_readiness(user_id)
 
     def recalculate_readiness(self, user_id: str) -> int:
         summary = self.get_summary(user_id)

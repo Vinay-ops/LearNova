@@ -16,43 +16,13 @@ import {
   ChevronRight,
   Pause,
   Play,
+  Loader2,
+  AlertTriangle,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useCases, useCaseAttempt, useCaseQuestions, useCaseAnswers } from "@/hooks/use-cases";
 import { cn } from "@/lib/utils";
-
-// Deterministic mock scoring: checks if answer contains expected keywords
-function calculateAnswerScore(
-  answerText: string,
-): { score: number; feedback: string } {
-  const len = answerText.trim().length;
-  const wordCount = answerText.trim().split(/\s+/).length;
-
-  // Base score from response length and quality signals
-  let baseScore = 50;
-  if (wordCount > 50) baseScore = 70;
-  if (wordCount > 100) baseScore = 78;
-  if (wordCount > 200) baseScore = 82;
-
-  // Add some variation
-  const score = Math.min(95, Math.max(30, baseScore + Math.round(Math.random() * 10 - 5)));
-
-  let feedback = "";
-  if (wordCount > 100) {
-    feedback = "Strong response with good depth and structure.";
-  } else if (wordCount > 40) {
-    feedback = "Good foundation. Consider adding more detail and supporting evidence.";
-  } else {
-    feedback = "Response could be stronger. Focus on the core issue and use data to support your points.";
-  }
-
-  return { score, feedback };
-}
-
-function calculateOverallScore(scores: { score: number }[]): number {
-  if (scores.length === 0) return 0;
-  return Math.round(scores.reduce((s, v) => s + v.score, 0) / scores.length);
-}
+import { extractApiMessage } from "@/lib/api-client";
 
 const mockIssueTree = {
   label: "Case Structure",
@@ -73,45 +43,38 @@ export default function CaseSimulator() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { cases } = useCases();
-  const { attempt, createAttempt, completeAttempt, updateAttempt } = useCaseAttempt(user?.id, id);
+  const { attempt, createAttempt, evaluateAttempt } = useCaseAttempt(user?.id, id);
   const { questions } = useCaseQuestions(id);
   const { answers: savedAnswers, saveAnswer } = useCaseAnswers(attempt?.id);
 
   const caseData = cases.find((c) => c.id === id);
 
-
-
   const [currentQIdx, setCurrentQIdx] = useState(0);
   const [response, setResponse] = useState("");
   const [submitted, setSubmitted] = useState(false);
-  const [answerScores, setAnswerScores] = useState<{ question_id: string; score: number }[]>([]);
   const [elapsed, setElapsed] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
-  const [answerFeedback, setAnswerFeedback] = useState("");
   const [questionStartTime, setQuestionStartTime] = useState(Date.now());
+  const [evaluating, setEvaluating] = useState(false);
+  const [evaluateError, setEvaluateError] = useState<string | null>(null);
 
   const currentQuestion = questions[currentQIdx];
   const totalQuestions = questions.length;
   const isLastQuestion = currentQIdx === totalQuestions - 1;
 
+  const answeredQuestionIds = savedAnswers
+    .filter((a) => a.answer_text && a.answer_text.trim().length > 0)
+    .map((a) => a.question_id);
 
-
-  // Load existing answers from API
+  // Restore progress from a partially-completed attempt.
   useEffect(() => {
-    if (savedAnswers.length > 0) {
-      const scores = savedAnswers.map((a) => ({ question_id: a.question_id, score: a.score || 0 }));
-      setAnswerScores(scores);
-
-      if (scores.length > 0) {
-        const answeredIds = scores.map((s) => s.question_id);
-        const nextUnanswered = questions.findIndex((q) => !answeredIds.includes(q.id));
-        if (nextUnanswered >= 0) {
-          setCurrentQIdx(nextUnanswered);
-        } else {
-          setCurrentQIdx(questions.length - 1);
-          setSubmitted(true);
-          setResponse(savedAnswers.find((a) => a.question_id === questions[questions.length - 1]?.id)?.answer_text || "");
-        }
+    if (answeredQuestionIds.length > 0) {
+      const nextUnanswered = questions.findIndex((q) => !answeredQuestionIds.includes(q.id));
+      if (nextUnanswered >= 0) {
+        setCurrentQIdx(nextUnanswered);
+      } else if (questions.length > 0) {
+        setCurrentQIdx(questions.length - 1);
+        setSubmitted(true);
       }
     }
   }, [savedAnswers, questions]);
@@ -122,7 +85,6 @@ export default function CaseSimulator() {
     const interval = setInterval(() => {
       setElapsed((prev) => {
         const next = prev + 1;
-        // Auto-complete when timer reaches 0 (countdown from case duration)
         if (caseData && next >= (caseData.duration_minutes || caseData.duration)) {
           clearInterval(interval);
           handleAutoComplete();
@@ -134,80 +96,56 @@ export default function CaseSimulator() {
   }, [caseData, isPaused]);
 
   const handleAutoComplete = useCallback(async () => {
-    if (!attempt || !caseData) return;
-    const finalScores = answerScores;
-    const overall = calculateOverallScore(finalScores);
-    await completeAttempt(attempt.id);
-    await updateAttempt(attempt.id, {
-      overall_score: overall,
-      structuring_score: Math.round(overall * 0.95 + Math.random() * 10),
-      quantitative_score: Math.round(overall * 0.9 + Math.random() * 15),
-      business_judgment_score: Math.round(overall * 0.85 + Math.random() * 20),
-      communication_score: Math.round(overall * 0.92 + Math.random() * 10),
-      synthesis_score: Math.round(overall * 0.88 + Math.random() * 15),
-      ai_feedback: "Case completed via timeout. Scores based on submitted answers.",
-      strengths: ["Participated in the case", "Submitted responses within time"],
-      weaknesses: ["Not all questions were fully addressed"],
-      recommendations: "Practice more cases to improve speed and depth of responses.",
-    });
-    navigate(`/cases/${caseData.id}/feedback`);
-  }, [attempt, caseData, answerScores]);
+    // Save whatever the candidate is currently typing, then evaluate.
+    if (attempt && currentQuestion && response.trim() && !answeredQuestionIds.includes(currentQuestion.id)) {
+      await saveAnswer(currentQuestion.id, {
+        answer_text: response,
+        duration_seconds: Math.round((Date.now() - questionStartTime) / 1000),
+      });
+    }
+    await completeAndEvaluate();
+  }, [attempt, currentQuestion, response, answeredQuestionIds, questionStartTime]);
+
+  // Server-authoritative evaluation: the backend runs the evaluator prompt
+  // (Prompt Registry → Groq), validates the structured output, and persists
+  // the real scores. No client-side scoring happens anywhere.
+  const completeAndEvaluate = useCallback(async () => {
+    if (!attempt) return;
+    setEvaluating(true);
+    setEvaluateError(null);
+    try {
+      await evaluateAttempt(attempt.id);
+      navigate(`/cases/${caseData?.id}/feedback`);
+    } catch (e: any) {
+      setEvaluateError(
+        extractApiMessage(
+          e,
+          "Evaluation failed. Check that the AI provider is configured.",
+        ),
+      );
+      setEvaluating(false);
+    }
+  }, [attempt, caseData, evaluateAttempt, navigate]);
 
   const handleSubmitAnswer = async () => {
     if (!response.trim() || !attempt || !currentQuestion) return;
 
     const timeSpent = Math.round((Date.now() - questionStartTime) / 1000);
-    const { score, feedback } = calculateAnswerScore(response);
-
     await saveAnswer(currentQuestion.id, {
       answer_text: response,
-      score,
-      ai_feedback: feedback,
       duration_seconds: timeSpent,
     });
-
-    setAnswerScores((prev) => [...prev, { question_id: currentQuestion.id, score }]);
     setSubmitted(true);
-    setAnswerFeedback(feedback);
   };
 
   const handleNextQuestion = async () => {
     if (isLastQuestion) {
-      const allScores = answerScores;
-      const overall = calculateOverallScore(allScores);
-      const attemptScores = allScores.map((s) => s.score);
-      const structuring = attemptScores.length > 0 ? Math.round(attemptScores.reduce((a, b) => a + b, 0) / attemptScores.length) : 60;
-
-      await completeAttempt(attempt!.id);
-      await updateAttempt(attempt!.id, {
-        overall_score: overall,
-        structuring_score: Math.min(100, structuring + Math.round(Math.random() * 10)),
-        quantitative_score: Math.min(100, structuring + Math.round(Math.random() * 15)),
-        business_judgment_score: Math.min(100, structuring + Math.round(Math.random() * 12)),
-        communication_score: Math.min(100, structuring + Math.round(Math.random() * 8)),
-        synthesis_score: Math.min(100, structuring + Math.round(Math.random() * 18)),
-        ai_feedback: overall >= 70
-          ? "Strong performance with good analytical thinking and clear communication."
-          : "Good effort. Focus on structuring your responses more clearly and supporting with data.",
-        strengths: overall >= 60
-          ? ["Clear structure in responses", "Good use of frameworks", "Demonstrated analytical skills"]
-          : ["Attempted all questions", "Showed willingness to engage"],
-        weaknesses: overall >= 60
-          ? ["Could improve quantitative depth", "Synthesis could be more concise"]
-          : ["Responses could be more structured", "Need more data-driven analysis"],
-        recommendations:
-          overall >= 70
-            ? "Focus on advanced cases to push your scores even higher."
-            : "Review core frameworks and practice mental math to build confidence.",
-      });
-      navigate(`/cases/${caseData!.id}/feedback`);
+      await completeAndEvaluate();
       return;
     }
-
     setCurrentQIdx((prev) => prev + 1);
     setResponse("");
     setSubmitted(false);
-    setAnswerFeedback("");
     setQuestionStartTime(Date.now());
   };
 
@@ -244,7 +182,7 @@ export default function CaseSimulator() {
                   key={i}
                   className={cn(
                     "h-1.5 w-6 rounded-full",
-                    answerScores.some((s) => s.question_id === questions[i]?.id)
+                    answeredQuestionIds.includes(questions[i]?.id)
                       ? "bg-emerald-500"
                       : i === currentQIdx
                       ? "bg-primary"
@@ -254,11 +192,33 @@ export default function CaseSimulator() {
               ))}
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={() => setIsPaused(!isPaused)}>
+          <Button variant="ghost" size="sm" onClick={() => setIsPaused(!isPaused)} disabled={evaluating}>
             {isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
           </Button>
         </div>
       </div>
+
+      {evaluateError && (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-3">
+          <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+          <div className="text-sm text-amber-900 flex-1">
+            <p className="font-semibold">Evaluation failed</p>
+            <p className="mt-0.5">{evaluateError}</p>
+            <p className="mt-1 text-xs text-amber-700">
+              Your answers are saved. Set GROQ_API_KEY on the backend and retry.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            className="shrink-0"
+            disabled={evaluating}
+            onClick={completeAndEvaluate}
+          >
+            Retry Evaluation
+          </Button>
+        </div>
+      )}
 
       {/* Two-panel layout */}
       <div className="grid gap-4 lg:grid-cols-[1fr_380px] h-[calc(100vh-140px)]">
@@ -278,7 +238,7 @@ export default function CaseSimulator() {
           {/* Conversation */}
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
             {questions.slice(0, currentQIdx + 1).map((q, i) => {
-              const savedAnswer = answerScores.find((s) => s.question_id === q.id);
+              const savedAnswer = savedAnswers.find((a) => a.question_id === q.id);
               return (
                 <div key={q.id} className="space-y-3">
                   {/* Interviewer question */}
@@ -292,23 +252,13 @@ export default function CaseSimulator() {
                   </div>
 
                   {/* Candidate response (if answered) */}
-                  {savedAnswer && (
+                  {savedAnswer && savedAnswer.answer_text && (
                     <div className="flex justify-end">
                       <div className="max-w-[80%] rounded-lg px-4 py-3 text-sm leading-relaxed bg-primary text-primary-foreground">
                         <p className="text-[10px] font-semibold uppercase tracking-wider text-primary-foreground/70 mb-1.5">
                           Your Response
                         </p>
-                        <p>
-                          {(() => {
-                            const ans = savedAnswers.find(
-                              (a) => a.question_id === q.id
-                            );
-                            return ans?.answer_text || "[Submitted]";
-                          })()}
-                        </p>
-                        <p className="text-[10px] mt-2 text-primary-foreground/80">
-                          Score: {savedAnswer.score}/100
-                        </p>
+                        <p>{savedAnswer.answer_text}</p>
                       </div>
                     </div>
                   )}
@@ -317,7 +267,7 @@ export default function CaseSimulator() {
             })}
 
             {/* Current question if not yet answered */}
-            {currentQuestion && !answerScores.some((s) => s.question_id === currentQuestion.id) && (
+            {currentQuestion && !submitted && !answeredQuestionIds.includes(currentQuestion.id) && (
               <div className="flex justify-start">
                 <div className="max-w-[80%] rounded-lg px-4 py-3 text-sm leading-relaxed bg-muted text-foreground">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
@@ -331,16 +281,22 @@ export default function CaseSimulator() {
 
           {/* Response input */}
           <div className="border-t px-5 py-4">
-            {submitted ? (
+            {evaluating ? (
+              <div className="flex items-center justify-center gap-3 py-3 text-sm text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Evaluating your case with AI… this may take a moment.
+              </div>
+            ) : submitted ? (
               <div className="space-y-3">
-                {answerFeedback && (
-                  <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-800">
-                    {answerFeedback}
-                  </div>
-                )}
+                <p className="text-xs text-muted-foreground">
+                  {isLastQuestion
+                    ? "Answer saved. Complete the case to receive your AI evaluation."
+                    : "Answer saved. Move on to the next question."}
+                </p>
                 <Button
                   onClick={handleNextQuestion}
                   className="w-full gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl"
+                  disabled={evaluating}
                 >
                   {isLastQuestion ? "Complete Case" : "Next Question"}
                   <ChevronRight className="h-4 w-4" />

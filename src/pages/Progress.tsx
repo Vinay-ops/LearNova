@@ -65,7 +65,9 @@ export default function Progress() {
     loadSummary();
   }, [userId]);
 
-  const previousReadiness = readinessScore > 12 ? readinessScore - 12 : readinessScore;
+  const previousReadiness = summary?.previous_readiness_score ?? null;
+  const readinessDelta =
+    previousReadiness != null ? readinessScore - previousReadiness : null;
 
   const strongest = skillScores.length > 0
     ? [...skillScores].sort((a, b) => b.score - a.score)[0]
@@ -73,11 +75,14 @@ export default function Progress() {
   const weakest = skillScores.length > 0
     ? [...skillScores].sort((a, b) => a.score - b.score)[0]
     : { name: "N/A", score: 0, previous_score: 0 };
-  const mostImproved = skillScores.length > 0
-    ? [...skillScores].sort(
+  // Most-improved only counts skills with a real previous measurement.
+  const improvedSkills = skillScores.filter((s) => (s.previous_score ?? 0) > 0);
+  const mostImproved = improvedSkills.length > 0
+    ? [...improvedSkills].sort(
         (a, b) => (b.score - (b.previous_score ?? 0)) - (a.score - (a.previous_score ?? 0))
       )[0]
-    : { name: "N/A", score: 0, previous_score: 0 };
+    : null;
+  const fmtDelta = (delta: number) => `${delta > 0 ? "+" : ""}${delta}`;
 
   return (
     <AppLayout>
@@ -116,8 +121,16 @@ export default function Progress() {
               </div>
               <div className="flex items-center gap-1.5 mt-2">
                 <TrendingUp className="h-3.5 w-3.5 text-emerald-600" />
-                <span className="text-sm text-emerald-600 font-semibold">
-                  +{readinessScore - previousReadiness} this month
+                <span
+                  className={`text-sm font-semibold ${
+                    readinessDelta != null && readinessDelta >= 0
+                      ? "text-emerald-600"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {readinessDelta != null
+                    ? `${fmtDelta(readinessDelta)} vs last check`
+                    : "Updated after each evaluation"}
                 </span>
               </div>
             </div>
@@ -127,7 +140,7 @@ export default function Progress() {
               {[
                 { label: "Strength", value: strongest.name, sub: `${strongest.score}/100`, color: "text-emerald-600", bgColor: "bg-emerald-50", borderColor: "border-emerald-200/60" },
                 { label: "Focus Area", value: weakest.name, sub: `${weakest.score}/100`, color: "text-amber-600", bgColor: "bg-amber-50", borderColor: "border-amber-200/60" },
-                { label: "Most Improved", value: mostImproved.name, sub: `+${mostImproved.score - (mostImproved.previous_score ?? 0)}`, color: "text-primary", bgColor: "bg-purple-50", borderColor: "border-purple-200/60" },
+                { label: "Most Improved", value: mostImproved ? mostImproved.name : "—", sub: mostImproved ? fmtDelta(mostImproved.score - (mostImproved.previous_score ?? 0)) : "No prior data", color: "text-primary", bgColor: "bg-purple-50", borderColor: "border-purple-200/60" },
               ].map((item) => (
                 <div key={item.label} className={`rounded-3xl border ${item.borderColor} ${item.bgColor} p-5 shadow-xl shadow-slate-200/30`}>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
@@ -147,45 +160,56 @@ export default function Progress() {
             <p className="text-sm font-bold text-foreground mb-4">
               Performance Over Time
             </p>
-            <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/50">
-              <div className="h-56">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={readinessOverTime}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0edfb" />
-                    <XAxis
-                      dataKey="date"
-                      tick={{ fontSize: 11, fill: "#7a7a8a" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      domain={[0, 100]}
-                      tick={{ fontSize: 11, fill: "#7a7a8a" }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <Tooltip
-                      contentStyle={{
-                        borderRadius: "12px",
-                        border: "1px solid #e8e2dc",
-                        fontSize: "12px",
-                        boxShadow: "0 4px 12px rgba(108,92,231,0.08)",
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="score"
-                      stroke="#6c5ce7"
-                      strokeWidth={2.5}
-                      dot={false}
-                      activeDot={{ r: 5, strokeWidth: 2, fill: "#6c5ce7" }}
-                      animationDuration={1200}
-                      animationEasing="ease-out"
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
+            {readinessOverTime.length > 0 ? (
+              <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/50">
+                <div className="h-56">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={readinessOverTime}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0edfb" />
+                      <XAxis
+                        dataKey="date"
+                        tick={{ fontSize: 11, fill: "#7a7a8a" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        domain={[0, 100]}
+                        tick={{ fontSize: 11, fill: "#7a7a8a" }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <Tooltip
+                        contentStyle={{
+                          borderRadius: "12px",
+                          border: "1px solid #e8e2dc",
+                          fontSize: "12px",
+                          boxShadow: "0 4px 12px rgba(108,92,231,0.08)",
+                        }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="score"
+                        stroke="#6c5ce7"
+                        strokeWidth={2.5}
+                        dot={false}
+                        activeDot={{ r: 5, strokeWidth: 2, fill: "#6c5ce7" }}
+                        animationDuration={1200}
+                        animationEasing="ease-out"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="rounded-3xl border border-slate-100 bg-white p-8 shadow-xl shadow-slate-200/50 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Your performance trend will appear here as you complete evaluations.
+                </p>
+                <p className="text-xs text-muted-foreground/70 mt-1">
+                  Only real snapshots are shown — no estimated history.
+                </p>
+              </div>
+            )}
           </FadeIn>
 
           {/* Skill Development */}
@@ -212,9 +236,11 @@ export default function Progress() {
                         <span className={cn("text-sm font-bold tabular-nums", skillTextColor(skill.score))}>
                           {skill.score}
                         </span>
-                        <span className="text-[11px] text-emerald-600 font-semibold tabular-nums">
-                          +{skill.score - (skill.previous_score ?? 0)}
-                        </span>
+                        {(skill.previous_score ?? 0) > 0 && (
+                          <span className="text-[11px] text-emerald-600 font-semibold tabular-nums">
+                            {fmtDelta(skill.score - (skill.previous_score ?? 0))}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </StaggerItem>

@@ -16,6 +16,7 @@ from ..schemas.case import (
     CaseAnswerResponse,
 )
 from ..services.case_service import CaseService
+from ..services.case_evaluation_service import CaseEvaluationService
 
 router = APIRouter(prefix="/api/cases", tags=["cases"])
 
@@ -121,4 +122,21 @@ def save_case_answer(
     db: Session = Depends(get_db),
 ):
     service = CaseService(db)
-    return service.save_answer(payload.attempt_id, payload.question_id, payload)
+    return service.save_answer(payload.attempt_id, payload.question_id, payload, current_user.id)
+
+
+@router.post("/attempts/{attempt_id}/evaluate", response_model=CaseAttemptResponse)
+def evaluate_case_attempt(
+    attempt_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Server-authoritative AI evaluation for a completed case attempt.
+
+    Runs the evaluator prompt (Prompt Registry → Groq), validates the
+    structured output, and persists the real scores to the attempt. Client-
+    supplied scores are never accepted.
+    """
+    service = CaseEvaluationService(db)
+    attempt, _ = service.evaluate_attempt(attempt_id, current_user.id)
+    return attempt

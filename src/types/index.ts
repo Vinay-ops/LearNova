@@ -290,6 +290,7 @@ export interface AISession {
   total_tokens: number;
   total_latency_ms: number;
   metadata?: any;
+  metadata_?: any;
 }
 
 export interface AIMessage {
@@ -337,8 +338,8 @@ export interface FeedbackResult {
 }
 
 export interface Recommendations {
-  recommended_cases: Array<{ id: ID; reason?: string }>;
-  recommended_drills: Array<{ id: ID; reason?: string }>;
+  recommended_cases: Array<{ id: ID; title?: string; reason?: string }>;
+  recommended_drills: Array<{ id: ID; title?: string; reason?: string }>;
   next_best_action?: string;
   reasoning?: string;
 }
@@ -386,4 +387,5 @@ export interface AIFeedbackResponse {
   recommendations?: string[];
   better_approach?: string;
   biggest_opportunity?: { skill: string; score: number; feedback: string };
+  recommended_drill?: { title?: string; duration?: number; skill?: string };
 }

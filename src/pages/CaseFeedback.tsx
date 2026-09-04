@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, AlertTriangle, ArrowRight, RotateCcw, Lightbulb, Target, Home } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { useCases, useCaseAttempts } from "@/hooks/use-cases";
+import { useCases, useCaseAttempts, useCaseQuestions, useCaseAnswers } from "@/hooks/use-cases";
 import { motion } from "framer-motion";
 import { FadeIn, StaggerList, StaggerItem, AnimatedBar } from "@/components/app/AnimatedSection";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,8 @@ export default function CaseFeedback() {
   const caseData = cases.find((c) => c.id === id);
   const completedAttempts = attempts.filter((a) => a.case_id === id && a.status === "completed");
   const latestAttempt = completedAttempts[completedAttempts.length - 1];
+  const { questions } = useCaseQuestions(id);
+  const { answers } = useCaseAnswers(latestAttempt?.id);
 
   if (!caseData || !latestAttempt) {
     return (
@@ -34,18 +36,44 @@ export default function CaseFeedback() {
     );
   }
 
+  if (latestAttempt.overall_score == null) {
+    return (
+      <AppLayout>
+        <div className="text-center py-16">
+          <h2 className="text-xl font-bold text-slate-900">Awaiting AI evaluation</h2>
+          <p className="text-muted-foreground mt-2 text-sm">
+            Your case attempt was recorded but hasn't been evaluated yet. Submit it for
+            evaluation to receive real AI feedback.
+          </p>
+          <Link to={`/cases/${id}`}>
+            <Button className="mt-4">Back to Case</Button>
+          </Link>
+        </div>
+      </AppLayout>
+    );
+  }
+
   const overallScore = latestAttempt.overall_score || 0;
   const maxScore = 100;
 
-  const skillBreakdown = [
-    { name: "Structuring", score: latestAttempt.structuring_score || 0 },
-    { name: "Quantitative Analysis", score: latestAttempt.quantitative_score || 0 },
-    { name: "Business Judgment", score: latestAttempt.business_judgment_score || 0 },
-    { name: "Communication", score: latestAttempt.communication_score || 0 },
-    { name: "Synthesis", score: latestAttempt.synthesis_score || 0 },
-  ];
+  // Only real, evaluated skill scores are rendered — missing dimensions are
+  // omitted instead of being shown as a fabricated 0.
+  const skillBreakdown = (
+    [
+      { name: "Structuring", score: latestAttempt.structuring_score },
+      { name: "Quantitative Analysis", score: latestAttempt.quantitative_score },
+      { name: "Business Judgment", score: latestAttempt.business_judgment_score },
+      { name: "Communication", score: latestAttempt.communication_score },
+      { name: "Synthesis", score: latestAttempt.synthesis_score },
+    ] as Array<{ name: string; score: number | undefined }>
+  ).filter(
+    (s): s is { name: string; score: number } => typeof s.score === "number",
+  );
 
-  const weakestSkill = [...skillBreakdown].sort((a, b) => a.score - b.score)[0];
+  const weakestSkill =
+    skillBreakdown.length > 0
+      ? [...skillBreakdown].sort((a, b) => a.score - b.score)[0]
+      : null;
 
   return (
     <AppLayout>
@@ -108,7 +136,7 @@ export default function CaseFeedback() {
             </p>
           </div>
           <div className="space-y-2.5">
-            {(latestAttempt.strengths.length > 0 ? latestAttempt.strengths : ["Good effort on the case"]).map((s: string, i: number) => (
+            {(latestAttempt.strengths.length > 0 ? latestAttempt.strengths : ["No specific strengths were recorded by the AI evaluation."]).map((s: string, i: number) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, x: -8 }}
@@ -130,19 +158,56 @@ export default function CaseFeedback() {
               Biggest Opportunity
             </p>
           </div>
-          <div className="pl-6">
-            <div className="flex items-center gap-2 mb-1.5">
-              <span className="font-semibold text-sm">{weakestSkill.name}</span>
-              <span className="text-sm text-muted-foreground tabular-nums">{weakestSkill.score}/100</span>
+          {weakestSkill ? (
+            <div className="pl-6">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="font-semibold text-sm">{weakestSkill.name}</span>
+                <span className="text-sm text-muted-foreground tabular-nums">{weakestSkill.score}/100</span>
+              </div>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                {latestAttempt.weaknesses.length > 0
+                  ? latestAttempt.weaknesses[0]
+                  : "No specific improvement area was recorded by the AI evaluation."}
+              </p>
             </div>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              {(latestAttempt.weaknesses.length > 0
-                ? latestAttempt.weaknesses[0]
-                : "This is your lowest skill. Targeted practice can help improve it quickly.")}
+          ) : (
+            <p className="text-sm leading-relaxed text-muted-foreground pl-6">
+              Skill-level scores weren't recorded for this attempt — see your AI feedback below.
             </p>
-          </div>
+          )}
         </FadeIn>
       </div>
+
+      {/* Question review — real submitted answers, no fabricated scores */}
+      {questions.length > 0 && (
+        <FadeIn delay={0.48} className="mb-8">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-widest mb-4">
+            Your Responses
+          </p>
+          <div className="space-y-3">
+            {questions.map((q) => {
+              const answer = answers.find((a) => a.question_id === q.id);
+              return (
+                <div
+                  key={q.id}
+                  className="rounded-2xl border border-slate-100 bg-white p-4 shadow-sm"
+                >
+                  <p className="text-sm font-semibold text-slate-800 mb-2">
+                    Q{q.display_order + 1}. {q.question_text}
+                  </p>
+                  {answer && answer.answer_text ? (
+                    <p className="text-sm text-slate-600 leading-relaxed pl-3 border-l-2 border-purple-200">
+                      {answer.answer_text}
+                    </p>
+                  ) : (
+                    <p className="text-xs italic text-muted-foreground pl-3">No answer submitted</p>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </FadeIn>
+      )}
 
       {/* Better Approach / Feedback */}
       <FadeIn delay={0.5} className="mb-8">

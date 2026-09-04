@@ -86,7 +86,24 @@ export function useCaseAttempt(userId: ID | undefined, caseId: ID | undefined) {
     [userId],
   );
 
-  return { attempt, loading, createAttempt, completeAttempt, updateAttempt, setAttempt };
+  const evaluateAttempt = useCallback(
+    async (attemptId: ID) => {
+      const evaluated = await casesApi.evaluateAttempt(attemptId);
+      setAttempt(evaluated);
+      return evaluated;
+    },
+    [],
+  );
+
+  return {
+    attempt,
+    loading,
+    createAttempt,
+    completeAttempt,
+    updateAttempt,
+    evaluateAttempt,
+    setAttempt,
+  };
 }
 
 export function useCaseQuestions(caseId: ID | undefined) {

@@ -48,6 +48,7 @@ class AISessionCreate(BaseModel):
     related_resource_type: Optional[str] = None
     prompt_id: Optional[str] = None
     model_used: Optional[str] = None
+    metadata_: Optional[Any] = None
 
 
 class AISessionUpdate(BaseModel):
@@ -79,32 +80,41 @@ class AISessionResponse(BaseModel):
 
 
 class AIChatRequest(BaseModel):
+    session_id: Optional[str] = None
     case_id: Optional[str] = None
     case_attempt_id: Optional[str] = None
-    message: str
+    topic: Optional[str] = None
+    difficulty: Optional[str] = None
+    message: str = ""
     conversation_history: Optional[List[dict[str, Any]]] = None
 
 
 class AIChatResponse(BaseModel):
     session_id: str
     message: str
-    next_question: Optional[str] = None
+    next_question: Optional[Any] = None
     structured_output: Optional[Any] = None
 
 
+class AIInterviewCompleteRequest(BaseModel):
+    session_id: str
+
+
 class AIEvaluationRequest(BaseModel):
-    case_attempt_id: str
+    case_attempt_id: Optional[str] = None
+    session_id: Optional[str] = None
 
 
 class AIEvaluationResponse(BaseModel):
-    case_attempt_id: str
+    case_attempt_id: Optional[str] = None
     evaluation: StructuredEvaluation
     ai_session_id: Optional[str] = None
 
 
 class AIFeedbackRequest(BaseModel):
-    case_id: str
-    attempt_id: str
+    case_id: Optional[str] = None
+    attempt_id: Optional[str] = None
+    session_id: Optional[str] = None
 
 
 class AIFeedbackResponse(BaseModel):
@@ -118,10 +128,37 @@ class AIFeedbackResponse(BaseModel):
 
 
 class AIRecommendationRequest(BaseModel):
-    pass
+    session_id: Optional[str] = None
 
 
 class AIRecommendationResponse(BaseModel):
+    recommended_cases: List[dict[str, Any]] = Field(default_factory=list)
+    recommended_drills: List[dict[str, Any]] = Field(default_factory=list)
+    next_best_action: Optional[str] = None
+    reasoning: Optional[str] = None
+
+
+class FeedbackOpportunity(BaseModel):
+    skill: str
+    score: int
+    feedback: Optional[str] = None
+
+
+class FeedbackLLMResult(BaseModel):
+    """Structured shape expected from the feedback_v1 prompt."""
+
+    overall_score: int
+    max_score: int = 100
+    skill_breakdown: List[SkillBreakdown] = Field(default_factory=list)
+    strengths: List[str] = Field(default_factory=list)
+    biggest_opportunity: Optional[FeedbackOpportunity] = None
+    better_approach: Optional[str] = None
+    recommended_drill: Optional[dict[str, Any]] = None
+
+
+class RecommendationsLLMResult(BaseModel):
+    """Structured shape expected from the recommendations_v1 prompt."""
+
     recommended_cases: List[dict[str, Any]] = Field(default_factory=list)
     recommended_drills: List[dict[str, Any]] = Field(default_factory=list)
     next_best_action: Optional[str] = None

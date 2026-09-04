@@ -86,6 +86,7 @@ class InterviewerService:
                 user_prompt=user_prompt,
                 model=template.model or None,
                 temperature=template.temperature,
+                max_tokens=template.max_tokens,
             )
             latency_ms = int((time.perf_counter() - start) * 1000)
             log_ai_request(

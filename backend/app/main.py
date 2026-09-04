@@ -60,9 +60,9 @@ def health():
             "cases": "Phase 3 - API ready",
             "assessments": "Phase 4 - API ready",
             "drills": "Phase 5 - API ready",
-            "ai_interview": "Phase 6-7 - Prompt architecture + stub routes",
-            "evaluations": "Phase 8 - Stub routes",
-            "recommendations": "Phase 9 - Stub routes",
+            "ai_interview": "Phase 6-7 - Sessions, adaptive chat, evaluation, feedback, recommendations",
+            "evaluations": "Phase 8 - Wired via evaluator prompt + server-side persistence",
+            "recommendations": "Phase 9 - Wired (deterministic + LLM enrichment)",
             "prompts": "Phase 6 - Prompt registry exposed",
         },
     }

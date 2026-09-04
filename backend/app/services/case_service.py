@@ -70,6 +70,23 @@ class CaseService:
             raise AuthorizationError()
         return CaseAttemptResponse.model_validate(attempt)
 
+    # Scoring/evaluation fields that only the server-side AI evaluation may
+    # write. Client-supplied values are ignored so fake scores can never be
+    # persisted (the evaluation endpoint is the single authoritative writer).
+    _EVALUATION_OWNED_FIELDS = {
+        "overall_score",
+        "structuring_score",
+        "quantitative_score",
+        "business_judgment_score",
+        "communication_score",
+        "synthesis_score",
+        "ai_feedback",
+        "strengths",
+        "weaknesses",
+        "recommendations",
+        "evaluated_by_prompt_id",
+    }
+
     def update_attempt(
         self, attempt_id: str, user_id: str, payload: CaseAttemptUpdate
     ) -> CaseAttemptResponse:
@@ -80,17 +97,22 @@ class CaseService:
             raise AuthorizationError()
 
         data = payload.model_dump(exclude_unset=True)
+        # Never let the client write evaluation-owned fields.
+        for field in self._EVALUATION_OWNED_FIELDS:
+            data.pop(field, None)
         update_model_fields(attempt, data)
         self.db.commit()
         self.db.refresh(attempt)
         return CaseAttemptResponse.model_validate(attempt)
 
     def save_answer(
-        self, attempt_id: str, question_id: str, payload: CaseAnswerCreate
+        self, attempt_id: str, question_id: str, payload: CaseAnswerCreate, user_id: str
     ) -> CaseAnswerResponse:
         attempt = self.db.query(CaseAttempt).filter(CaseAttempt.id == attempt_id).first()
         if not attempt:
             raise NotFoundError("Case attempt")
+        if str(attempt.user_id) != str(user_id):
+            raise AuthorizationError()
 
         question = (
             self.db.query(CaseQuestion)
@@ -109,8 +131,12 @@ class CaseService:
             .first()
         )
 
+        # The AI evaluation owns score/ai_feedback — client-supplied values are
+        # never persisted. Answers are stored as raw text only.
         if existing:
             data = payload.model_dump(exclude_unset=True)
+            data.pop("score", None)
+            data.pop("ai_feedback", None)
             update_model_fields(existing, data)
             self.db.commit()
             self.db.refresh(existing)
@@ -120,8 +146,8 @@ class CaseService:
             attempt_id=attempt_id,
             question_id=question_id,
             answer_text=payload.answer_text,
-            score=payload.score,
-            ai_feedback=payload.ai_feedback,
+            score=None,
+            ai_feedback=None,
             duration_seconds=payload.duration_seconds,
         )
         self.db.add(answer)
