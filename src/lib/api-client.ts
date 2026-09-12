@@ -5,7 +5,10 @@ import axios from "axios";
 // /api/* to the FastAPI backend. Set it locally to point at the dev backend.
 const env = (import.meta as any).env ?? {};
 // VITE_API_URL is the single name — no legacy alias.
-const configuredUrl: string = env.VITE_API_URL || "";
+const rawConfiguredUrl = typeof env.VITE_API_URL === "string" ? env.VITE_API_URL.trim() : "";
+const configuredUrl: string = /^(null|undefined)$/i.test(rawConfiguredUrl)
+  ? ""
+  : rawConfiguredUrl;
 // Never ship a localhost API URL in a production build: ignore it and fall
 // back to same-origin /api calls (the Vercel services rewrite handles routing).
 const isLocalUrl = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?($|\/)/.test(configuredUrl);
