@@ -3,6 +3,7 @@ from typing import Optional
 from sqlalchemy.orm import Session
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
+from pydantic import ValidationError as PydanticValidationError
 
 from ..core.config import settings
 from ..core.security import create_access_token, verify_token
@@ -11,7 +12,7 @@ from ..core.exceptions import (
     ConflictError,
     NotFoundError,
 )
-from ..core.logging import log_auth_event
+from ..core.logging import log_auth_event, get_logger
 from ..db.session import get_db
 from ..models.user import User
 from ..models.profile import Profile
@@ -75,8 +76,7 @@ class AuthService:
             raise AuthenticationError("Invalid email or password")
 
         try:
-            if not ph.verify(user.password_hash, password):
-                raise AuthenticationError("Invalid email or password")
+            ph.verify(user.password_hash, password)
         except VerifyMismatchError:
             raise AuthenticationError("Invalid email or password")
         except Exception:
@@ -86,11 +86,47 @@ class AuthService:
         token = create_access_token(str(user.id))
         log_auth_event("login", str(user.id))
 
+        try:
+            user_resp = UserResponse.model_validate(user)
+        except PydanticValidationError as e:
+            get_logger("casepilot.auth").error(
+                "user response validation failed",
+                extra={"user_id": str(user.id), "errors": e.errors()},
+            )
+            raise
+
+        profile_resp = None
+        if profile:
+            try:
+                profile_resp = ProfileResponse.model_validate(profile)
+            except PydanticValidationError as e:
+                get_logger("casepilot.auth").warning(
+                    "profile response validation failed — coercing defaults",
+                    extra={
+                        "user_id": str(user.id),
+                        "profile_id": str(profile.id),
+                        "errors": e.errors(),
+                    },
+                )
+                # Build a safe profile response by coercing NULLs to schema defaults
+                profile_resp = ProfileResponse(
+                    id=str(profile.id),
+                    user_id=str(profile.user_id),
+                    full_name=profile.full_name or (profile.user.email.split("@")[0] if profile.user else "User"),
+                    avatar_url=profile.avatar_url,
+                    experience_level=profile.experience_level,
+                    target_firms=profile.target_firms if isinstance(profile.target_firms, list) else [],
+                    interview_date=profile.interview_date,
+                    readiness_score=profile.readiness_score if isinstance(profile.readiness_score, int) else 0,
+                    created_at=profile.created_at,
+                    updated_at=profile.updated_at,
+                )
+
         return AuthResponse(
             access_token=token,
             token_type="bearer",
-            user=UserResponse.model_validate(user),
-            profile=ProfileResponse.model_validate(profile) if profile else None,
+            user=user_resp,
+            profile=profile_resp,
         )
 
     def me(self, user_id: str) -> MeResponse:
@@ -98,9 +134,28 @@ class AuthService:
         if not user:
             raise NotFoundError("User")
         profile = self.db.query(Profile).filter(Profile.user_id == user_id).first()
+
+        profile_resp = None
+        if profile:
+            try:
+                profile_resp = ProfileResponse.model_validate(profile)
+            except PydanticValidationError:
+                profile_resp = ProfileResponse(
+                    id=str(profile.id),
+                    user_id=str(profile.user_id),
+                    full_name=profile.full_name or (user.email.split("@")[0]),
+                    avatar_url=profile.avatar_url,
+                    experience_level=profile.experience_level,
+                    target_firms=profile.target_firms if isinstance(profile.target_firms, list) else [],
+                    interview_date=profile.interview_date,
+                    readiness_score=profile.readiness_score if isinstance(profile.readiness_score, int) else 0,
+                    created_at=profile.created_at,
+                    updated_at=profile.updated_at,
+                )
+
         return MeResponse(
             user=UserResponse.model_validate(user),
-            profile=ProfileResponse.model_validate(profile) if profile else None,
+            profile=profile_resp,
         )
 
     def logout(self, user_id: Optional[str] = None) -> dict:

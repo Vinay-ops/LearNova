@@ -1,8 +1,12 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+from pydantic import ValidationError as PydanticValidationError
+import traceback
 
 from .core.config import settings
-from .core.logging import LOG_LEVEL, setup_logging
+from .core.logging import LOG_LEVEL, setup_logging, log_api_error, get_logger
 from .ai import bootstrap_prompts
 from .api import (
     auth_router,
@@ -19,6 +23,8 @@ from .api import (
     quizzes_router,
     resumes_router,
 )
+
+logger = get_logger("casepilot.main")
 
 setup_logging(LOG_LEVEL)
 bootstrap_prompts()
@@ -67,6 +73,72 @@ def health():
             "prompts": "Phase 6 - Prompt registry exposed",
         },
     }
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_exception_handler(
+    request: Request, exc: RequestValidationError
+) -> JSONResponse:
+    log_api_error(
+        request.method, request.url.path, 422,
+        error_detail=exc.errors(),
+    )
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"detail": exc.errors(), "code": "validation_error"},
+    )
+
+
+@app.exception_handler(PydanticValidationError)
+async def response_validation_exception_handler(
+    request: Request, exc: PydanticValidationError
+) -> JSONResponse:
+    logger.error(
+        "response validation failed",
+        extra={
+            "method": request.method,
+            "path": request.url.path,
+            "errors": exc.errors(),
+            "traceback": traceback.format_exc(limit=10),
+        },
+    )
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "detail": "Response schema validation failed",
+            "code": "response_validation_error",
+            "errors": exc.errors() if settings.ENVIRONMENT == "development" else None,
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(
+    request: Request, exc: Exception
+) -> JSONResponse:
+    tb_str = traceback.format_exc(limit=15)
+    logger.error(
+        "unhandled exception",
+        extra={
+            "method": request.method,
+            "path": request.url.path,
+            "error_type": type(exc).__name__,
+            "error_msg": str(exc),
+            "traceback": tb_str,
+        },
+    )
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "detail": (
+                str(exc)
+                if settings.ENVIRONMENT == "development"
+                else "Internal server error"
+            ),
+            "code": "internal_error",
+            "error_type": type(exc).__name__ if settings.ENVIRONMENT == "development" else None,
+        },
+    )
 
 
 app.include_router(auth_router)
