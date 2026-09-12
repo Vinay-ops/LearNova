@@ -42,7 +42,16 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 database_url = os.getenv("DATABASE_URL", "")
-config.set_main_option("sqlalchemy.url", database_url)
+
+# 'postgresql://' URLs default to the psycopg2 dialect in SQLAlchemy, but this
+# project ships psycopg (v3) only — normalize here exactly as app/db/database.py
+# does, so the same DATABASE_URL works for both the app and migrations.
+if database_url.startswith("postgresql://"):
+    database_url = database_url.replace("postgresql://", "postgresql+psycopg://", 1)
+
+# alembic.ini is read by configparser, which treats '%' as interpolation syntax.
+# Passwords are percent-encoded in connection strings, so escape it here.
+config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 
 target_metadata = Base.metadata
 
