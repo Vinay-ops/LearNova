@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
@@ -26,12 +27,44 @@ from .api import (
 
 logger = get_logger("casepilot.main")
 
-setup_logging(LOG_LEVEL)
-bootstrap_prompts()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Run startup logic AFTER the FastAPI app is constructed so any failure
+    is caught by exception handlers (not a hard import-time crash).
+
+    Vercel serverless functions re-import the module on every cold start.
+    If startup code runs at module import (e.g. ``create_engine``,
+    ``bootstrap_prompts`` touching the DB) and fails, FastAPI never even
+    registers and you get ``FUNCTION_INVOCATION_FAILED`` with no logs.
+    Running it here instead keeps the app alive and error responses sane.
+    """
+    try:
+        setup_logging(LOG_LEVEL)
+    except Exception as e:  # pragma: no cover - defensive
+        print(f"[startup] setup_logging failed: {e!r}")
+
+    try:
+        bootstrap_prompts()
+    except Exception as e:  # pragma: no cover - defensive
+        # bootstrap_prompts only registers in-memory templates; failure here
+        # means an import error in a prompt module. Log and continue; the
+        # first real AI call will fail anyway with a clear error.
+        try:
+            logger.error(
+                "bootstrap_prompts failed — proceeding with empty registry",
+                extra={"error_type": type(e).__name__, "error_msg": str(e)},
+            )
+        except Exception:
+            print(f"[startup] bootstrap_prompts failed: {e!r}")
+
+    yield
+
 
 app = FastAPI(
     title="Learnova API",
     version="0.2.0",
+    lifespan=lifespan,
     description=(
         "Learnova — AI-powered consulting interview preparation platform. "
         "Architecture supports auth, profiles, cases, assessments, drills, "
@@ -55,8 +88,113 @@ app.add_middleware(
 
 @app.get("/api/health", tags=["health"])
 def health():
-    return {
-        "status": "ok",
+    """Health check that also reports DATABASE_URL diagnostics and a live DB
+    connection probe. On Vercel this is the first URL to hit to debug env-var
+    issues without needing a login attempt.
+    """
+    from urllib.parse import urlparse
+    from .db.database import get_engine, _normalize_database_url
+    from sqlalchemy import text
+    from sqlalchemy.exc import SQLAlchemyError
+
+    raw_url = settings.DATABASE_URL or ""
+    try:
+        norm = _normalize_database_url(raw_url)
+    except Exception as e:
+        norm = f"<normalize failed: {e!r}>"
+
+    # Parse host:port without leaking password
+    host = port = scheme = path = None
+    try:
+        parsed = urlparse(norm) if isinstance(norm, str) else None
+        if parsed:
+            scheme = parsed.scheme
+            host = parsed.hostname
+            port = parsed.port
+            path = parsed.path
+    except Exception:
+        pass
+
+    # Detect common config mistakes
+    warnings = []
+    if not raw_url:
+        warnings.append("DATABASE_URL is EMPTY — backend env var not set")
+    if scheme and "postgres" in scheme and host and host.endswith(".supabase.com"):
+        if "pooler" not in host:
+            warnings.append(
+                "Using DIRECT Supabase host (db.<ref>.supabase.com). Vercel is IPv4-only "
+                "and cannot reach the IPv6 direct host. Switch to Session Pooler host "
+                "(aws-0-<region>.pooler.supabase.com)."
+            )
+    if scheme and "postgres" in scheme and port is not None and port != 6543 and host and "pooler" in str(host):
+        warnings.append(
+            f"Session Pooler port should be 6543, got {port}. Pooler does NOT "
+            "listen on 5432 — that will timeout / refuse."
+        )
+    if scheme and "postgres" in scheme and raw_url and "sslmode=require" not in raw_url:
+        warnings.append(
+            "DATABASE_URL missing ?sslmode=require. Supabase pooler requires "
+            "TLS; connection will be rejected otherwise."
+        )
+    if not settings.JWT_SECRET:
+        warnings.append("JWT_SECRET is EMPTY — token creation will crash")
+
+    # Actually try a one-off DB probe using engine.connect() so we know the
+    # credentials + network work without relying on an endpoint that needs auth.
+    db_probe = {"status": "skipped"}
+    if raw_url and scheme and "sqlite" not in str(scheme):
+        try:
+            engine = get_engine()
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+                db_probe = {"status": "ok"}
+        except SQLAlchemyError as e:
+            inner = getattr(e, "orig", None)
+            inner_msg = str(inner) if inner is not None else str(e)
+            # Classify the error so operators can act immediately
+            category = "database_error"
+            if "password authentication" in inner_msg.lower():
+                category = "bad_password"
+                hints = [
+                    "Supabase DB password may have been reset recently. "
+                    "Go to Supabase → Database → Reset database password, then "
+                    "paste the NEW password (URL-encoded if special chars) "
+                    "into Vercel Backend DATABASE_URL."
+                ]
+            elif "timeout" in inner_msg.lower() or "refused" in inner_msg.lower() or "cannot assign" in inner_msg.lower():
+                category = "network"
+                hints = [
+                    "Ensure pooler host is used (aws-0-REGION.pooler.supabase.com)",
+                    "Ensure port is 6543 (NOT 5432) for pooler",
+                    "Ensure ?sslmode=require is appended",
+                ]
+            elif "ssl" in inner_msg.lower() or "tls" in inner_msg.lower():
+                category = "ssl"
+                hints = ["Append ?sslmode=require to DATABASE_URL"]
+            else:
+                hints = []
+            db_probe = {
+                "status": "error",
+                "category": category,
+                "error_type": type(e).__name__,
+                "driver_error_type": type(inner).__name__ if inner is not None else None,
+                "message": inner_msg,
+                "hints": hints,
+            }
+        except Exception as e:
+            db_probe = {
+                "status": "error",
+                "category": "unknown",
+                "error_type": type(e).__name__,
+                "message": str(e),
+            }
+
+    overall = "ok"
+    if warnings or db_probe.get("status") == "error":
+        overall = "degraded"
+
+    payload = {
+        "status": overall,
         "version": "0.2.0",
         "phase": "Phase 5 (Cases, Assessments, Drills) implemented",
         "modules": {
@@ -72,7 +210,24 @@ def health():
             "recommendations": "Phase 9 - Wired (deterministic + LLM enrichment)",
             "prompts": "Phase 6 - Prompt registry exposed",
         },
+        "env": {
+            "environment": settings.ENVIRONMENT,
+            "jwt_secret_set": bool(settings.JWT_SECRET),
+            "groq_api_key_set": bool(settings.GROQ_API_KEY),
+            "frontend_url": settings.FRONTEND_URL,
+        },
+        "database": {
+            "scheme": scheme,
+            "host": host,
+            "port": port,
+            "path": path,
+            "uses_pooler": "pooler" in str(host) if host else False,
+            "has_sslmode_require": "sslmode=require" in raw_url,
+            "warnings": warnings,
+            "probe": db_probe,
+        },
     }
+    return payload
 
 
 @app.exception_handler(RequestValidationError)
