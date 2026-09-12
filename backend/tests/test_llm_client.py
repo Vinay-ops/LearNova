@@ -7,6 +7,8 @@ import pytest
 from unittest.mock import MagicMock, patch
 
 from app.ai.client import (
+    GROQ_BASE_URL,
+    GROQ_MODEL,
     LLMResponse,
     StubLLMClient,
     GroqLLMClient,
@@ -16,8 +18,7 @@ from app.ai.client import (
 from app.schemas.ai import StructuredEvaluation
 from app.core.exceptions import AIError, AIValidationError
 
-GROQ_BASE_URL = "https://api.groq.com/openai/v1"
-DEFAULT_MODEL = "openai/gpt-oss-120b"
+DEFAULT_MODEL = GROQ_MODEL
 
 
 # ============================================================
@@ -77,8 +78,6 @@ class TestGetLLMClient:
     def test_returns_groq_when_key_set(self):
         with patch("app.ai.client.settings") as mock_settings:
             mock_settings.GROQ_API_KEY = "test-key-123"
-            mock_settings.GROQ_MODEL = DEFAULT_MODEL
-            mock_settings.GROQ_BASE_URL = GROQ_BASE_URL
             mock_settings.LLM_TEMPERATURE = 0.7
             client = get_llm_client()
             assert isinstance(client, GroqLLMClient)
@@ -100,8 +99,6 @@ class TestGroqLLMClient:
     def _make_client(self, api_key="test-key"):
         with patch("app.ai.client.settings") as mock_settings:
             mock_settings.GROQ_API_KEY = api_key
-            mock_settings.GROQ_MODEL = DEFAULT_MODEL
-            mock_settings.GROQ_BASE_URL = GROQ_BASE_URL
             mock_settings.LLM_TEMPERATURE = 0.7
             return GroqLLMClient()
 
@@ -246,53 +243,45 @@ class TestGroqLLMClient:
         call_kwargs = mock_openai_cls.return_value.chat.completions.create.call_args[1]
         assert call_kwargs["max_tokens"] == 500
 
-    def test_blank_configured_model_still_sends_a_model(self):
-        """Regression: an empty GROQ_MODEL env value ("") must fall back to a
-        valid model — the provider rejects model-less requests with a 400."""
-        with patch("app.ai.client.settings") as mock_settings:
-            mock_settings.GROQ_API_KEY = "test-key"
-            mock_settings.GROQ_MODEL = ""  # explicitly blank in env
-            mock_settings.GROQ_BASE_URL = GROQ_BASE_URL
-            mock_settings.LLM_TEMPERATURE = 0.7
-            client = GroqLLMClient()
+    def test_no_model_arg_uses_module_constant(self):
+        """Templates pass model=None, so the client must always send the
+        GROQ_MODEL constant — the provider rejects model-less requests (400)."""
+        assert GroqLLMClient._resolve_model(None) == DEFAULT_MODEL
 
-            mock_response = MagicMock()
-            mock_response.choices = [MagicMock()]
-            mock_response.choices[0].message.content = "ok"
-            mock_response.usage.total_tokens = 5
+        client = self._make_client()
 
-            mock_openai_cls = MagicMock()
-            mock_openai_cls.return_value.chat.completions.create.return_value = mock_response
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message.content = "ok"
+        mock_response.usage.total_tokens = 5
 
-            with patch.dict("sys.modules", {"openai": MagicMock(OpenAI=mock_openai_cls)}):
-                # No model passed by the caller (templates pass model=None)
-                resp = client.chat("system", "user")
+        mock_openai_cls = MagicMock()
+        mock_openai_cls.return_value.chat.completions.create.return_value = mock_response
 
-            assert resp.model == DEFAULT_MODEL
-            call_kwargs = mock_openai_cls.return_value.chat.completions.create.call_args[1]
-            assert call_kwargs["model"] == DEFAULT_MODEL
+        with patch.dict("sys.modules", {"openai": MagicMock(OpenAI=mock_openai_cls)}):
+            resp = client.chat("system", "user")
 
-    def test_mistaken_models_url_is_normalized(self):
-        """Regression: setting GROQ_BASE_URL to the model-list URL must not
-        corrupt request paths (404 /openai/v1/models/chat/completions)."""
-        with patch("app.ai.client.settings") as mock_settings:
-            mock_settings.GROQ_API_KEY = "test-key"
-            mock_settings.GROQ_MODEL = DEFAULT_MODEL
-            mock_settings.GROQ_BASE_URL = "https://api.groq.com/openai/v1/models"
-            mock_settings.LLM_TEMPERATURE = 0.7
-            client = GroqLLMClient()
+        assert resp.model == DEFAULT_MODEL
+        call_kwargs = mock_openai_cls.return_value.chat.completions.create.call_args[1]
+        assert call_kwargs["model"] == DEFAULT_MODEL
+
+    def test_base_url_is_normalized(self):
+        """The base URL is a constant now, but normalization must still hold so
+        a model-list URL / trailing slash never corrupts request paths
+        (which would 404 as /openai/v1/models/chat/completions)."""
+        client = self._make_client()
         assert client.base_url == GROQ_BASE_URL
 
-        # trailing slash and bare value also normalize
+        assert GroqLLMClient._normalize_base_url("https://api.groq.com/openai/v1/models") == GROQ_BASE_URL
         assert GroqLLMClient._normalize_base_url("https://api.groq.com/openai/v1/") == GROQ_BASE_URL
         assert GroqLLMClient._normalize_base_url("") == GROQ_BASE_URL
         assert GroqLLMClient._normalize_base_url(None) == GROQ_BASE_URL
 
     def test_whitespace_only_model_arg_falls_back(self):
-        with patch("app.ai.client.settings") as mock_settings:
-            mock_settings.GROQ_MODEL = ""
-            assert GroqLLMClient._resolve_model("   ") == DEFAULT_MODEL
-            assert GroqLLMClient._resolve_model("llama-3.1-8b-instant") == "llama-3.1-8b-instant"
+        # GROQ_MODEL is a code constant now — no env is involved in resolution.
+        assert GroqLLMClient._resolve_model("   ") == DEFAULT_MODEL
+        assert GroqLLMClient._resolve_model("") == DEFAULT_MODEL
+        assert GroqLLMClient._resolve_model("llama-3.1-8b-instant") == "llama-3.1-8b-instant"
 
     def test_api_key_not_in_error_messages(self):
         """Security: API key must never appear in error messages."""

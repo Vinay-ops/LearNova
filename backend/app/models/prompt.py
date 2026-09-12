@@ -14,6 +14,9 @@ from sqlalchemy import (
     func,
 )
 
+# The default model is a code constant in the AI client module (single source
+# of truth for the Groq endpoint/model — see app/ai/client.py).
+from ..ai.client import GROQ_MODEL
 from ..db.database import Base
 from ..utils.enums import PromptPurpose
 
@@ -30,7 +33,7 @@ class Prompt(Base):
     user_prompt_template = Column(Text, nullable=True)
     variables = Column(JSON, nullable=True, default=list)
     output_schema = Column(JSON, nullable=True)
-    model = Column(String, nullable=False, default="openai/gpt-oss-120b")
+    model = Column(String, nullable=False, default=GROQ_MODEL)
     temperature = Column(Numeric(precision=3, scale=2), nullable=False, default=0.7)
     top_p = Column(Numeric(precision=3, scale=2), nullable=True)
     max_tokens = Column(Integer, nullable=True)

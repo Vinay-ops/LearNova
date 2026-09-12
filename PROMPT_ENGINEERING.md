@@ -76,7 +76,7 @@ Every AI feature in CasePilot runs through the same pipeline:
 |---|---|
 | **Purpose** | Run realistic one-question-at-a-time case interview |
 | **Phase** | Phase 7 |
-| **Model** | `GROQ_MODEL` default: `openai/gpt-oss-120b` (override via prompt template) |
+| **Model** | `GROQ_MODEL` code constant (`openai/gpt-oss-120b`) — per-prompt override via the prompt's `model` field |
 | **Temperature** | 0.8 (higher so follow-ups sound natural, not templated) |
 | **Output** | `{ question, question_type, display_hint, expected_duration_seconds, notes }` |
 
@@ -116,7 +116,7 @@ Every AI feature in CasePilot runs through the same pipeline:
 |---|---|
 | **Purpose** | Score a completed case attempt per skill and produce evidence-based feedback |
 | **Phase** | Phase 8 |
-| **Model** | `GROQ_MODEL` default: `openai/gpt-oss-120b` (override via prompt template) |
+| **Model** | `GROQ_MODEL` code constant (`openai/gpt-oss-120b`) — per-prompt override via the prompt's `model` field |
 | **Temperature** | 0.2 (near-zero to keep scoring deterministic) |
 | **Output** | Pydantic `StructuredEvaluation` — `{overall_score, skills[{skill,score,evidence}], strengths, improvements, recommendations}` |
 
@@ -151,7 +151,7 @@ Every AI feature in CasePilot runs through the same pipeline:
 |---|---|
 | **Purpose** | Generate complete, solvable case packets: title, company, Q1…Q5, model answers, rubrics |
 | **Phase** | Phase 6 integration |
-| **Model** | `GROQ_MODEL` default: `openai/gpt-oss-120b` (override via prompt template) |
+| **Model** | `GROQ_MODEL` code constant (`openai/gpt-oss-120b`) — per-prompt override via the prompt's `model` field |
 | **Temperature** | 0.9 (high variation for interesting, diverse cases) |
 | **Output** | JSON matching the Case + CaseQuestion DB schemas 1:1 |
 

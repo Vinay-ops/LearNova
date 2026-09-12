@@ -4,6 +4,16 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """Runtime configuration — secrets and genuinely per-environment values.
+
+    Required env vars (see .env.example): DATABASE_URL, GROQ_API_KEY,
+    JWT_SECRET, FRONTEND_URL, ENVIRONMENT (plus the frontend's VITE_API_URL).
+
+    The Groq endpoint and model are deliberately NOT env-driven — they are code
+    constants in ``app/ai/client.py`` (``GROQ_BASE_URL`` / ``GROQ_MODEL``)
+    because they are neither secret nor environment-specific.
+    """
+
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parent.parent.parent / ".env",
         case_sensitive=True,
@@ -18,16 +28,11 @@ class Settings(BaseSettings):
 
     FRONTEND_URL: str = "http://localhost:5173"
 
-    LOG_LEVEL: str = "INFO"
-
     LLM_TEMPERATURE: float = 0.7
 
-    # AI provider: Groq (OpenAI-compatible endpoint)
-    # Default model verified against Groq's supported-model docs (Sept 2026):
-    # openai/gpt-oss-120b is a production model (131k ctx, 65k max completion).
+    # AI provider: Groq via its OpenAI-compatible endpoint. Only the key is
+    # configured here; the base URL and model are constants in app/ai/client.py.
     GROQ_API_KEY: Optional[str] = None
-    GROQ_MODEL: str = "openai/gpt-oss-120b"
-    GROQ_BASE_URL: str = "https://api.groq.com/openai/v1"
 
     ENVIRONMENT: str = "development"
 

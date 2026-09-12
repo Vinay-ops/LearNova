@@ -2,7 +2,7 @@
 
 Base URL defaults:
 - Dev backend: `http://localhost:8000`
-- Frontend API base is read from `VITE_API_BASE_URL`; defaults to the backend URL above.
+- Frontend API base is read from `VITE_API_URL` (legacy `VITE_API_BASE_URL` is still accepted as a fallback); when unset it defaults to same-origin `/api/*`.
 
 All protected routes require a `Authorization: Bearer <token>` header issued from `/api/auth/login` or `/api/auth/signup`.
 

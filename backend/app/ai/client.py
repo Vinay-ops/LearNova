@@ -15,6 +15,20 @@ from ..core.logging import log_ai_request
 logger = logging.getLogger("learnova.ai.client")
 
 
+# ---------------------------------------------------------------------------
+# Groq endpoint + model — code constants, NOT environment variables.
+#
+# Neither value is a secret nor varies per environment, so keeping them in the
+# process env only produced config drift between the .env templates. To switch
+# models, edit GROQ_MODEL here. A per-call `model=` override (the prompt
+# registry passes one when a prompt defines it) still takes precedence, so an
+# individual prompt can be re-pointed at a different model from the DB without
+# a code change.
+# ---------------------------------------------------------------------------
+GROQ_BASE_URL = "https://api.groq.com/openai/v1"
+GROQ_MODEL = "openai/gpt-oss-120b"
+
+
 @dataclass
 class LLMResponse:
     content: str
@@ -44,12 +58,10 @@ class BaseLLMClient:
     provider (Groq today) never touches services, prompts, or routes.
     """
 
-    DEFAULT_MODEL = "openai/gpt-oss-120b"
+    DEFAULT_MODEL = GROQ_MODEL
 
     def __init__(self) -> None:
-        self.default_model = (
-            (getattr(settings, "GROQ_MODEL", "") or "").strip() or self.DEFAULT_MODEL
-        )
+        self.default_model = GROQ_MODEL
         self.default_temperature = getattr(settings, "LLM_TEMPERATURE", 0.7)
 
     def chat(
@@ -100,19 +112,18 @@ class GroqLLMClient(BaseLLMClient):
     pointed at https://api.groq.com/openai/v1 — no separate Groq SDK needed.
     """
 
-    # Hard fallback so a request is never sent without a model — the provider
-    # rejects model-less requests with a 400. A blank GROQ_MODEL env value
-    # ("") must NOT disable model resolution.
-    DEFAULT_MODEL_FALLBACK = "openai/gpt-oss-120b"
+    # Fallback so a request is never sent without a model — the provider
+    # rejects model-less requests with a 400.
+    DEFAULT_MODEL_FALLBACK = GROQ_MODEL
 
     @staticmethod
     def _normalize_base_url(raw: Optional[str]) -> str:
-        """Sanitize GROQ_BASE_URL before the SDK appends its route paths.
+        """Normalize the Groq base URL before the SDK appends its route paths.
 
-        The OpenAI-compatible endpoint is https://api.groq.com/openai/v1 and
-        the SDK appends 'chat/completions' etc. A trailing slash or a mistaken
-        '/models' suffix (the model-list URL) must not corrupt request paths
-        (would 404 as /openai/v1/models/chat/completions).
+        Defensive: the endpoint is now the GROQ_BASE_URL constant, but a
+        trailing slash or a mistaken '/models' suffix (the model-list URL)
+        must never corrupt request paths (would 404 as
+        /openai/v1/models/chat/completions).
         """
         url = ((raw or "").strip().rstrip("/")) or "https://api.groq.com/openai/v1"
         if url.endswith("/models"):
@@ -121,21 +132,15 @@ class GroqLLMClient(BaseLLMClient):
 
     def __init__(self) -> None:
         self.api_key = settings.GROQ_API_KEY or ""
-        self.base_url = self._normalize_base_url(settings.GROQ_BASE_URL)
-        self.default_model = (
-            (settings.GROQ_MODEL or "").strip() or self.DEFAULT_MODEL_FALLBACK
-        )
+        self.base_url = self._normalize_base_url(GROQ_BASE_URL)
+        self.default_model = GROQ_MODEL
         self.default_temperature = settings.LLM_TEMPERATURE
         self._client = None
 
     @classmethod
     def _resolve_model(cls, model: Optional[str]) -> str:
-        """Pick a non-empty model: explicit arg → configured default → fallback."""
-        return (
-            (model or "").strip()
-            or (getattr(settings, "GROQ_MODEL", "") or "").strip()
-            or cls.DEFAULT_MODEL_FALLBACK
-        )
+        """Pick a non-empty model: explicit arg → the GROQ_MODEL constant."""
+        return (model or "").strip() or GROQ_MODEL
 
     def _get_client(self):
         """Lazy-init the OpenAI-compatible client pointed at Groq."""

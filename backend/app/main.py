@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .core.config import settings
-from .core.logging import setup_logging
+from .core.logging import LOG_LEVEL, setup_logging
 from .ai import bootstrap_prompts
 from .api import (
     auth_router,
@@ -20,7 +20,7 @@ from .api import (
     resumes_router,
 )
 
-setup_logging(settings.LOG_LEVEL)
+setup_logging(LOG_LEVEL)
 bootstrap_prompts()
 
 app = FastAPI(

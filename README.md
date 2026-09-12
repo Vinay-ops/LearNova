@@ -221,8 +221,9 @@ npx tsc -b             # TypeScript check only
 **Frontend env (optional):**
 Create `.env` at project root if backend isn't on default port `8000`:
 ```
-VITE_API_BASE_URL=http://localhost:8000
+VITE_API_URL=http://localhost:8000
 ```
+(Leave it unset in production — the Vercel services rewrite routes same-origin `/api/*`.)
 
 ### Backend
 
@@ -237,12 +238,15 @@ pip install -r requirements.txt
 
 # 2. Configure env — copy from example and fill in
 cp .env.example .env
-# edit .env:
+# edit .env — required vars:
 #   DATABASE_URL=postgres://user:pass@host:port/dbname?sslmode=require   (from Supabase)
 #   JWT_SECRET=<strong random string>
-#   JWT_ALGORITHM=HS256
-#   ACCESS_TOKEN_EXPIRE_MINUTES=60
 #   FRONTEND_URL=http://localhost:5173
+#   GROQ_API_KEY=<from https://console.groq.com/keys — blank = stub AI>
+#   ENVIRONMENT=development
+# Everything else is a code constant: JWT_ALGORITHM / ACCESS_TOKEN_EXPIRE_MINUTES /
+# LLM_TEMPERATURE in app/core/config.py, log level in app/core/logging.py, and the
+# Groq endpoint + model (GROQ_BASE_URL / GROQ_MODEL) in app/ai/client.py.
 
 # 3. Run migrations against Supabase PostgreSQL
 alembic upgrade head

@@ -5,6 +5,11 @@ import json
 from datetime import datetime, timezone
 
 
+# Log verbosity is a code constant (previously the LOG_LEVEL env var).
+# Change it here; DEBUG/INFO/WARNING/ERROR are all valid.
+LOG_LEVEL = "INFO"
+
+
 class StructuredFormatter(logging.Formatter):
     def format(self, record: logging.LogRecord) -> str:
         log_entry: dict[str, Any] = {

@@ -30,7 +30,8 @@ backend/app/
 ├── main.py                  # FastAPI app entry, router registration, bootstrap
 │
 ├── core/                    # Cross-cutting concerns
-│   ├── config.py            # Pydantic settings (DATABASE_URL, JWT, GROQ, etc.)
+│   ├── config.py            # Pydantic settings — env only: DATABASE_URL, JWT_SECRET,
+│   │                        # GROQ_API_KEY, FRONTEND_URL, ENVIRONMENT (+ defaults)
 │   ├── security.py          # Password hashing, JWT creation/verification, get_current_user
 │   ├── exceptions.py        # Typed HTTP exceptions (Auth, Authz, NotFound, Conflict, AI, DB, etc.)
 │   └── logging.py           # Structured JSON logging + event helpers
@@ -81,6 +82,7 @@ backend/app/
 ├── ai/                      # Prompt engineering is a FIRST-CLASS concern
 │   ├── __init__.py          # bootstrap_prompts(), execute_pipeline exports
 │   ├── client.py            # LLMClientProtocol, StubLLMClient (provider pluggable)
+│   │                        # GROQ_BASE_URL / GROQ_MODEL code constants
 │   │                        # validate_structured_output (retry + log)
 │   ├── interviewer.py       # AI interviewer pipeline + context builder
 │   ├── evaluator.py         # AI rubric-based evaluator pipeline
