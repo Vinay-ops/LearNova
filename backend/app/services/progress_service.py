@@ -7,10 +7,13 @@ from sqlalchemy.orm import Session
 from ..core.exceptions import NotFoundError
 from ..models.user import User
 from ..models.profile import Profile
+from ..models.ai_session import AISession
 from ..models.case import CaseAttempt
 from ..models.assessment import AssessmentAttempt
 from ..models.drill import DrillAttempt
 from ..models.skill import UserSkill, Skill
+from ..models.resume import ReadinessSnapshot
+from ..utils.enums import AISessionType
 from ..schemas.progress import (
     ProgressSummary,
     ReadinessEntry,
@@ -54,6 +57,15 @@ class ProgressService:
             )
             .all()
         )
+        interview_sessions = (
+            self.db.query(AISession)
+            .filter(
+                AISession.user_id == user_id,
+                AISession.session_type == AISessionType.CASE_INTERVIEW.value,
+                AISession.status == "completed",
+            )
+            .all()
+        )
 
         user_skills = (
             self.db.query(UserSkill)
@@ -68,6 +80,19 @@ class ProgressService:
         avg_score = clamp_score(int(average(completed_scores))) if completed_scores else 0
         best_score = max(completed_scores) if completed_scores else None
 
+        # Real interview scores come only from persisted AI evaluations.
+        interview_scores = []
+        for session in interview_sessions:
+            metadata = session.metadata_ or {}
+            evaluation = metadata.get("evaluation") if isinstance(metadata, dict) else None
+            if isinstance(evaluation, dict):
+                score = evaluation.get("overall_score")
+                if isinstance(score, (int, float)):
+                    interview_scores.append(int(score))
+        average_interview_score = (
+            round(average(interview_scores), 1) if interview_scores else None
+        )
+
         skill_breakdown: List[SkillScoreBreakdown] = []
         for us in user_skills:
             skill = self.db.query(Skill).filter(Skill.id == us.skill_id).first()
@@ -81,7 +106,7 @@ class ProgressService:
                 )
             )
 
-        readiness_over_time = self._build_readiness_history(profile.readiness_score)
+        readiness_over_time = self._build_readiness_history(user_id, profile.readiness_score)
 
         return ProgressSummary(
             user_id=str(user_id),
@@ -91,6 +116,8 @@ class ProgressService:
             total_cases_completed=len(case_attempts),
             total_assessments_completed=len(assessment_attempts),
             total_drills_completed=len(drill_attempts),
+            total_interviews_completed=len(interview_sessions),
+            average_interview_score=average_interview_score,
             total_practice_minutes=sum(
                 ca.elapsed_seconds // 60 for ca in case_attempts
             ) + sum(da.time_spent_seconds // 60 for da in drill_attempts),
@@ -100,15 +127,27 @@ class ProgressService:
             readiness_over_time=readiness_over_time,
         )
 
-    def _build_readiness_history(self, current_score: int) -> List[ReadinessEntry]:
-        """Real readiness-over-time series.
+    def _build_readiness_history(self, user_id: str, current_score: int) -> List[ReadinessEntry]:
+        """Real readiness-over-time series from persisted snapshots.
 
-        Readiness history requires persisting each readiness snapshot with a
-        timestamp. Until that persistence exists we return an empty series
-        rather than synthesizing points — a fabricated "trend" ending at the
-        current score would misrepresent the learner's actual history.
+        Snapshots are written only when a genuine evaluation/progress event
+        changes the calculated readiness (see recalculate_readiness). We never
+        synthesize points — the chart shows only these real measurements.
         """
-        return []
+        snapshots = (
+            self.db.query(ReadinessSnapshot)
+            .filter(ReadinessSnapshot.user_id == str(user_id))
+            .order_by(ReadinessSnapshot.created_at.asc())
+            .limit(90)
+            .all()
+        )
+        return [
+            ReadinessEntry(
+                date=s.created_at.date().isoformat() if s.created_at else "",
+                score=clamp_score(s.score),
+            )
+            for s in snapshots
+        ]
 
     def set_skill_score(
         self, user_id: str, payload: SkillScoreCreate
@@ -215,5 +254,18 @@ class ProgressService:
         profile = self.db.query(Profile).filter(Profile.user_id == user_id).first()
         if profile:
             profile.readiness_score = readiness
-            self.db.commit()
+
+        # Persist a snapshot ONLY when a real recalculation changes the score
+        # (or when no measurement exists yet). No synthetic daily entries.
+        last = (
+            self.db.query(ReadinessSnapshot)
+            .filter(ReadinessSnapshot.user_id == str(user_id))
+            .order_by(ReadinessSnapshot.created_at.desc())
+            .first()
+        )
+        if last is None or clamp_score(last.score) != readiness:
+            self.db.add(
+                ReadinessSnapshot(user_id=str(user_id), score=readiness, source="readiness_recalc")
+            )
+        self.db.commit()
         return readiness

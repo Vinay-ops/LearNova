@@ -17,6 +17,7 @@ from .api import (
     prompts_router,
     learning_router,
     quizzes_router,
+    resumes_router,
 )
 
 setup_logging(settings.LOG_LEVEL)
@@ -80,3 +81,4 @@ app.include_router(ai_router)
 app.include_router(prompts_router)
 app.include_router(learning_router)
 app.include_router(quizzes_router)
+app.include_router(resumes_router)

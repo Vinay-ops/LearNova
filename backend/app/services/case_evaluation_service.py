@@ -69,11 +69,13 @@ def run_case_evaluation(
     transcript: str,
     answers: list[dict[str, Any]],
     candidate_profile: dict[str, Any],
+    prompt_name: str = "evaluator",
 ) -> StructuredEvaluation:
     """Run the evaluator prompt through the LLM abstraction and validate output.
 
-    Shared by case-attempt evaluation and generative interview evaluation so
-    there is exactly one evaluation path.
+    Shared by case-attempt evaluation and (role/resume) interview evaluation so
+    there is exactly one evaluation path. ``prompt_name`` selects the rubric:
+    "evaluator" (case skills) or "interview_evaluator" (role skills).
     """
     service = EvaluatorService(client=resolve_client(client))
     return service.evaluate_attempt(
@@ -81,6 +83,7 @@ def run_case_evaluation(
         transcript=transcript,
         answers=answers,
         candidate_profile=candidate_profile,
+        prompt_name=prompt_name,
     )
 
 

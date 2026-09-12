@@ -67,6 +67,8 @@ export default function Dashboard() {
   const completedCases = summary?.total_cases_completed ?? 0;
   const completedAssessments = summary?.total_assessments_completed ?? 0;
   const completedDrills = summary?.total_drills_completed ?? 0;
+  const completedInterviews = summary?.total_interviews_completed ?? 0;
+  const averageInterviewScore = summary?.average_interview_score;
   const averageScore = summary?.average_score ?? 0;
   const streak = summary?.streak_days ?? 0;
   const daysLeft = getDaysUntilInterview(profile?.interviewDate || null);
@@ -158,6 +160,15 @@ export default function Dashboard() {
             trendColor: "text-blue-600",
           },
           {
+            icon: Mic,
+            value: completedInterviews,
+            suffix: "",
+            label: "Interviews Done",
+            color: "bg-pink-100 text-pink-600",
+            trend: `${completedInterviews} completed`,
+            trendColor: "text-pink-600",
+          },
+          {
             icon: Trophy,
             value: `${averageScore}`,
             suffix: "%",
@@ -165,6 +176,18 @@ export default function Dashboard() {
             color: "bg-emerald-100 text-emerald-600",
             trend: "Solid progress",
             trendColor: "text-emerald-600",
+          },
+          {
+            icon: Target,
+            value: averageInterviewScore != null ? `${averageInterviewScore}` : "—",
+            suffix: averageInterviewScore != null ? "%" : "",
+            label: "Avg Interview Score",
+            color: "bg-purple-100 text-purple-600",
+            trend:
+              averageInterviewScore != null
+                ? `Real AI-evaluated average`
+                : "Finish an interview to score",
+            trendColor: "text-purple-600",
           },
         ].map((stat, i) => {
           const Icon = stat.icon;

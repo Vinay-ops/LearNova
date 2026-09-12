@@ -138,10 +138,21 @@ def test_ai_chat_creates_session_and_threads_history(
 ):
     calls = []
 
+    FOLLOW_Q = json.dumps(
+        {
+            "question": "What is the most important driver to validate first?",
+            "question_type": "probe",
+            "display_hint": "",
+            "expected_duration_seconds": 120,
+            "notes": "",
+        }
+    )
+
     class CapturingFake:
         def chat(self, **kwargs):
             calls.append(kwargs)
-            return LLMResponse(content=INTERVIEW_Q, model="fake-model", tokens_used=10)
+            content = FOLLOW_Q if len(calls) > 1 else INTERVIEW_Q
+            return LLMResponse(content=content, model="fake-model", tokens_used=10)
 
     fake = CapturingFake()
     _patch_interview_client(monkeypatch, fake)

@@ -8,6 +8,9 @@ import type {
   AIFeedbackResponse,
   Recommendations,
   PromptVersionInfo,
+  ResumeData,
+  ResumeParseResponse,
+  ResumeRecord,
 } from "@/types";
 
 export interface AIInterviewRepository {
@@ -20,6 +23,7 @@ export interface AIInterviewRepository {
   getSession(sessionId: ID): Promise<AISession>;
   listSessions(userId: ID): Promise<AISession[]>;
   deleteSession(sessionId: ID): Promise<void>;
+  abandonSession(sessionId: ID): Promise<AISession>;
   listMessages(sessionId: ID): Promise<AIMessage[]>;
   appendMessage(
     sessionId: ID,
@@ -33,8 +37,24 @@ export interface AIInterviewRepository {
     caseAttemptId?: ID;
     topic?: string;
     difficulty?: string;
+    role?: string;
+    resume?: ResumeData;
+    resumeId?: ID;
     message: string;
   }): Promise<AIChatResponse>;
+  parseResume(file: File, role?: string): Promise<ResumeParseResponse>;
+  listResumes(): Promise<ResumeRecord[]>;
+  saveResume(params: {
+    filename: string;
+    source_type?: string;
+    role?: string;
+    resume: ResumeData;
+  }): Promise<ResumeRecord>;
+  updateResume(
+    resumeId: ID,
+    params: { filename?: string; role?: string; resume?: ResumeData },
+  ): Promise<ResumeRecord>;
+  deleteResume(resumeId: ID): Promise<void>;
   completeInterview(sessionId: ID): Promise<AISession>;
   evaluateCase(caseAttemptId: ID): Promise<AIEvaluationResponse>;
   evaluateSession(sessionId: ID): Promise<AIEvaluationResponse>;
@@ -76,6 +96,13 @@ export class ApiAIInterviewRepository implements AIInterviewRepository {
     await api.delete(`/api/ai/sessions/${sessionId}`);
   }
 
+  async abandonSession(sessionId: ID): Promise<AISession> {
+    const { data } = await api.put<AISession>(`/api/ai/sessions/${sessionId}`, {
+      status: "abandoned",
+    });
+    return data;
+  }
+
   async listMessages(sessionId: ID): Promise<AIMessage[]> {
     const { data } = await api.get<AIMessage[]>(
       `/api/ai/sessions/${sessionId}/messages`,
@@ -107,6 +134,9 @@ export class ApiAIInterviewRepository implements AIInterviewRepository {
     caseAttemptId?: ID;
     topic?: string;
     difficulty?: string;
+    role?: string;
+    resume?: ResumeData;
+    resumeId?: ID;
     message: string;
   }): Promise<AIChatResponse> {
     const { data } = await api.post<AIChatResponse>("/api/ai/interview/chat", {
@@ -115,9 +145,56 @@ export class ApiAIInterviewRepository implements AIInterviewRepository {
       case_attempt_id: params.caseAttemptId,
       topic: params.topic,
       difficulty: params.difficulty,
+      role: params.role,
+      resume: params.resume,
+      resume_id: params.resumeId,
       message: params.message,
     });
     return data;
+  }
+
+  async parseResume(file: File, role?: string): Promise<ResumeParseResponse> {
+    const form = new FormData();
+    form.append("file", file);
+    if (role) form.append("role", role);
+    const { data } = await api.post<ResumeParseResponse>(
+      "/api/ai/resume/parse",
+      form,
+      { headers: { "Content-Type": "multipart/form-data" } },
+    );
+    return data;
+  }
+
+  async listResumes(): Promise<ResumeRecord[]> {
+    const { data } = await api.get<ResumeRecord[]>("/api/resumes");
+    return data;
+  }
+
+  async saveResume(params: {
+    filename: string;
+    source_type?: string;
+    role?: string;
+    resume: ResumeData;
+  }): Promise<ResumeRecord> {
+    const { data } = await api.post<ResumeRecord>("/api/resumes", {
+      filename: params.filename,
+      source_type: params.source_type || "parsed",
+      role: params.role,
+      resume: params.resume,
+    });
+    return data;
+  }
+
+  async updateResume(
+    resumeId: ID,
+    params: { filename?: string; role?: string; resume?: ResumeData },
+  ): Promise<ResumeRecord> {
+    const { data } = await api.patch<ResumeRecord>(`/api/resumes/${resumeId}`, params);
+    return data;
+  }
+
+  async deleteResume(resumeId: ID): Promise<void> {
+    await api.delete(`/api/resumes/${resumeId}`);
   }
 
   async completeInterview(sessionId: ID): Promise<AISession> {
@@ -201,6 +278,7 @@ export const aiInterviewApi = {
   getSession: (sessionId: ID) => aiInterviewRepository.getSession(sessionId),
   listSessions: (userId: ID) => aiInterviewRepository.listSessions(userId),
   deleteSession: (sessionId: ID) => aiInterviewRepository.deleteSession(sessionId),
+  abandonSession: (sessionId: ID) => aiInterviewRepository.abandonSession(sessionId),
   listMessages: (sessionId: ID) => aiInterviewRepository.listMessages(sessionId),
   appendMessage: (
     sessionId: ID,
@@ -214,8 +292,25 @@ export const aiInterviewApi = {
     caseAttemptId?: ID;
     topic?: string;
     difficulty?: string;
+    role?: string;
+    resume?: ResumeData;
+    resumeId?: ID;
     message: string;
   }) => aiInterviewRepository.sendMessage(params),
+  parseResume: (file: File, role?: string) =>
+    aiInterviewRepository.parseResume(file, role),
+  listResumes: () => aiInterviewRepository.listResumes(),
+  saveResume: (params: {
+    filename: string;
+    source_type?: string;
+    role?: string;
+    resume: ResumeData;
+  }) => aiInterviewRepository.saveResume(params),
+  updateResume: (
+    resumeId: ID,
+    params: { filename?: string; role?: string; resume?: ResumeData },
+  ) => aiInterviewRepository.updateResume(resumeId, params),
+  deleteResume: (resumeId: ID) => aiInterviewRepository.deleteResume(resumeId),
   completeInterview: (sessionId: ID) =>
     aiInterviewRepository.completeInterview(sessionId),
   evaluateCase: (caseAttemptId: ID) =>

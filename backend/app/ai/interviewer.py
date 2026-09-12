@@ -59,11 +59,12 @@ class InterviewerService:
         question_index: int,
         total_questions: int,
         prompt_version: str = "v1",
+        prompt_name: str = "interviewer",
     ) -> dict[str, Any]:
         from .__init__ import bootstrap_prompts
         bootstrap_prompts()
 
-        template = prompt_registry.get("interviewer", prompt_version)
+        template = prompt_registry.get(prompt_name, prompt_version)
         context = build_interviewer_context(
             profile=profile,
             case_data=case_data,
@@ -117,7 +118,7 @@ class InterviewerService:
             latency_ms = int((time.perf_counter() - start) * 1000)
             log_ai_request(
                 "interviewer_next_question",
-                prompt_name="interviewer",
+                prompt_name=getattr(template, "name", prompt_name),
                 prompt_version=prompt_version,
                 latency_ms=latency_ms,
                 success=False,

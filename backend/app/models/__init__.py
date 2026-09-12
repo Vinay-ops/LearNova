@@ -12,6 +12,7 @@ from .drill import Drill, DrillQuestion, DrillAttempt
 from .application import Application
 from .ai_session import AISession, AIMessage
 from .prompt import Prompt
+from .resume import Resume, ReadinessSnapshot
 
 __all__ = [
     "User",
@@ -33,4 +34,6 @@ __all__ = [
     "AISession",
     "AIMessage",
     "Prompt",
+    "Resume",
+    "ReadinessSnapshot",
 ]

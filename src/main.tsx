@@ -14,6 +14,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard.tsx"));
 const Learn = lazy(() => import("./pages/Learn.tsx"));
 const Practice = lazy(() => import("./pages/Practice.tsx"));
 const AIInterview = lazy(() => import("./pages/AIInterview.tsx"));
+const InterviewHistory = lazy(() => import("./pages/InterviewHistory.tsx"));
 const CaseDetails = lazy(() => import("./pages/CaseDetails.tsx"));
 const CaseSimulator = lazy(() => import("./pages/CaseSimulator.tsx"));
 const CaseFeedback = lazy(() => import("./pages/CaseFeedback.tsx"));
@@ -152,6 +153,14 @@ function AnimatedRoutes() {
             element={
               <RequireAuth>
                 <AIInterview />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/interviews"
+            element={
+              <RequireAuth>
+                <InterviewHistory />
               </RequireAuth>
             }
           />

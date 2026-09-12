@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { TrendingUp, Flame, BookOpen, BarChart3 } from "lucide-react";
+import { TrendingUp, Flame, BookOpen, BarChart3, Mic } from "lucide-react";
 import { motion } from "framer-motion";
 import { FadeIn, StaggerList, StaggerItem, AnimatedBar } from "@/components/app/AnimatedSection";
 import {
@@ -44,7 +44,9 @@ export default function Progress() {
   const completedCases = summary?.total_cases_completed ?? 0;
   const completedAssessments = summary?.total_assessments_completed ?? 0;
   const completedDrills = summary?.total_drills_completed ?? 0;
+  const completedInterviews = summary?.total_interviews_completed ?? 0;
   const averageScore = summary?.average_score ? Math.round(summary.average_score) : 0;
+  const averageInterviewScore = summary?.average_interview_score;
   const streak = summary?.streak_days ?? 0;
 
   const loadSummary = async () => {
@@ -252,10 +254,12 @@ export default function Progress() {
           {/* Key Metrics */}
           <FadeIn delay={0.4}>
             <p className="text-sm font-bold text-foreground mb-4">Key Metrics</p>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               {[
                 { icon: BookOpen, value: completedCases, label: "Cases completed", color: "bg-blue-100 text-blue-600" },
-                { icon: BarChart3, value: `${averageScore}%`, label: "Average score", color: "bg-purple-100 text-purple-600" },
+                { icon: Mic, value: completedInterviews, label: "Interviews completed", color: "bg-pink-100 text-pink-600" },
+                { icon: BarChart3, value: `${averageScore}%`, label: "Average case score", color: "bg-purple-100 text-purple-600" },
+                { icon: BarChart3, value: averageInterviewScore != null ? `${averageInterviewScore}%` : "—", label: "Average interview score", color: "bg-violet-100 text-violet-600" },
                 { icon: BookOpen, value: completedDrills, label: "Drills completed", color: "bg-teal-100 text-teal-600" },
                 { icon: Flame, value: `${streak}`, label: "Day streak", color: "bg-amber-100 text-amber-600" },
               ].map((m) => {

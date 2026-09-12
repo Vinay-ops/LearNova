@@ -79,6 +79,17 @@ class AIError(AppError):
         self.retryable = retryable
 
 
+class ResumeExtractionError(AppError):
+    """Raised when resume file text extraction is unavailable or fails."""
+
+    def __init__(self, detail: str = "Could not extract text from resume file") -> None:
+        super().__init__(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=detail,
+            code="resume_extraction_error",
+        )
+
+
 class AIValidationError(AIError):
     def __init__(self, detail: str = "AI output failed validation") -> None:
         super().__init__(detail=detail, retryable=True)

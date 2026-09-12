@@ -28,3 +28,27 @@ def test_set_skill_score_and_recalculate(client: TestClient, auth_headers):
     recalc = client.post("/api/progress/recalculate-readiness", headers=auth_headers)
     assert recalc.status_code == 200
     assert 0 <= recalc.json()["readiness_score"] <= 100
+
+
+def test_readiness_history_records_only_real_recalculations(
+    client: TestClient, auth_headers
+):
+    """Readiness history must contain real measurement points only."""
+    summary = client.get("/api/progress", headers=auth_headers).json()
+    assert summary["readiness_over_time"] == []
+
+    recalc = client.post(
+        "/api/progress/recalculate-readiness", headers=auth_headers
+    ).json()
+    score = recalc["readiness_score"]
+
+    summary = client.get("/api/progress", headers=auth_headers).json()
+    points = summary["readiness_over_time"]
+    assert len(points) == 1
+    assert points[0]["score"] == score
+    assert points[0]["date"]
+
+    # Recalculating with an unchanged score must NOT create a duplicate point.
+    client.post("/api/progress/recalculate-readiness", headers=auth_headers)
+    summary = client.get("/api/progress", headers=auth_headers).json()
+    assert len(summary["readiness_over_time"]) == 1

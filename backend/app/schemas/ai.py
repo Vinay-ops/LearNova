@@ -85,6 +85,9 @@ class AIChatRequest(BaseModel):
     case_attempt_id: Optional[str] = None
     topic: Optional[str] = None
     difficulty: Optional[str] = None
+    role: Optional[str] = None
+    resume: Optional[Any] = None
+    resume_id: Optional[str] = None
     message: str = ""
     conversation_history: Optional[List[dict[str, Any]]] = None
 
@@ -94,6 +97,8 @@ class AIChatResponse(BaseModel):
     message: str
     next_question: Optional[Any] = None
     structured_output: Optional[Any] = None
+    question_index: Optional[int] = None
+    total_questions: Optional[int] = None
 
 
 class AIInterviewCompleteRequest(BaseModel):
@@ -154,6 +159,46 @@ class FeedbackLLMResult(BaseModel):
     biggest_opportunity: Optional[FeedbackOpportunity] = None
     better_approach: Optional[str] = None
     recommended_drill: Optional[dict[str, Any]] = None
+
+
+# -- resume parsing -----------------------------------------------------------
+
+
+class ResumeProject(BaseModel):
+    name: str
+    description: str = ""
+    technologies: List[str] = Field(default_factory=list)
+
+
+class ResumeExperience(BaseModel):
+    role: str
+    company: str = ""
+    duration: str = ""
+    summary: str = ""
+
+
+class ResumeEducation(BaseModel):
+    degree: str
+    institution: str = ""
+    year: str = ""
+
+
+class ResumeData(BaseModel):
+    name: str = ""
+    title: str = ""
+    summary: str = ""
+    skills: List[str] = Field(default_factory=list)
+    technologies: List[str] = Field(default_factory=list)
+    projects: List[ResumeProject] = Field(default_factory=list)
+    experience: List[ResumeExperience] = Field(default_factory=list)
+    education: List[ResumeEducation] = Field(default_factory=list)
+    certifications: List[str] = Field(default_factory=list)
+
+
+class ResumeParseResponse(BaseModel):
+    source_type: str
+    characters: int
+    resume: ResumeData
 
 
 class RecommendationsLLMResult(BaseModel):

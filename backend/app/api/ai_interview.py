@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, status, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 
 from ..core.security import get_current_user, get_db
@@ -26,8 +26,13 @@ from ..schemas.ai import (
     AIRecommendationRequest,
     AIRecommendationResponse,
     StructuredEvaluation,
+    ResumeData,
+    ResumeParseResponse,
 )
+from ..ai.resume_parser import ResumeParserService
 from ..services.case_evaluation_service import CaseEvaluationService
+from ..services.resume_service import MAX_RESUME_BYTES, extract_resume_text
+from ..core.exceptions import ValidationError as AppValidationError
 from ..services.interview_session_service import InterviewSessionService
 from ..services.progress_service import ProgressService
 from ..ai.feedback_generator import FeedbackGeneratorService
@@ -122,6 +127,39 @@ def create_ai_message(
     )
 
 
+# -- resume parsing -----------------------------------------------------------
+
+
+@router.post("/resume/parse", response_model=ResumeParseResponse)
+async def parse_resume(
+    file: UploadFile = File(...),
+    role: Optional[str] = Form(None),
+    current_user: User = Depends(get_current_user),
+):
+    """Upload a resume (PDF/DOCX/TXT) and get structured candidate data back.
+
+    Text extraction is a local file operation; the structured parse runs the
+    resume_parser_v1 prompt (Prompt Registry → Groq) and validates the result
+    against the ResumeData schema. No resume file or text is persisted — the
+    caller passes the structured data when starting the interview.
+    """
+    filename = (file.filename or "").strip()
+    data = await file.read()
+    if not data:
+        raise AppValidationError("Resume file is empty")
+    if len(data) > MAX_RESUME_BYTES:
+        raise AppValidationError("Resume file is too large (max 2 MB)")
+
+    resume_text = extract_resume_text(filename, data)
+    parser = ResumeParserService()
+    parsed = parser.parse(resume_text, role=role)
+    return ResumeParseResponse(
+        source_type=filename.rsplit(".", 1)[-1].lower() if "." in filename else "text",
+        characters=len(resume_text),
+        resume=parsed,
+    )
+
+
 # -- interview chat ----------------------------------------------------------
 
 
@@ -138,6 +176,8 @@ def ai_interview_chat(
         message=result["message"],
         next_question=result["next_question"],
         structured_output=result["structured_output"],
+        question_index=result.get("question_index"),
+        total_questions=result.get("total_questions"),
     )
 
 
@@ -276,7 +316,20 @@ def ai_generate_feedback(
         }
 
     generator = FeedbackGeneratorService()
-    return generator.generate_feedback(profile, case_results, drills)
+    result = generator.generate_feedback(profile, case_results, drills)
+
+    # Persist the feedback on the interview session so the history page can
+    # review it without another AI call.
+    if payload.session_id:
+        service = InterviewSessionService(db)
+        session = service.get_session(payload.session_id, current_user.id)
+        md = dict(session.metadata_ or {})
+        md["feedback"] = AIFeedbackResponse.model_validate(result).model_dump(
+            mode="json"
+        )
+        session.metadata_ = md
+        db.commit()
+    return result
 
 
 # -- recommendations -----------------------------------------------------------
@@ -329,10 +382,23 @@ def ai_generate_recommendations(
         evaluation = (session.metadata_ or {}).get("evaluation")
 
     recommender = RecommenderService()
-    return recommender.get_personalized_recommendations(
+    result = recommender.get_personalized_recommendations(
         summary.model_dump(),
         applications_dict,
         drills=drills,
         cases=cases,
         evaluation=evaluation,
-    )
+    )
+
+    # Persist recommendations on the session when provided so completed
+    # interviews can be reviewed later without re-running the LLM.
+    if payload.session_id:
+        service = InterviewSessionService(db)
+        session = service.get_session(payload.session_id, current_user.id)
+        md = dict(session.metadata_ or {})
+        md["recommendations"] = AIRecommendationResponse.model_validate(
+            result
+        ).model_dump(mode="json")
+        session.metadata_ = md
+        db.commit()
+    return result

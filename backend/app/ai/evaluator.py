@@ -48,11 +48,12 @@ class EvaluatorService:
         answers: list[dict[str, Any]],
         candidate_profile: dict[str, Any],
         prompt_version: str = "v1",
+        prompt_name: str = "evaluator",
     ) -> StructuredEvaluation:
         from .__init__ import bootstrap_prompts
         bootstrap_prompts()
 
-        template = prompt_registry.get("evaluator", prompt_version)
+        template = prompt_registry.get(prompt_name, prompt_version)
         context = build_evaluator_context(case_data, transcript, answers, candidate_profile)
         is_valid, errors = template.validate_context(context)
         if not is_valid:
@@ -91,7 +92,7 @@ class EvaluatorService:
             latency_ms = int((time.perf_counter() - start) * 1000)
             log_ai_request(
                 "evaluate",
-                prompt_name="evaluator",
+                prompt_name=getattr(template, "name", prompt_name),
                 prompt_version=prompt_version,
                 latency_ms=latency_ms,
                 success=False,

@@ -14,6 +14,7 @@ from ..models.drill import Drill, DrillQuestion, DrillAttempt
 from ..models.application import Application
 from ..models.ai_session import AISession, AIMessage
 from ..models.prompt import Prompt
+from ..models.resume import Resume, ReadinessSnapshot
 
 __all__ = [
     "Base",
@@ -36,4 +37,6 @@ __all__ = [
     "AISession",
     "AIMessage",
     "Prompt",
+    "Resume",
+    "ReadinessSnapshot",
 ]

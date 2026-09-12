@@ -26,8 +26,10 @@ class ProgressSummary(BaseModel):
     total_cases_completed: int = 0
     total_assessments_completed: int = 0
     total_drills_completed: int = 0
+    total_interviews_completed: int = 0
     total_practice_minutes: int = 0
     average_score: float = 0.0
+    average_interview_score: Optional[float] = None
     best_score: Optional[int] = None
     skill_scores: List[SkillScoreBreakdown] = Field(default_factory=list)
     # Named readiness_over_time to match the frontend contract (mocks included).

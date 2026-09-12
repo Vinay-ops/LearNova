@@ -102,6 +102,7 @@ class PromptPurpose(str, Enum):
     ADAPTIVE_DIFFICULTY = "adaptive_difficulty"
     LEARNING_TUTOR = "learning_tutor"
     QUIZ_GENERATION = "quiz_generation"
+    RESUME_PARSER = "resume_parser"
 
 
 class DrillCategory(str, Enum):

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router";
-import { LayoutDashboard, BookOpen, ClipboardList, TrendingUp, Briefcase, Settings, User, Menu, X, Target, LogOut, GraduationCap, Mic } from "lucide-react";
+import { LayoutDashboard, BookOpen, ClipboardList, TrendingUp, Briefcase, Settings, User, Menu, X, Target, LogOut, GraduationCap, Mic, History } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -8,6 +8,7 @@ const navLinks = [
   { to: "/learn", label: "Learn", icon: GraduationCap },
   { to: "/practice", label: "Practice", icon: BookOpen },
   { to: "/interview", label: "AI Interviews", icon: Mic },
+  { to: "/interviews", label: "My Interviews", icon: History },
   { to: "/assessments", label: "Assessments", icon: ClipboardList },
   { to: "/progress", label: "Progress", icon: TrendingUp },
   { to: "/applications", label: "Applications", icon: Briefcase },

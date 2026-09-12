@@ -269,8 +269,10 @@ export interface ProgressSummary {
   total_cases_completed: number;
   total_assessments_completed: number;
   total_drills_completed: number;
+  total_interviews_completed?: number;
   total_practice_minutes: number;
   average_score: number;
+  average_interview_score?: number;
   best_score?: number;
   skill_scores: SkillScore[];
   readiness_over_time: ReadinessEntry[];
@@ -291,6 +293,8 @@ export interface AISession {
   total_latency_ms: number;
   metadata?: any;
   metadata_?: any;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface AIMessage {
@@ -344,6 +348,58 @@ export interface Recommendations {
   reasoning?: string;
 }
 
+// -- resume / role-based interview --------------------------------------------
+
+export type InterviewRole = "Software Engineer" | "Data Analyst" | "Product Manager" | "Consulting" | "Custom";
+
+export interface ResumeProject {
+  name: string;
+  description?: string;
+  technologies?: string[];
+}
+
+export interface ResumeExperience {
+  role: string;
+  company?: string;
+  duration?: string;
+  summary?: string;
+}
+
+export interface ResumeEducation {
+  degree: string;
+  institution?: string;
+  year?: string;
+}
+
+export interface ResumeData {
+  name?: string;
+  title?: string;
+  summary?: string;
+  skills?: string[];
+  technologies?: string[];
+  projects?: ResumeProject[];
+  experience?: ResumeExperience[];
+  education?: ResumeEducation[];
+  certifications?: string[];
+}
+
+export interface ResumeParseResponse {
+  source_type: string;
+  characters: number;
+  resume: ResumeData;
+}
+
+export interface ResumeRecord {
+  id: ID;
+  user_id: ID;
+  filename: string;
+  source_type?: string;
+  role?: string;
+  data: ResumeData;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ApiError {
   statusCode?: number;
   detail?: any;
@@ -368,8 +424,13 @@ export interface AIChatResponse {
         display_hint?: string;
         expected_duration_seconds?: number;
         notes?: string;
+        performance?: string;
+        next_difficulty?: string;
+        grounding?: Record<string, string>;
       };
   structured_output?: any;
+  question_index?: number;
+  total_questions?: number;
 }
 
 export interface AIEvaluationResponse {
