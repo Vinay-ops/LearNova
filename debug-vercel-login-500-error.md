@@ -1,6 +1,6 @@
 # Debug Session: vercel-login-500-error
 
-- **Status**: [OPEN]
+- **Status**: [RESOLVED — missing python-multipart in backend/requirements.txt; add dep and redeploy]
 - **Created**: 2026-09-12
 - **Session ID**: vercel-login-500-error
 - **Symptom**: `POST https://learnova-ai-8.vercel.app/api/auth/login` returns HTTP 500 with no visible error detail in console. Generic "Failed to load resource: the server responded with a status of 500 ()".
@@ -27,3 +27,4 @@
 | Time | Event | Detail |
 |------|-------|--------|
 | - | Hypotheses drafted | H1–H5 above |
+| 2026-09-12 | Vercel runtime logs (`vercel logs dpl_…`) | **Root cause:** import crash — `RuntimeError: Form data requires "python-multipart" to be installed` while loading `app/api/ai_interview.py` (`/resume/parse` UploadFile). Entire Lambda exits → `FUNCTION_INVOCATION_FAILED` on every `/api/*` route including login. **Fix:** `python-multipart` in `backend/requirements.txt`, redeploy. Supabase/JWT hypotheses not reached. |
