@@ -4,6 +4,16 @@ import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Loader2,
   AlertTriangle,
   PlayCircle,
@@ -20,8 +30,10 @@ import { aiInterviewApi } from "@/features/ai-interview";
 import {
   formatDate,
   isInterviewListable,
+  scoreBadgeClass,
   sessionKind,
   sessionTitle,
+  statusBadgeClass,
   statusLabel,
   storedScore,
 } from "@/features/ai-interview/derive";
@@ -40,17 +52,43 @@ function modeLabel(session: AISession): string {
   return "Chat";
 }
 
-function ModeIcon({ session }: { session: AISession }) {
-  const kind = sessionKind(session.metadata_ ?? undefined);
-  if (kind === "role") return <FileText className="h-3.5 w-3.5" />;
-  if (kind === "case") return <BookOpen className="h-3.5 w-3.5" />;
-  return <MessageSquare className="h-3.5 w-3.5" />;
+/** Tile tone reuses the app palette: amber = in progress, purple = role, blue = case. */
+function modeIconTone(kind: string, isActive: boolean): string {
+  if (isActive) return "bg-amber-50 text-amber-600";
+  if (kind === "role") return "bg-purple-50 text-purple-600";
+  if (kind === "case") return "bg-blue-50 text-blue-600";
+  return "bg-slate-50 text-slate-500";
 }
 
-function statusBadgeClass(status: string): string {
-  if (status === "completed") return "bg-emerald-100 text-emerald-700 border-0";
-  if (status === "active") return "bg-amber-100 text-amber-700 border-0";
-  return "bg-slate-100 text-slate-500 border-0";
+function ModeIcon({ kind }: { kind: string }) {
+  // Rendered at 16px (h-4) — large enough that role/case/chat stay
+  // distinguishable inside the 40px tile.
+  if (kind === "role") return <FileText className="h-4 w-4" />;
+  if (kind === "case") return <BookOpen className="h-4 w-4" />;
+  return <MessageSquare className="h-4 w-4" />;
+}
+
+/** Score/status colours come from derive.ts so they match Progress everywhere. */
+function ScoreBadge({ score }: { score: number }) {
+  return (
+    <Badge
+      variant="secondary"
+      className={cn("text-[11px] font-bold", scoreBadgeClass(score))}
+    >
+      {score}/100
+    </Badge>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  return (
+    <Badge
+      variant="secondary"
+      className={cn("text-[11px] font-semibold", statusBadgeClass(status))}
+    >
+      {statusLabel(status)}
+    </Badge>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -63,6 +101,8 @@ export default function InterviewHistory() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // Delete is destructive — never fire it on a single click.
+  const [pendingDelete, setPendingDelete] = useState<AISession | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -87,7 +127,8 @@ export default function InterviewHistory() {
     [sessions],
   );
 
-  const handleDelete = async (session: AISession) => {
+  const confirmDelete = async (session: AISession) => {
+    setPendingDelete(null);
     setDeletingId(session.id);
     try {
       await aiInterviewApi.deleteSession(session.id);
@@ -136,9 +177,12 @@ export default function InterviewHistory() {
           </div>
         )}
 
-        {/* Loading skeleton */}
+        {/* Loading — same spinner pattern as AIInterview's loadingSession */}
         {loading && (
-          <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
+          <div
+            aria-busy="true"
+            className="flex min-h-[12rem] items-center justify-center gap-2 py-16 text-muted-foreground"
+          >
             <Loader2 className="h-5 w-5 animate-spin" />
             <span className="text-sm">Loading interviews…</span>
           </div>
@@ -172,123 +216,107 @@ export default function InterviewHistory() {
               const kind = sessionKind(meta);
               const isActive = session.status === "active";
               const isDeleting = deletingId === session.id;
-              const totalQ = typeof meta.total_questions === "number"
-                ? meta.total_questions
-                : null;
+              const totalQ =
+                typeof meta.total_questions === "number"
+                  ? meta.total_questions
+                  : null;
 
               return (
                 <div
                   key={session.id}
                   className={cn(
-                    "rounded-2xl border bg-white px-5 py-4 flex items-center gap-4 shadow-sm shadow-slate-100/60 transition-shadow hover:shadow-md",
-                    isActive
-                      ? "border-amber-200"
-                      : "border-slate-100",
+                    "rounded-2xl border bg-white p-4 shadow-lg shadow-slate-200/40 transition-shadow hover:shadow-xl hover:shadow-slate-200/60 sm:px-5 sm:py-4",
+                    isActive ? "border-amber-200" : "border-slate-100",
                   )}
                 >
-                  {/* Mode icon */}
-                  <div
-                    className={cn(
-                      "h-10 w-10 rounded-xl flex items-center justify-center shrink-0",
-                      isActive
-                        ? "bg-amber-50 text-amber-600"
-                        : kind === "role"
-                          ? "bg-purple-50 text-purple-500"
-                          : "bg-slate-50 text-slate-400",
-                    )}
-                  >
-                    <ModeIcon session={session} />
-                  </div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+                    {/* Mode tile + title/meta. Badges live in the wrapping meta
+                        row, so they reflow instead of overlapping at 375px. */}
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
+                      <div
+                        aria-hidden="true"
+                        className={cn(
+                          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl",
+                          modeIconTone(kind, isActive),
+                        )}
+                      >
+                        <ModeIcon kind={kind} />
+                      </div>
 
-                  {/* Body */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-slate-800 truncate">
-                      {sessionTitle(meta)}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                      <span className="text-[11px] text-slate-400 font-medium">
-                        {modeLabel(session)}
-                      </span>
-                      {(meta.difficulty as string) && (
-                        <>
-                          <span className="text-[11px] text-slate-300">·</span>
-                          <span className="text-[11px] text-slate-400 font-medium">
-                            {String(meta.difficulty)}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-slate-800">
+                          {sessionTitle(meta)}
+                        </p>
+                        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
+                          <span className="text-[11px] font-medium text-slate-500">
+                            {modeLabel(session)}
                           </span>
-                        </>
-                      )}
-                      {totalQ !== null && (
-                        <>
+                          {meta.difficulty ? (
+                            <>
+                              <span className="text-[11px] text-slate-300">·</span>
+                              <span className="text-[11px] font-medium text-slate-500">
+                                {String(meta.difficulty)}
+                              </span>
+                            </>
+                          ) : null}
+                          {totalQ !== null && (
+                            <>
+                              <span className="text-[11px] text-slate-300">·</span>
+                              <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-slate-500">
+                                <Clock className="h-3 w-3" />
+                                {totalQ} questions
+                              </span>
+                            </>
+                          )}
                           <span className="text-[11px] text-slate-300">·</span>
-                          <span className="text-[11px] text-slate-400 font-medium flex items-center gap-0.5">
-                            <Clock className="h-2.5 w-2.5" />
-                            {totalQ}q
+                          <span className="text-[11px] font-medium text-slate-500">
+                            {formatDate(session.started_at)}
                           </span>
-                        </>
-                      )}
-                      <span className="text-[11px] text-slate-300">·</span>
-                      <span className="text-[11px] text-slate-400 font-medium">
-                        {formatDate(session.started_at)}
-                      </span>
+                          {score !== null && <ScoreBadge score={score} />}
+                          <StatusBadge status={session.status} />
+                        </div>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Score */}
-                  {score !== null && (
-                    <Badge
-                      variant="secondary"
-                      className="shrink-0 text-[11px] bg-emerald-100 text-emerald-700 border-0 font-bold"
-                    >
-                      {score}/100
-                    </Badge>
-                  )}
-
-                  {/* Status */}
-                  <Badge
-                    variant="secondary"
-                    className={cn("shrink-0 text-[11px] font-semibold", statusBadgeClass(session.status))}
-                  >
-                    {statusLabel(session.status)}
-                  </Badge>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <Button
-                      size="sm"
-                      onClick={() => openSession(session)}
-                      className={cn(
-                        "h-8 rounded-xl text-[11px] px-3 font-bold gap-1.5",
-                        isActive
-                          ? "bg-amber-600 hover:bg-amber-700 text-white"
-                          : "bg-purple-600 hover:bg-purple-700 text-white",
-                      )}
-                    >
-                      {isActive ? (
-                        <>
-                          <PlayCircle className="h-3.5 w-3.5" />
-                          Continue
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="h-3.5 w-3.5" />
-                          View
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={isDeleting}
-                      onClick={() => handleDelete(session)}
-                      className="h-8 w-8 p-0 text-slate-400 hover:text-red-600 rounded-xl"
-                      aria-label="Delete interview"
-                    >
-                      {isDeleting ? (
-                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-3.5 w-3.5" />
-                      )}
-                    </Button>
+                    {/* Actions — drop below the card body on mobile. */}
+                    <div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
+                      <Button
+                        size="sm"
+                        onClick={() => openSession(session)}
+                        className={cn(
+                          "h-8 gap-1.5 rounded-xl px-3 text-[11px] font-bold",
+                          isActive
+                            ? "bg-amber-600 hover:bg-amber-700 text-white"
+                            : "bg-purple-600 hover:bg-purple-700 text-white",
+                        )}
+                      >
+                        {isActive ? (
+                          <>
+                            <PlayCircle className="h-3.5 w-3.5" />
+                            Continue
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="h-3.5 w-3.5" />
+                            View
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        disabled={isDeleting}
+                        onClick={() => setPendingDelete(session)}
+                        className="h-8 w-8 rounded-xl p-0 text-slate-400 hover:text-red-600"
+                        aria-label="Delete interview"
+                      >
+                        {isDeleting ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3.5 w-3.5" />
+                        )}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               );
@@ -310,6 +338,36 @@ export default function InterviewHistory() {
           </div>
         )}
       </div>
+
+      {/* Destructive-action confirmation (portaled above the sticky nav) */}
+      <AlertDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this interview?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingDelete
+                ? `"${sessionTitle(pendingDelete.metadata_ ?? undefined)}" and its full transcript will be permanently removed. This can't be undone.`
+                : "This interview and its full transcript will be permanently removed."}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 text-white hover:bg-red-700"
+              onClick={() => {
+                if (pendingDelete) confirmDelete(pendingDelete);
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }

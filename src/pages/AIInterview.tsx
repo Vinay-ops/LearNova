@@ -1,10 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation } from "react-router";
+import { Link, useLocation, useNavigate } from "react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import {
   Bot,
   User,
@@ -31,6 +41,7 @@ import {
   PlayCircle,
   Library,
   PencilLine,
+  Eye,
 } from "lucide-react";
 import { aiInterviewApi } from "@/features/ai-interview";
 import {
@@ -40,7 +51,9 @@ import {
   isInterviewListable,
   persistActiveSessionId,
   practiceTargets,
+  resolvePendingSession,
   resumeSummary,
+  scoreBadgeClass,
   sessionKind,
   sessionTitle,
   statusLabel,
@@ -236,6 +249,11 @@ export default function AIInterview() {
   const [interviews, setInterviews] = useState<AISession[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [resumeNotice, setResumeNotice] = useState<string | null>(null);
+  // Confirmation gate for the inline history delete (same pattern as /interviews).
+  const [pendingDeleteInterview, setPendingDeleteInterview] = useState<AISession | null>(null);
+  // True once the first GET /api/ai/sessions has settled (success or failure),
+  // so the pending-session resolver knows the list is authoritative.
+  const [libraryLoaded, setLibraryLoaded] = useState(false);
 
   // StrictMode / double-invoke guard: prevents startInterview() from firing
   // twice on the same user click or from a React StrictMode double-effect.
@@ -258,6 +276,8 @@ export default function AIInterview() {
       setInterviews(sessions);
     } catch {
       /* non-fatal: library loads lazily on demand */
+    } finally {
+      setLibraryLoaded(true);
     }
   }, []);
 
@@ -359,18 +379,74 @@ export default function AIInterview() {
   // (e.g. "View" or "Continue" from the history page), wait for the library to
   // load so savedResumes is populated, then call loadSession.
   const location = useLocation();
+  const navigate = useNavigate();
   const pendingLoadId = (location.state as any)?.loadSessionId as string | undefined;
-  const pendingLoadHandled = useRef(false);
+
+  // Guard keyed on the *session id* (not a boolean): a StrictMode remount or a
+  // re-render mid-flight may re-run this effect, but once a given id has
+  // settled (opened or failed) it never retries again. Navigating to a
+  // *different* session id still runs because the key differs.
+  const settledLoadIdRef = useRef<string | null>(null);
+  const [pendingLoadError, setPendingLoadError] = useState<{
+    id: string;
+    message: string;
+  } | null>(null);
+
+  /** Strip the one-shot navigation state so a settled request isn't replayed. */
+  const clearPendingLoadState = useCallback(() => {
+    navigate(location.pathname, { replace: true, state: {} });
+  }, [navigate, location.pathname]);
 
   useEffect(() => {
-    if (!pendingLoadId || pendingLoadHandled.current) return;
-    // interviews list may still be empty on first render — wait for it.
-    if (interviews.length === 0) return;
-    const target = interviews.find((s) => s.id === pendingLoadId);
-    if (!target) return;
-    pendingLoadHandled.current = true;
-    loadSession(target);
-  }, [pendingLoadId, interviews, loadSession]);
+    if (!pendingLoadId || !libraryLoaded) return;
+    if (settledLoadIdRef.current === pendingLoadId) return;
+
+    let cancelled = false;
+    const id = pendingLoadId;
+    (async () => {
+      // The first sessions list can miss a just-created session (create → list
+      // fetch race); resolvePendingSession re-fetches with backoff, bounded so
+      // this can never spin forever.
+      const outcome = await resolvePendingSession({
+        sessionId: id,
+        initialSessions: interviews,
+        fetchSessions: () => aiInterviewApi.listSessions(""),
+        isCancelled: () => cancelled,
+      });
+      if (cancelled) return;
+
+      if (outcome.status === "found") {
+        settledLoadIdRef.current = id;
+        setPendingLoadError(null);
+        setInterviews(outcome.sessions);
+        clearPendingLoadState();
+        loadSession(outcome.session);
+      } else if (outcome.status === "not_found") {
+        // Never leave a silent waiting state — fail visibly, fall back to the
+        // normal setup phase, and offer a manual retry.
+        settledLoadIdRef.current = id;
+        setPendingLoadError({
+          id,
+          message:
+            "Couldn't load that interview — it may still be starting up. Check your history and try again.",
+        });
+        clearPendingLoadState();
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pendingLoadId, libraryLoaded, interviews, loadSession, clearPendingLoadState]);
+
+  const retryPendingLoad = () => {
+    const id = pendingLoadError?.id;
+    if (!id) return;
+    setPendingLoadError(null);
+    // Re-arm the id guard and re-seed navigation state so the effect runs again.
+    settledLoadIdRef.current = null;
+    navigate(location.pathname, { replace: true, state: { loadSessionId: id } });
+  };
 
   // ── resume helpers ────────────────────────────────────────────────────────
   const pickResumeFile = () => fileInputRef.current?.click();
@@ -547,6 +623,7 @@ export default function AIInterview() {
   };
 
   const deleteInterview = async (session: AISession) => {
+    setPendingDeleteInterview(null);
     try {
       await aiInterviewApi.deleteSession(session.id);
       setInterviews((prev) => prev.filter((s) => s.id !== session.id));
@@ -616,6 +693,24 @@ export default function AIInterview() {
 
   // ══════════════════════════════ SETUP ═══════════════════════════════════
   if (phase === "setup") {
+    // Pre-joined so a long custom role name can never collide with the metadata
+    // chips (role name gets its own wrapping line; chips get their own row).
+    const activeMeta = activeInterview?.metadata_ ?? undefined;
+    const recoveryMeta: string[] = [];
+    if (activeInterview) {
+      if (sessionKind(activeMeta) === "role") {
+        recoveryMeta.push(`${String(activeMeta?.difficulty || "Medium")} difficulty`);
+      }
+      if (
+        typeof activeMeta?.total_questions === "number" &&
+        activeMeta.total_questions > 0
+      ) {
+        recoveryMeta.push(`${String(activeMeta.total_questions)} questions`);
+      }
+      if (activeInterview.updated_at) {
+        recoveryMeta.push(`updated ${formatDate(activeInterview.updated_at)}`);
+      }
+    }
     return (
       <AppLayout>
         <div className="max-w-2xl mx-auto">
@@ -637,6 +732,36 @@ export default function AIInterview() {
             </div>
           )}
 
+          {/* A requested session (from /interviews) never showed up in the list.
+              Fail visibly with a manual retry instead of a silent wait. */}
+          {pendingLoadError && (
+            <div
+              role="alert"
+              className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 flex flex-wrap items-start gap-3"
+            >
+              <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+              <p className="text-sm text-amber-900 flex-1 min-w-[12rem]">{pendingLoadError.message}</p>
+              <div className="flex items-center gap-2 shrink-0 ml-auto">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-lg border-amber-300 text-amber-800 hover:bg-amber-100"
+                  onClick={retryPendingLoad}
+                >
+                  Try again
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="rounded-lg text-amber-800 hover:bg-amber-100"
+                  onClick={() => setPendingLoadError(null)}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Session recovery — never silently create a second session */}
           {activeInterview && (
             <div className="mb-5 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4">
@@ -644,19 +769,14 @@ export default function AIInterview() {
                 <PlayCircle className="h-4 w-4" />
                 You have an interview in progress
               </p>
-              <p className="text-xs text-amber-800 mt-1">
+              {/* Long custom role names wrap here instead of colliding with the
+                  metadata chips below. */}
+              <p className="text-sm font-semibold text-amber-900 mt-1 break-words">
                 {sessionTitle(activeInterview.metadata_ ?? undefined)}
-                {sessionKind(activeInterview.metadata_ ?? undefined) === "role"
-                  ? ` · ${(activeInterview.metadata_?.difficulty as string) || "Medium"} difficulty`
-                  : ""}
-                {typeof activeInterview.metadata_?.total_questions === "number" &&
-                  activeInterview.metadata_.total_questions > 0 && (
-                    <span className="ml-1 font-semibold text-amber-900">
-                      · {String(activeInterview.metadata_.total_questions)} questions
-                    </span>
-                  )}
-                {activeInterview.updated_at ? ` · updated ${formatDate(activeInterview.updated_at)}` : ""}
               </p>
+              {recoveryMeta.length > 0 && (
+                <p className="text-xs text-amber-800 mt-0.5">{recoveryMeta.join(" · ")}</p>
+              )}
               <div className="flex flex-wrap gap-2 mt-3">
                 <Button
                   size="sm"
@@ -935,7 +1055,10 @@ export default function AIInterview() {
                           </p>
                         </div>
                         {score !== null && (
-                          <Badge variant="secondary" className="text-[10px] bg-emerald-100 text-emerald-700 border-0 shrink-0">
+                          <Badge
+                            variant="secondary"
+                            className={cn("text-[10px] shrink-0", scoreBadgeClass(score))}
+                          >
                             {score}/100
                           </Badge>
                         )}
@@ -944,12 +1067,18 @@ export default function AIInterview() {
                             size="sm"
                             onClick={() => loadSession(s)}
                             disabled={loadingSession}
-                            className="h-7 rounded-lg text-[11px] px-2.5 font-bold gap-1"
+                            className={cn(
+                              "h-7 rounded-lg text-[11px] px-2.5 font-bold gap-1",
+                              // amber = in progress, purple = review (same as /interviews)
+                              s.status === "active"
+                                ? "bg-amber-600 hover:bg-amber-700 text-white"
+                                : "bg-purple-600 hover:bg-purple-700 text-white",
+                            )}
                           >
-                            {s.status === "active" ? <PlayCircle className="h-3 w-3" /> : <ChevronDown className="h-3 w-3 -rotate-90" />}
+                            {s.status === "active" ? <PlayCircle className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
                             {s.status === "active" ? "Continue" : "View"}
                           </Button>
-                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-slate-400 hover:text-red-600" onClick={() => deleteInterview(s)} aria-label="Delete interview">
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-slate-400 hover:text-red-600" onClick={() => setPendingDeleteInterview(s)} aria-label="Delete interview">
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         </div>
@@ -961,6 +1090,36 @@ export default function AIInterview() {
             </div>
           )}
         </div>
+
+        {/* Delete is destructive — confirm before calling the API. */}
+        <AlertDialog
+          open={pendingDeleteInterview !== null}
+          onOpenChange={(open) => {
+            if (!open) setPendingDeleteInterview(null);
+          }}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete this interview?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {pendingDeleteInterview
+                  ? `"${sessionTitle(pendingDeleteInterview.metadata_ ?? undefined)}" and its full transcript will be permanently removed. This can't be undone.`
+                  : "This interview and its full transcript will be permanently removed."}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-red-600 text-white hover:bg-red-700"
+                onClick={() => {
+                  if (pendingDeleteInterview) deleteInterview(pendingDeleteInterview);
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </AppLayout>
     );
   }

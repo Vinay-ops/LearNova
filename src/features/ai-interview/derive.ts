@@ -139,6 +139,98 @@ export function storedScore(meta: SessionMeta): number | null {
   return typeof score === "number" && Number.isFinite(score) ? Math.round(score) : null;
 }
 
+// ---------------------------------------------------------------------------
+// Navigating into a specific session (the "Continue" / "View" flow)
+//
+// AIInterview loads the sessions list, then opens whichever session was
+// requested via navigation state. A just-created session can be missing from
+// the first list response (create → list fetch race), so resolution re-fetches
+// a bounded number of times with backoff before failing. That policy lives
+// here — pure and testable — instead of inside the effect, so the race can be
+// reproduced deterministically in unit tests.
+// ---------------------------------------------------------------------------
+
+/** Backoff between re-fetches; its length also bounds the retry count. */
+export const PENDING_SESSION_RETRY_DELAYS_MS: readonly number[] = [500, 1200, 2000];
+
+export type PendingSessionOutcome =
+  | { status: "found"; sessions: AISession[]; session: AISession }
+  | { status: "not_found" }
+  | { status: "cancelled" };
+
+export interface ResolvePendingSessionOptions {
+  sessionId: string;
+  /** Sessions the page already has (may not yet contain the target). */
+  initialSessions: AISession[];
+  /** Re-fetch the sessions list (GET /api/ai/sessions). */
+  fetchSessions: () => Promise<AISession[]>;
+  /** Backoff schedule; tests pass `[]`/custom values to stay instant. */
+  delaysMs?: readonly number[];
+  sleep?: (ms: number) => Promise<void>;
+  /** Return true once the caller has unmounted or navigated away. */
+  isCancelled?: () => boolean;
+}
+
+const defaultSleep = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Resolve a requested session id against a (possibly stale) sessions list,
+ * re-fetching with backoff while the id is still missing. Never loops forever:
+ * the bounded `delaysMs` schedule decides when to give up and report
+ * `not_found` so the caller can fail visibly instead of spinning.
+ */
+export async function resolvePendingSession({
+  sessionId,
+  initialSessions,
+  fetchSessions,
+  delaysMs = PENDING_SESSION_RETRY_DELAYS_MS,
+  sleep = defaultSleep,
+  isCancelled = () => false,
+}: ResolvePendingSessionOptions): Promise<PendingSessionOutcome> {
+  const initialTarget = initialSessions.find((s) => s.id === sessionId);
+  if (initialTarget) {
+    return { status: "found", sessions: initialSessions, session: initialTarget };
+  }
+
+  for (const delay of delaysMs) {
+    await sleep(delay);
+    if (isCancelled()) return { status: "cancelled" };
+    let fresh: AISession[];
+    try {
+      fresh = await fetchSessions();
+    } catch {
+      // A transient fetch failure is not terminal — keep retrying within bound.
+      continue;
+    }
+    if (isCancelled()) return { status: "cancelled" };
+    const target = fresh.find((s) => s.id === sessionId);
+    if (target) return { status: "found", sessions: fresh, session: target };
+  }
+
+  return isCancelled() ? { status: "cancelled" } : { status: "not_found" };
+}
+
+// ---------------------------------------------------------------------------
+// Shared badge colour semantics
+//
+// These are the app's single source of truth for score/status colours, so the
+// history page reads the same as Progress/Dashboard (see their `skillColor`):
+// >=80 good (emerald), >=65 mid (purple/primary), else needs work (amber).
+// ---------------------------------------------------------------------------
+
+export function scoreBadgeClass(score: number): string {
+  if (score >= 80) return "bg-emerald-100 text-emerald-700 border-0";
+  if (score >= 65) return "bg-purple-100 text-purple-700 border-0";
+  return "bg-amber-100 text-amber-700 border-0";
+}
+
+export function statusBadgeClass(status: string): string {
+  if (status === "completed") return "bg-emerald-100 text-emerald-700 border-0";
+  if (status === "active") return "bg-amber-100 text-amber-700 border-0";
+  return "bg-slate-100 text-slate-500 border-0";
+}
+
 export function isInterviewSession(session: Pick<AISession, "session_type">): boolean {
   // Learning-tutor sessions use session_type "learning"; everything stored as
   // "case_interview" is an AI interview (case, role/resume, or topic).

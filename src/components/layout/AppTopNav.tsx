@@ -42,7 +42,9 @@ export function AppTopNav() {
 
   return (
     <nav className="sticky top-0 z-50 bg-white border-b border-slate-100 shadow-sm">
-      <div className="mx-auto max-w-7xl px-6 h-16 flex items-center justify-between gap-6">
+      {/* Width matches AppLayout's content column so the nav lines up with the
+          page below it. */}
+      <div className="mx-auto max-w-[1400px] px-6 h-16 flex items-center justify-between gap-4">
         {/* Logo */}
         <Link to="/dashboard" className="flex items-center gap-2 shrink-0">
           <div className="w-8 h-8 rounded-xl bg-purple-600 flex items-center justify-center shadow-md shadow-purple-200">
@@ -51,29 +53,35 @@ export function AppTopNav() {
           <span className="text-xl font-extrabold text-slate-900 tracking-tight">Learnova</span>
         </Link>
 
-        {/* Desktop Nav Links */}
-        <div className="hidden md:flex items-center gap-1 flex-1 justify-center">
-          {navLinks.map(({ to, label, icon: Icon }) => {
-            const active = isActive(to);
-            return (
-              <Link
-                key={to}
-                to={to}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                  active
-                    ? "bg-purple-50 text-purple-700"
-                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${active ? "text-purple-600" : "text-slate-400"}`} />
-                {label}
-              </Link>
-            );
-          })}
+        {/* Desktop Nav Links — the 8 items measure ~952px plus ~300px of
+            logo/profile chrome, so they need a ~1335px viewport. Collapse to the
+            hamburger below 1340px (same pattern, wider threshold) so links never
+            wrap or push the profile cluster off-screen. The inner track scrolls
+            horizontally only if the row is ever wider than the space available. */}
+        <div className="hidden min-[1340px]:flex flex-1 min-w-0 justify-center">
+          <div className="flex max-w-full items-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {navLinks.map(({ to, label, icon: Icon }) => {
+              const active = isActive(to);
+              return (
+                <Link
+                  key={to}
+                  to={to}
+                  className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2.5 py-2 rounded-xl text-sm font-semibold transition-all ${
+                    active
+                      ? "bg-purple-50 text-purple-700"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 shrink-0 ${active ? "text-purple-600" : "text-slate-400"}`} />
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
         </div>
 
         {/* Right: Settings + Profile */}
-        <div className="hidden md:flex items-center gap-2 shrink-0">
+        <div className="hidden min-[1340px]:flex items-center gap-2 shrink-0">
           <Link
             to="/settings"
             className={`p-2 rounded-xl transition-all ${
@@ -134,7 +142,7 @@ export function AppTopNav() {
 
         {/* Mobile menu button */}
         <button
-          className="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-50"
+          className="min-[1340px]:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-50"
           onClick={() => setMobileOpen(!mobileOpen)}
         >
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -143,7 +151,7 @@ export function AppTopNav() {
 
       {/* Mobile Nav */}
       {mobileOpen && (
-        <div className="md:hidden border-t border-slate-100 bg-white px-4 py-3 flex flex-col gap-1">
+        <div className="min-[1340px]:hidden border-t border-slate-100 bg-white px-4 py-3 flex flex-col gap-1">
           {navLinks.map(({ to, label, icon: Icon }) => {
             const active = isActive(to);
             return (
