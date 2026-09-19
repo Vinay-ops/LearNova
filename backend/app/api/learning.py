@@ -3,6 +3,7 @@ from typing import List
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.orm import Session
 
+from ..core.rate_limit import enforce_ai_rate_limit
 from ..core.security import get_current_user, get_db
 from ..models.ai_session import AIMessage, AISession
 from ..models.user import User
@@ -90,4 +91,5 @@ def send_learning_message(
     db: Session = Depends(get_db),
 ):
     service = LearningService(db)
+    enforce_ai_rate_limit("learning_chat", current_user.id)
     return service.chat(session_id, current_user.id, payload.content)

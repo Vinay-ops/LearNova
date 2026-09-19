@@ -341,8 +341,8 @@ export default function Settings() {
                         className={cn(
                           "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
                           selected
-                            ? "bg-purple-600 text-white border-purple-600"
-                            : "bg-white text-slate-600 border-slate-200 hover:border-purple-300"
+                            ? "bg-blue-600 text-white border-blue-600"
+                            : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"
                         )}
                       >
                         {firm}

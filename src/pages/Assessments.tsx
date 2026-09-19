@@ -65,8 +65,8 @@ export default function Assessments() {
               return (
                 <StaggerItem key={a.id}>
                   <div className="flex items-center gap-4 px-5 py-4 border-b border-border/40 last:border-0 hover:bg-muted/30 transition-colors group">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-purple-50 shrink-0">
-                      <Icon className="h-5 w-5 text-purple-600" />
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 shrink-0">
+                      <Icon className="h-5 w-5 text-blue-600" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">

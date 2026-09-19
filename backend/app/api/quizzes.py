@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
+from ..core.rate_limit import enforce_ai_rate_limit
 from ..core.security import get_current_user, get_db
 from ..models.user import User
 from ..schemas.quiz import (
@@ -24,6 +25,7 @@ def generate_quiz(
     The LLM output is validated (structure + quality) and regenerated per
     invalid question before anything is stored.
     """
+    enforce_ai_rate_limit("quiz_generate", current_user.id)
     service = QuizService(db)
     return service.generate(
         user_id=current_user.id,

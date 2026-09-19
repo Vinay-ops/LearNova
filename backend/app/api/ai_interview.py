@@ -38,6 +38,7 @@ from ..services.progress_service import ProgressService
 from ..ai.feedback_generator import FeedbackGeneratorService
 from ..ai.recommender import RecommenderService
 from ..core.exceptions import NotFoundError, ValidationError
+from ..core.rate_limit import enforce_ai_rate_limit
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
 
@@ -150,6 +151,8 @@ async def parse_resume(
     if len(data) > MAX_RESUME_BYTES:
         raise AppValidationError("Resume file is too large (max 2 MB)")
 
+    enforce_ai_rate_limit("resume_parse", current_user.id)
+
     resume_text = extract_resume_text(filename, data)
     parser = ResumeParserService()
     parsed = parser.parse(resume_text, role=role)
@@ -169,6 +172,7 @@ def ai_interview_chat(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    enforce_ai_rate_limit("interview_chat", current_user.id)
     service = InterviewSessionService(db)
     result = service.chat(payload, current_user.id)
     return AIChatResponse(
@@ -200,6 +204,7 @@ def ai_evaluate(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    enforce_ai_rate_limit("evaluation", current_user.id)
     if not payload.case_attempt_id and not payload.session_id:
         raise ValidationError("Provide either case_attempt_id or session_id")
 
@@ -262,6 +267,7 @@ def ai_generate_feedback(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    enforce_ai_rate_limit("feedback", current_user.id)
     if not payload.attempt_id and not payload.session_id:
         raise ValidationError("Provide either attempt_id or session_id")
 
@@ -341,6 +347,7 @@ def ai_generate_recommendations(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    enforce_ai_rate_limit("recommendations", current_user.id)
     progress = ProgressService(db)
     summary = progress.get_summary(current_user.id)
 

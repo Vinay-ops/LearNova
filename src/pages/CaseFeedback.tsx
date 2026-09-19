@@ -196,7 +196,7 @@ export default function CaseFeedback() {
                     Q{q.display_order + 1}. {q.question_text}
                   </p>
                   {answer && answer.answer_text ? (
-                    <p className="text-sm text-slate-600 leading-relaxed pl-3 border-l-2 border-purple-200">
+                    <p className="text-sm text-slate-600 leading-relaxed pl-3 border-l-2 border-blue-200">
                       {answer.answer_text}
                     </p>
                   ) : (
@@ -227,11 +227,11 @@ export default function CaseFeedback() {
       {/* Recommendation */}
       {latestAttempt.recommendations && (
         <FadeIn delay={0.55} className="mb-8">
-          <div className="rounded-lg border bg-purple-50 p-4 pl-6">
-            <p className="text-xs font-semibold text-purple-700 uppercase tracking-widest mb-1">
+          <div className="rounded-lg border bg-blue-50 p-4 pl-6">
+            <p className="text-xs font-semibold text-blue-700 uppercase tracking-widest mb-1">
               Recommendation
             </p>
-            <p className="text-sm leading-relaxed text-purple-900">{latestAttempt.recommendations || ""}</p>
+            <p className="text-sm leading-relaxed text-blue-900">{latestAttempt.recommendations || ""}</p>
           </div>
         </FadeIn>
       )}
@@ -239,7 +239,7 @@ export default function CaseFeedback() {
       {/* Actions */}
       <FadeIn delay={0.6} className="flex flex-col sm:flex-row gap-3">
         <Link to="/practice" className="flex-1">
-          <Button className="w-full gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl shadow-md shadow-purple-200">
+          <Button className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md shadow-blue-200">
             <Target className="h-4 w-4" />
             Practice Weakness
             <ArrowRight className="h-4 w-4" />

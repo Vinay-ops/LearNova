@@ -137,5 +137,13 @@ def save_assessment_answer(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    """Store one answer for the caller's OWN attempt.
+
+    The attempt is loaded and ownership-verified in the service, and
+    correctness/points are always computed server-side — never taken from the
+    request body.
+    """
     service = AssessmentService(db)
-    return service.save_answer(payload.attempt_id, payload.question_id, payload)
+    return service.save_answer(
+        payload.attempt_id, payload.question_id, payload, current_user.id
+    )

@@ -203,7 +203,7 @@ export default function AssessmentResults() {
                 </div>
                 <Button
                   onClick={practiceWeak}
-                  className="gap-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold rounded-full px-5 text-xs shadow-md shadow-purple-200 shrink-0"
+                  className="gap-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-full px-5 text-xs shadow-md shadow-blue-200 shrink-0"
                   size="sm"
                 >
                   Practice Weak Areas

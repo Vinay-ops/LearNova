@@ -103,7 +103,7 @@ export default function Dashboard() {
       >
         <div>
           <h1 className="text-3xl font-extrabold tracking-tight text-slate-900">
-            {getGreeting()}, <span className="text-purple-600">{displayName}</span> 👋
+            {getGreeting()}, <span className="text-primary">{displayName}</span> 👋
           </h1>
           <p className="text-slate-500 mt-1 text-sm font-semibold">
             {daysLeft != null && daysLeft > 0 ? (
@@ -118,7 +118,7 @@ export default function Dashboard() {
           </p>
         </div>
         <Link to="/practice">
-          <Button className="gap-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold rounded-full px-6 py-5 shadow-lg shadow-purple-200">
+          <Button className="gap-2 bg-primary hover:bg-primary/90 text-white font-extrabold rounded-full px-6 py-5 shadow-nova">
             <Target className="h-4 w-4" />
             Start Practice
             <ArrowRight className="h-4 w-4" />
@@ -134,7 +134,7 @@ export default function Dashboard() {
             value: readinessScore,
             suffix: "/100",
             label: "Interview Readiness",
-            color: "bg-purple-100 text-purple-600",
+            color: "bg-blue-100 text-blue-600",
             trend:
               readinessDelta != null
                 ? `${readinessDelta >= 0 ? "+" : ""}${readinessDelta} vs last check`
@@ -182,12 +182,12 @@ export default function Dashboard() {
             value: averageInterviewScore != null ? `${averageInterviewScore}` : "—",
             suffix: averageInterviewScore != null ? "%" : "",
             label: "Avg Interview Score",
-            color: "bg-purple-100 text-purple-600",
+            color: "bg-blue-100 text-blue-600",
             trend:
               averageInterviewScore != null
                 ? `Real AI-evaluated average`
                 : "Finish an interview to score",
-            trendColor: "text-purple-600",
+            trendColor: "text-blue-600",
           },
         ].map((stat, i) => {
           const Icon = stat.icon;
@@ -198,7 +198,7 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15 + i * 0.08, duration: 0.4 }}
               whileHover={{ y: -3 }}
-              className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/50"
+              className="nova-card nova-card-interactive rounded-3xl p-6"
             >
               <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl ${stat.color} mb-4 shadow-sm`}>
                 <Icon className="h-6 w-6" />
@@ -220,12 +220,12 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-4">
             <p className="text-base font-extrabold text-slate-900">Skill Performance</p>
             <Link to="/progress">
-              <Button variant="ghost" size="sm" className="text-xs font-bold text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-full">
+              <Button variant="ghost" size="sm" className="text-xs font-bold text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-full">
                 View Details <ArrowRight className="h-3.5 w-3.5 ml-1" />
               </Button>
             </Link>
           </div>
-          <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/50">
+          <div className="nova-card rounded-3xl p-6">
             <StaggerList className="space-y-4">
               {skillScores.map((skill, i) => (
                 <StaggerItem key={skill.name}>
@@ -274,7 +274,7 @@ export default function Dashboard() {
             <FadeIn delay={0.6} className="mt-6">
               {weakestSkill ? (
                 <div className="rounded-2xl bg-amber-50 border border-amber-200/60 p-4 flex items-start gap-3">
-                  <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 text-amber-600 shadow-sm">
+                  <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0 text-amber-600">
                     <Target className="h-5 w-5" />
                   </div>
                   <div>
@@ -313,11 +313,11 @@ export default function Dashboard() {
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.3, duration: 0.4 }}
               whileHover={{ y: -2 }}
-              className="rounded-3xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-purple-50/30 p-6 shadow-xl shadow-slate-200/50"
+              className="rounded-3xl border border-primary/15 bg-gradient-to-br from-primary/5 via-card to-card p-6 shadow-nova"
             >
               {recommendedDrill ? (
                 <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 shrink-0 shadow-sm">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shrink-0">
                     <Zap className="h-6 w-6" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -329,7 +329,7 @@ export default function Dashboard() {
                       {recommendedDrill.description}
                     </p>
                     <Link to="/practice">
-                      <Button className="mt-4 gap-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold rounded-full px-5 py-2 text-xs shadow-md shadow-purple-200" size="sm">
+                      <Button className="mt-4 gap-2 bg-primary hover:bg-primary/90 text-white font-extrabold rounded-full px-5 py-2 text-xs shadow-nova-sm" size="sm">
                         Start Drill
                         <ArrowRight className="h-3.5 w-3.5" />
                       </Button>
@@ -338,7 +338,7 @@ export default function Dashboard() {
                 </div>
               ) : (
                 <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-100 text-amber-600 shrink-0 shadow-sm">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary shrink-0">
                     <Zap className="h-6 w-6" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -349,7 +349,7 @@ export default function Dashboard() {
                       Once you take assessments and drills, we'll recommend the best next step here.
                     </p>
                     <Link to="/practice">
-                      <Button className="mt-4 gap-2 bg-purple-600 hover:bg-purple-700 text-white font-extrabold rounded-full px-5 py-2 text-xs shadow-md shadow-purple-200" size="sm">
+                      <Button className="mt-4 gap-2 bg-primary hover:bg-primary/90 text-white font-extrabold rounded-full px-5 py-2 text-xs shadow-nova-sm" size="sm">
                         Browse Practice
                         <ArrowRight className="h-3.5 w-3.5" />
                       </Button>
@@ -363,7 +363,7 @@ export default function Dashboard() {
           {/* Recent Activity / Today's training */}
           <div>
             <p className="text-base font-extrabold text-slate-900 mb-4">Recent Activity</p>
-            <div className="rounded-3xl border border-slate-100 bg-white shadow-xl shadow-slate-200/50 overflow-hidden p-2">
+            <div className="nova-card rounded-3xl overflow-hidden p-2">
               {recentAttempts.length > 0 ? (
                 <StaggerList>
                   {recentAttempts.map((attempt) => {
@@ -371,7 +371,7 @@ export default function Dashboard() {
                     return (
                       <StaggerItem key={attempt.id}>
                         <motion.div
-                          whileHover={{ x: 3, backgroundColor: "rgb(248 245 242)" }}
+                          whileHover={{ x: 3, backgroundColor: "rgb(241 245 249)" }}
                           transition={{ type: "spring", stiffness: 500, damping: 30 }}
                           className="flex items-center gap-3 px-4 py-3.5 rounded-2xl cursor-pointer"
                         >
@@ -407,7 +407,7 @@ export default function Dashboard() {
             <p className="text-base font-extrabold text-slate-900 mb-4">Quick Actions</p>
             <div className="space-y-2">
               {[
-                { to: "/learn", label: "Learn a Topic", icon: GraduationCap, color: "bg-purple-100 text-purple-600" },
+                { to: "/learn", label: "Learn a Topic", icon: GraduationCap, color: "bg-blue-100 text-blue-600" },
                 { to: "/interview", label: "AI Mock Interview", icon: Mic, color: "bg-pink-100 text-pink-600" },
                 { to: "/assessments", label: "Take Quiz / Assessment", icon: Target, color: "bg-blue-100 text-blue-600" },
                 { to: "/practice", label: "Start Practice", icon: BookOpen, color: "bg-emerald-100 text-emerald-600" },
@@ -437,11 +437,11 @@ export default function Dashboard() {
           Readiness Over Time
         </p>
         {readinessOverTime.length > 0 ? (
-          <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/50">
+          <div className="nova-card rounded-3xl p-6">
             <div className="h-60">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={readinessOverTime}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f3ede8" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                   <XAxis
                     dataKey="date"
                     tick={{ fontSize: 11, fill: "#94a3b8", fontWeight: 600 }}
@@ -459,16 +459,16 @@ export default function Dashboard() {
                       borderRadius: "16px",
                       border: "none",
                       fontSize: "12px",
-                      boxShadow: "0 10px 25px -5px rgba(108,92,231,0.15)",
+                      boxShadow: "0 10px 25px -5px rgba(37,99,235,0.15)",
                     }}
                   />
                   <Line
                     type="monotone"
                     dataKey="score"
-                    stroke="#6c5ce7"
+                    stroke="#2563EB"
                     strokeWidth={3}
                     dot={false}
-                    activeDot={{ r: 6, strokeWidth: 2, fill: "#6c5ce7" }}
+                    activeDot={{ r: 6, strokeWidth: 2, fill: "#2563EB" }}
                     animationDuration={1200}
                     animationEasing="ease-out"
                   />
@@ -477,7 +477,7 @@ export default function Dashboard() {
             </div>
           </div>
         ) : (
-          <div className="rounded-3xl border border-slate-100 bg-white p-8 shadow-xl shadow-slate-200/50 text-center">
+          <div className="nova-card rounded-3xl p-8 text-center">
             <p className="text-sm text-slate-500">
               Your readiness trend will appear here as you complete evaluations.
             </p>

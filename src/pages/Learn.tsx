@@ -196,7 +196,7 @@ export default function Learn() {
     <AppLayout>
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center gap-3 mb-6">
-          <div className="h-10 w-10 rounded-2xl bg-purple-600 flex items-center justify-center shadow-md shadow-purple-200">
+          <div className="h-10 w-10 rounded-2xl bg-blue-600 flex items-center justify-center shadow-md shadow-blue-200">
             <GraduationCap className="h-5 w-5 text-white" />
           </div>
           <div>
@@ -216,7 +216,7 @@ export default function Learn() {
                 <button
                   key={s.id}
                   onClick={() => openSession(s)}
-                  className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-600 hover:border-purple-300 hover:text-purple-700 transition-all"
+                  className="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-600 hover:border-blue-300 hover:text-blue-700 transition-all"
                 >
                   {s.topic}
                 </button>
@@ -246,12 +246,12 @@ export default function Learn() {
                 onChange={(e) => setTopic(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && startLearning()}
                 placeholder="e.g. Python decorators, SQL joins, OS scheduling…"
-                className="h-12 rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                className="h-12 rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
               />
               <Button
                 onClick={startLearning}
                 disabled={busy}
-                className="h-12 px-5 rounded-xl gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold shadow-md shadow-purple-200 shrink-0"
+                className="h-12 px-5 rounded-xl gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md shadow-blue-200 shrink-0"
               >
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                 Learn
@@ -262,7 +262,7 @@ export default function Learn() {
                 <button
                   key={t}
                   onClick={() => setTopic(t)}
-                  className="px-3 py-1.5 rounded-full bg-slate-100 text-xs font-semibold text-slate-600 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-200 border border-transparent transition-all"
+                  className="px-3 py-1.5 rounded-full bg-slate-100 text-xs font-semibold text-slate-600 hover:bg-blue-50 hover:text-blue-700 hover:border-blue-200 border border-transparent transition-all"
                 >
                   {t}
                 </button>
@@ -279,7 +279,7 @@ export default function Learn() {
                   }
                   setQuizOpen(true);
                 }}
-                className="rounded-xl border-purple-200 text-purple-700 hover:bg-purple-50 gap-2"
+                className="rounded-xl border-blue-200 text-blue-700 hover:bg-blue-50 gap-2"
               >
                 <BookOpen className="h-4 w-4" />
                 Generate Quiz for Topic
@@ -291,9 +291,9 @@ export default function Learn() {
           <>
             <div className="rounded-3xl border border-slate-100 bg-white shadow-xl shadow-slate-200/40 overflow-hidden">
               {/* Chat header */}
-              <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-purple-50/70 to-white">
+              <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-slate-100 bg-gradient-to-r from-blue-50/70 to-white">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-9 w-9 rounded-xl bg-purple-600 flex items-center justify-center shrink-0">
+                  <div className="h-9 w-9 rounded-xl bg-blue-600 flex items-center justify-center shrink-0">
                     <GraduationCap className="h-4.5 w-4.5 text-white" />
                   </div>
                   <div className="min-w-0">
@@ -305,7 +305,7 @@ export default function Learn() {
                   <Button
                     size="sm"
                     onClick={() => setQuizOpen(true)}
-                    className="gap-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow-sm px-4"
+                    className="gap-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm px-4"
                   >
                     <BookOpen className="h-3.5 w-3.5" />
                     Generate Quiz
@@ -329,8 +329,8 @@ export default function Learn() {
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="text-center py-14 px-6">
-                    <div className="h-12 w-12 rounded-2xl bg-purple-100 flex items-center justify-center mx-auto mb-4">
-                      <Sparkles className="h-6 w-6 text-purple-600" />
+                    <div className="h-12 w-12 rounded-2xl bg-blue-100 flex items-center justify-center mx-auto mb-4">
+                      <Sparkles className="h-6 w-6 text-blue-600" />
                     </div>
                     <p className="text-sm font-bold text-slate-800">You're learning {activeTopic}</p>
                     <p className="text-xs text-slate-500 mt-1.5 max-w-sm mx-auto leading-relaxed">
@@ -345,7 +345,7 @@ export default function Learn() {
                         className={cn(
                           "max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap",
                           m.role === "user"
-                            ? "bg-purple-600 text-white rounded-br-md shadow-md shadow-purple-200"
+                            ? "bg-blue-600 text-white rounded-br-md shadow-md shadow-blue-200"
                             : "bg-white border border-slate-100 text-slate-700 rounded-bl-md shadow-sm",
                         )}
                       >
@@ -373,12 +373,12 @@ export default function Learn() {
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && sendMessage()}
                     placeholder={`Ask about ${activeTopic}…`}
-                    className="rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                    className="rounded-xl border-slate-200 bg-slate-50 focus:bg-white focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
                   />
                   <Button
                     onClick={sendMessage}
                     disabled={busy || !input.trim()}
-                    className="h-10 w-10 p-0 rounded-xl bg-purple-600 hover:bg-purple-700 text-white shrink-0 disabled:opacity-50"
+                    className="h-10 w-10 p-0 rounded-xl bg-blue-600 hover:bg-blue-700 text-white shrink-0 disabled:opacity-50"
                     aria-label="Send"
                   >
                     <Send className="h-4 w-4" />
@@ -427,8 +427,8 @@ export default function Learn() {
                     className={cn(
                       "py-2.5 rounded-xl text-sm font-semibold border-2 transition-all",
                       quizDifficulty === d
-                        ? "bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-200"
-                        : "bg-white text-slate-600 border-slate-200 hover:border-purple-300",
+                        ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200"
+                        : "bg-white text-slate-600 border-slate-200 hover:border-blue-300",
                     )}
                   >
                     {d}
@@ -445,8 +445,8 @@ export default function Learn() {
                     className={cn(
                       "py-2.5 rounded-xl text-sm font-semibold border-2 transition-all",
                       quizCount === n
-                        ? "bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-200"
-                        : "bg-white text-slate-600 border-slate-200 hover:border-purple-300",
+                        ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200"
+                        : "bg-white text-slate-600 border-slate-200 hover:border-blue-300",
                     )}
                   >
                     {n}
@@ -475,7 +475,7 @@ export default function Learn() {
                 <Button
                   onClick={generateQuiz}
                   disabled={quizBusy}
-                  className="flex-[2] rounded-xl gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold shadow-md shadow-purple-200"
+                  className="flex-[2] rounded-xl gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md shadow-blue-200"
                 >
                   {quizBusy ? (
                     <>

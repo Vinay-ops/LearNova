@@ -78,8 +78,8 @@ export default function ProfileSetup() {
                   className={cn(
                     "px-4 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all",
                     selected
-                      ? "bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-200"
-                      : "bg-white text-slate-600 border-slate-200 hover:border-purple-300 hover:bg-purple-50"
+                      ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200"
+                      : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:bg-blue-50"
                   )}
                 >
                   {selected && <Check className="inline w-3.5 h-3.5 mr-1.5" />}
@@ -104,8 +104,8 @@ export default function ProfileSetup() {
                 className={cn(
                   "px-4 py-3 rounded-xl text-sm font-semibold border-2 transition-all text-center",
                   experience === level
-                    ? "bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-200"
-                    : "bg-white text-slate-600 border-slate-200 hover:border-purple-300 hover:bg-purple-50"
+                    ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-blue-300 hover:bg-blue-50"
                 )}
               >
                 {level}
@@ -134,7 +134,7 @@ export default function ProfileSetup() {
         <div className="flex gap-3">
           <Button
             onClick={handleContinue}
-            className="flex-1 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold py-5 shadow-lg shadow-purple-200"
+            className="flex-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 shadow-lg shadow-blue-200"
           >
             Continue
           </Button>

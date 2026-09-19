@@ -94,7 +94,7 @@ export default function Profile() {
       {/* Profile header card */}
       <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-sm flex items-center gap-5 mb-6">
         <Avatar className="h-16 w-16 shadow-md">
-          <AvatarFallback className="bg-purple-600 text-white text-xl font-extrabold">
+          <AvatarFallback className="bg-blue-600 text-white text-xl font-extrabold">
             {initial}
           </AvatarFallback>
         </Avatar>
@@ -115,12 +115,12 @@ export default function Profile() {
 
       {/* Stats strip */}
       <FadeIn delay={0.15} className="grid grid-cols-2 gap-4 mb-6">
-        <div className="rounded-3xl bg-purple-50 border border-purple-100 p-6 shadow-sm">
-          <p className="text-xs font-extrabold text-purple-600 uppercase tracking-widest mb-1">
+        <div className="rounded-3xl bg-blue-50 border border-blue-100 p-6 shadow-sm">
+          <p className="text-xs font-extrabold text-blue-600 uppercase tracking-widest mb-1">
             Readiness Score
           </p>
-          <p className="text-4xl font-extrabold text-purple-900 tabular-nums">
-            {readinessScore}<span className="text-base font-semibold text-purple-500 ml-1">/100</span>
+          <p className="text-4xl font-extrabold text-blue-900 tabular-nums">
+            {readinessScore}<span className="text-base font-semibold text-blue-500 ml-1">/100</span>
           </p>
         </div>
         <div className="rounded-3xl bg-amber-50 border border-amber-100 p-6 shadow-sm">
@@ -144,7 +144,7 @@ export default function Profile() {
           return (
             <StaggerItem key={item.label}>
               <motion.div whileHover={{ x: 4 }} transition={{ type: "spring", stiffness: 500, damping: 30 }} className="flex items-center gap-4 px-5 py-4 rounded-2xl hover:bg-slate-50">
-                <div className="w-10 h-10 rounded-2xl bg-purple-100 text-purple-600 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center shrink-0">
                   <Icon className="h-5 w-5" />
                 </div>
                 <span className="text-sm font-semibold text-slate-500 w-36 shrink-0">{item.label}</span>
@@ -182,8 +182,8 @@ export default function Profile() {
                       className={cn(
                         "px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all",
                         selected
-                          ? "bg-purple-600 text-white border-purple-600"
-                          : "bg-white text-slate-600 border-slate-200 hover:border-purple-300"
+                          ? "bg-blue-600 text-white border-blue-600"
+                          : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"
                       )}
                     >
                       {firm}
@@ -202,8 +202,8 @@ export default function Profile() {
                     className={cn(
                       "px-3 py-2 rounded-lg text-xs font-semibold border transition-all text-center",
                       editExperience === level
-                        ? "bg-purple-600 text-white border-purple-600"
-                        : "bg-white text-slate-600 border-slate-200 hover:border-purple-300"
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-slate-600 border-slate-200 hover:border-blue-300"
                     )}
                   >
                     {level}

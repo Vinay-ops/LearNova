@@ -295,7 +295,7 @@ export default function CaseSimulator() {
                 </p>
                 <Button
                   onClick={handleNextQuestion}
-                  className="w-full gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl"
+                  className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl"
                   disabled={evaluating}
                 >
                   {isLastQuestion ? "Complete Case" : "Next Question"}

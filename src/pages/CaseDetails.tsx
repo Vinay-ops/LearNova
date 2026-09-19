@@ -100,7 +100,7 @@ export default function CaseDetails() {
               <Badge
                 key={skill}
                 variant="secondary"
-                className="bg-purple-50 text-purple-600 border-0 text-xs"
+                className="bg-blue-50 text-blue-600 border-0 text-xs"
               >
                 {skill}
               </Badge>
@@ -120,7 +120,7 @@ export default function CaseDetails() {
           <ul className="space-y-2">
             {(caseData.skills || []).map((item: string, i: number) => (
               <li key={i} className="flex items-start gap-2.5">
-                <BookOpen className="h-4 w-4 text-purple-600 mt-0.5 shrink-0" />
+                <BookOpen className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
                 <span className="text-sm text-slate-600">{item}</span>
               </li>
             ))}
@@ -130,7 +130,7 @@ export default function CaseDetails() {
         {/* Start Button */}
         <Button
           onClick={handleStartCase}
-          className="w-full py-6 bg-purple-600 hover:bg-purple-700 text-white font-extrabold rounded-2xl shadow-lg shadow-purple-200 text-base gap-3"
+          className="w-full py-6 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-2xl shadow-lg shadow-blue-200 text-base gap-3"
         >
           <Play className="h-5 w-5 fill-white" />
           Start Case Interview

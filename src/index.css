@@ -1,4 +1,8 @@
-/* CasePilot — Learnova-style purple & warm cream theme */
+/* ==========================================================================
+   Learnova — Global Design System
+   AI-Powered Learning, Quiz, Practice & Interview Assessment Platform
+   ========================================================================== */
+
 @import "tailwindcss";
 @import "tw-animate-css";
 @custom-variant dark (&:is(.dark *));
@@ -8,6 +12,9 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 10px);
+  --radius-3xl: calc(var(--radius) + 18px);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -26,11 +33,22 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-surface: var(--surface);
+  --color-muted-text: var(--muted-text);
+
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -39,110 +57,167 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  --color-success: var(--success);
-  --color-warning: var(--warning);
-  --color-orange: var(--orange);
-  --color-purple: var(--purple);
-  --color-teal: var(--teal);
-  --color-coral: var(--coral);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  --shadow-nova-sm: 0 1px 2px 0 rgb(15 23 42 / 0.04),
+    0 1px 3px 0 rgb(15 23 42 / 0.06);
+  --shadow-nova: 0 1px 3px 0 rgb(15 23 42 / 0.05),
+    0 8px 24px -8px rgb(15 23 42 / 0.10);
+  --shadow-nova-lg: 0 2px 6px -1px rgb(15 23 42 / 0.05),
+    0 20px 44px -16px rgb(15 23 42 / 0.16);
 }
 
+/* --------------------------------------------------------------------------
+   Light theme (default) — Learnova palette
+   -------------------------------------------------------------------------- */
 :root {
-  --radius: 0.875rem;
-  /* Learnova warm cream background */
-  --background: #faf8f5;
-  --foreground: #1a1a2e;
+  --radius: 0.75rem;
+
+  --background: #f8fafc;
+  --foreground: #0f172a;
   --card: #ffffff;
-  --card-foreground: #1a1a2e;
+  --card-foreground: #0f172a;
+  --surface: #ffffff;
   --popover: #ffffff;
-  --popover-foreground: #1a1a2e;
-  /* Purple primary — Learnova signature */
-  --primary: #6c5ce7;
+  --popover-foreground: #0f172a;
+
+  --primary: #2563eb;
   --primary-foreground: #ffffff;
-  --secondary: #f0edfb;
-  --secondary-foreground: #4a4a5a;
-  --muted: #f3f0f8;
-  --muted-foreground: #7a7a8a;
-  --accent: #6c5ce7;
+  --secondary: #1e293b;
+  --secondary-foreground: #ffffff;
+
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --muted-text: #94a3b8;
+
+  --accent: #7c3aed;
   --accent-foreground: #ffffff;
-  --destructive: #dc3545;
-  --border: #e8e2dc;
-  --input: #e8e2dc;
-  --ring: #6c5ce7;
-  --chart-1: #6c5ce7;
-  --chart-2: #f59e0b;
-  --chart-3: #00b894;
-  --chart-4: #e17055;
-  --chart-5: #fd79a8;
-  /* Light sidebar/navbar */
-  --sidebar: #ffffff;
-  --sidebar-foreground: #1a1a2e;
-  --sidebar-primary: #6c5ce7;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f0edfb;
-  --sidebar-accent-foreground: #6c5ce7;
-  --sidebar-border: #e8e2dc;
-  --sidebar-ring: #6c5ce7;
-  /* Semantic */
-  --success: #00b894;
+
+  --destructive: #dc2626;
+  --success: #16a34a;
+  --success-foreground: #ffffff;
   --warning: #f59e0b;
-  --orange: #f59e0b;
-  --purple: #6c5ce7;
-  --teal: #00b894;
-  --coral: #e17055;
+  --warning-foreground: #ffffff;
+  --danger: #dc2626;
+  --danger-foreground: #ffffff;
+
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #2563eb;
+
+  --chart-1: #2563eb;
+  --chart-2: #7c3aed;
+  --chart-3: #16a34a;
+  --chart-4: #f59e0b;
+  --chart-5: #0ea5e9;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f172a;
+  --sidebar-primary: #2563eb;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #1e293b;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #2563eb;
 }
 
+/* --------------------------------------------------------------------------
+   Dark theme — deep slate, never neon
+   -------------------------------------------------------------------------- */
 .dark {
-  --background: #1a1a2e;
-  --foreground: #f0ece8;
-  --card: #242442;
-  --card-foreground: #f0ece8;
-  --popover: #242442;
-  --popover-foreground: #f0ece8;
-  --primary: #a29bfe;
-  --primary-foreground: #1a1a2e;
-  --secondary: #2a2a4a;
-  --secondary-foreground: #c0c0d0;
-  --muted: #2a2a4a;
-  --muted-foreground: #8888a0;
-  --accent: #a29bfe;
-  --accent-foreground: #1a1a2e;
-  --destructive: #ff6b6b;
-  --border: #2e2e50;
-  --input: #2e2e50;
-  --ring: #a29bfe;
-  --chart-1: #a29bfe;
-  --chart-2: #ffeaa7;
-  --chart-3: #55efc4;
-  --chart-4: #fab1a0;
-  --chart-5: #fd79a8;
-  --sidebar: #16162b;
-  --sidebar-foreground: #e0dcd8;
-  --sidebar-primary: #a29bfe;
-  --sidebar-primary-foreground: #1a1a2e;
-  --sidebar-accent: #222240;
-  --sidebar-accent-foreground: #a29bfe;
-  --sidebar-border: #222240;
-  --sidebar-ring: #a29bfe;
-  --success: #55efc4;
-  --warning: #ffeaa7;
-  --orange: #ffeaa7;
-  --purple: #a29bfe;
-  --teal: #55efc4;
-  --coral: #fab1a0;
+  --background: #0b1220;
+  --foreground: #e8eef7;
+  --card: #111c30;
+  --card-foreground: #e8eef7;
+  --surface: #111c30;
+  --popover: #111c30;
+  --popover-foreground: #e8eef7;
+
+  --primary: #3b82f6;
+  --primary-foreground: #08111f;
+  --secondary: #e2e8f0;
+  --secondary-foreground: #0f172a;
+
+  --muted: #17253d;
+  --muted-foreground: #94a3b8;
+  --muted-text: #64748b;
+
+  --accent: #8b5cf6;
+  --accent-foreground: #0b1220;
+
+  --destructive: #f87171;
+  --success: #4ade80;
+  --success-foreground: #08111f;
+  --warning: #fbbf24;
+  --warning-foreground: #08111f;
+  --danger: #f87171;
+  --danger-foreground: #08111f;
+
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #3b82f6;
+
+  --chart-1: #60a5fa;
+  --chart-2: #a78bfa;
+  --chart-3: #4ade80;
+  --chart-4: #fbbf24;
+  --chart-5: #38bdf8;
+
+  --sidebar: #0d1728;
+  --sidebar-foreground: #e8eef7;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #08111f;
+  --sidebar-accent: #17253d;
+  --sidebar-accent-foreground: #e8eef7;
+  --sidebar-border: #1e293b;
+  --sidebar-ring: #3b82f6;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    border-color: var(--border);
   }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', system-ui, sans-serif;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01";
+    font-variation-settings: "opsz" 32;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  /* Visible, consistent focus ring for keyboard users everywhere. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
   button:not([disabled]),
   [role="button"]:not([disabled]) {
     cursor: pointer;
+  }
+
+  ::selection {
+    background: color-mix(in srgb, var(--primary) 22%, transparent);
   }
 }
 
@@ -150,11 +225,84 @@
   .text-balance {
     text-wrap: balance;
   }
+  .text-pretty {
+    text-wrap: pretty;
+  }
   .font-tabular {
     font-variant-numeric: tabular-nums;
   }
 
-  /* Settings → Appearance → Compact View: modestly denser spacing */
+  /* Consistent scrollbars in long chat / list panes. */
+  .nova-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .nova-scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .nova-scroll::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .nova-scroll::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--muted-foreground) 30%, transparent);
+    border-radius: 999px;
+  }
+  .nova-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: color-mix(in srgb, var(--muted-foreground) 50%, transparent);
+  }
+
+  /* Hide scrollbar for horizontal chip rows while keeping scrollability. */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Brand gradient used sparingly: hero text, primary CTAs, active accents. */
+  .nova-gradient-text {
+    background-image: linear-gradient(100deg, #2563eb 0%, #4f46e5 45%, #7c3aed 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .nova-gradient-surface {
+    background-image: linear-gradient(135deg, #eff6ff 0%, #ffffff 45%, #f5f3ff 100%);
+  }
+  .nova-hero-mesh {
+    background-image:
+      radial-gradient(60rem 30rem at 12% -10%, rgba(37, 99, 235, 0.16), transparent 60%),
+      radial-gradient(48rem 26rem at 92% 0%, rgba(124, 58, 237, 0.14), transparent 62%),
+      radial-gradient(40rem 24rem at 50% 120%, rgba(14, 165, 233, 0.10), transparent 65%);
+  }
+  .nova-grid-lines {
+    background-image:
+      linear-gradient(to right, rgba(15, 23, 42, 0.045) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(15, 23, 42, 0.045) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+
+  /* Card surface used across every app page. */
+  .nova-card {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-nova-sm);
+  }
+  .nova-card-interactive {
+    transition:
+      box-shadow 0.18s ease,
+      transform 0.18s ease,
+      border-color 0.18s ease;
+  }
+  .nova-card-interactive:hover {
+    box-shadow: var(--shadow-nova);
+    border-color: color-mix(in srgb, var(--primary) 28%, var(--border));
+  }
+
+  /* Settings → Appearance → Compact View: modestly denser spacing. */
   html.compact .p-6 {
     padding: 1.15rem;
   }
@@ -168,5 +316,17 @@
   }
   html.compact .mb-8 {
     margin-bottom: 1.4rem;
+  }
+}
+
+/* Respect users who ask for less motion. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }

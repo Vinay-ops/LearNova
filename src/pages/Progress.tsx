@@ -142,7 +142,7 @@ export default function Progress() {
               {[
                 { label: "Strength", value: strongest.name, sub: `${strongest.score}/100`, color: "text-emerald-600", bgColor: "bg-emerald-50", borderColor: "border-emerald-200/60" },
                 { label: "Focus Area", value: weakest.name, sub: `${weakest.score}/100`, color: "text-amber-600", bgColor: "bg-amber-50", borderColor: "border-amber-200/60" },
-                { label: "Most Improved", value: mostImproved ? mostImproved.name : "—", sub: mostImproved ? fmtDelta(mostImproved.score - (mostImproved.previous_score ?? 0)) : "No prior data", color: "text-primary", bgColor: "bg-purple-50", borderColor: "border-purple-200/60" },
+                { label: "Most Improved", value: mostImproved ? mostImproved.name : "—", sub: mostImproved ? fmtDelta(mostImproved.score - (mostImproved.previous_score ?? 0)) : "No prior data", color: "text-primary", bgColor: "bg-blue-50", borderColor: "border-blue-200/60" },
               ].map((item) => (
                 <div key={item.label} className={`rounded-3xl border ${item.borderColor} ${item.bgColor} p-5 shadow-xl shadow-slate-200/30`}>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">
@@ -191,10 +191,10 @@ export default function Progress() {
                       <Line
                         type="monotone"
                         dataKey="score"
-                        stroke="#6c5ce7"
+                        stroke="#2563EB"
                         strokeWidth={2.5}
                         dot={false}
-                        activeDot={{ r: 5, strokeWidth: 2, fill: "#6c5ce7" }}
+                        activeDot={{ r: 5, strokeWidth: 2, fill: "#2563EB" }}
                         animationDuration={1200}
                         animationEasing="ease-out"
                       />
@@ -258,7 +258,7 @@ export default function Progress() {
               {[
                 { icon: BookOpen, value: completedCases, label: "Cases completed", color: "bg-blue-100 text-blue-600" },
                 { icon: Mic, value: completedInterviews, label: "Interviews completed", color: "bg-pink-100 text-pink-600" },
-                { icon: BarChart3, value: `${averageScore}%`, label: "Average case score", color: "bg-purple-100 text-purple-600" },
+                { icon: BarChart3, value: `${averageScore}%`, label: "Average case score", color: "bg-blue-100 text-blue-600" },
                 { icon: BarChart3, value: averageInterviewScore != null ? `${averageInterviewScore}%` : "—", label: "Average interview score", color: "bg-violet-100 text-violet-600" },
                 { icon: BookOpen, value: completedDrills, label: "Drills completed", color: "bg-teal-100 text-teal-600" },
                 { icon: Flame, value: `${streak}`, label: "Day streak", color: "bg-amber-100 text-amber-600" },

@@ -87,11 +87,25 @@ class AssessmentService:
         return AssessmentAttemptResponse.model_validate(attempt)
 
     def save_answer(
-        self, attempt_id: str, question_id: str, payload: AssessmentAnswerCreate
+        self,
+        attempt_id: str,
+        question_id: str,
+        payload: AssessmentAnswerCreate,
+        user_id: str,
     ) -> AssessmentAnswerResponse:
+        """Store one answer, strictly for the caller's OWN attempt.
+
+        Ownership is enforced here (not just in the router) and correctness is
+        ALWAYS derived server-side: the client's ``is_correct``/``points_earned``
+        fields are ignored outright so a fake score can never be submitted.
+        Non-MCQ answers stay ungraded (``is_correct = None``) until a server-side
+        evaluator grades them.
+        """
         attempt = self.db.query(AssessmentAttempt).filter(AssessmentAttempt.id == attempt_id).first()
         if not attempt:
             raise NotFoundError("Assessment attempt")
+        if str(attempt.user_id) != str(user_id):
+            raise AuthorizationError()
 
         question = (
             self.db.query(AssessmentQuestion)
@@ -100,6 +114,8 @@ class AssessmentService:
         )
         if not question:
             raise NotFoundError("Assessment question")
+        if str(question.assessment_id) != str(attempt.assessment_id):
+            raise ValidationError("Question does not belong to this assessment")
 
         existing = (
             self.db.query(AssessmentAnswer)
@@ -110,25 +126,26 @@ class AssessmentService:
             .first()
         )
 
-        # Correctness is computed server-side for scored questions so the
-        # client can never influence the result. Free-text answers stay null
-        # until an evaluator grades them.
-        is_correct = payload.is_correct
-        points_earned = payload.points_earned or 0
+        # Server-authoritative grading for MCQ; everything else stays ungraded.
         if (
             payload.selected_option_index is not None
-            and question.correct_option_index is not None
             and question.question_type == QuestionType.MCQ.value
         ):
+            if question.correct_option_index is None:
+                raise ValidationError("This question has no answer key")
             is_correct = payload.selected_option_index == question.correct_option_index
-            points_earned = question.points if is_correct else 0
+            points_earned = (question.points or 0) if is_correct else 0
+        else:
+            is_correct = None
+            points_earned = 0
 
         if existing:
-            data = payload.model_dump(exclude_unset=True)
-            update_model_fields(existing, data)
-            # Re-apply authoritative correctness after any partial update
-            existing.is_correct = is_correct if payload.selected_option_index is not None else existing.is_correct
-            existing.points_earned = points_earned if payload.selected_option_index is not None else existing.points_earned
+            existing.selected_option_index = payload.selected_option_index
+            existing.free_text_answer = payload.free_text_answer
+            existing.is_correct = is_correct
+            existing.points_earned = points_earned
+            if payload.time_spent_seconds is not None:
+                existing.time_spent_seconds = payload.time_spent_seconds
             self.db.commit()
             self.db.refresh(existing)
             return AssessmentAnswerResponse.model_validate(existing)

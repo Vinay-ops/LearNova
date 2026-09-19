@@ -92,7 +92,7 @@ const ROLE_OPTIONS: Array<{ label: string; icon: string; hint: string }> = [
 ];
 
 const skillColor = (score: number) =>
-  score >= 80 ? "bg-emerald-600" : score >= 65 ? "bg-purple-500" : "bg-amber-500";
+  score >= 80 ? "bg-emerald-600" : score >= 65 ? "bg-blue-500" : "bg-amber-500";
 
 function commaJoin(items: string[] | undefined): string {
   return (items ?? []).join(", ");
@@ -120,17 +120,17 @@ function ResumeReviewCard({
   const set = (patch: Partial<ResumeData>) => onChange?.({ ...resume, ...patch });
 
   return (
-    <div className="rounded-xl border border-purple-100 bg-white/80 px-4 py-3">
+    <div className="rounded-xl border border-blue-100 bg-white/80 px-4 py-3">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         className="w-full flex items-center justify-between gap-2 text-left"
       >
-        <span className="flex items-center gap-2 text-xs font-bold text-purple-700">
+        <span className="flex items-center gap-2 text-xs font-bold text-blue-700">
           <PencilLine className="h-3.5 w-3.5" />
           Review &amp; edit what the interviewer will see
         </span>
-        {open ? <ChevronUp className="h-4 w-4 text-purple-400" /> : <ChevronDown className="h-4 w-4 text-purple-400" />}
+        {open ? <ChevronUp className="h-4 w-4 text-blue-400" /> : <ChevronDown className="h-4 w-4 text-blue-400" />}
       </button>
       {open && (
         <div className="mt-3 space-y-3 text-sm">
@@ -806,7 +806,7 @@ export default function AIInterview() {
           {savedResumes.length > 0 && (
             <div className="mb-5 rounded-2xl border border-slate-200 bg-white px-4 py-3">
               <div className="flex items-center gap-2 mb-2">
-                <Library className="h-4 w-4 text-purple-600" />
+                <Library className="h-4 w-4 text-blue-600" />
                 <p className="text-xs font-bold text-slate-700">My Resumes</p>
                 <span className="text-[10px] text-slate-400 font-medium">reusable assets — select one or upload below</span>
               </div>
@@ -818,7 +818,7 @@ export default function AIInterview() {
                       key={record.id}
                       className={cn(
                         "flex items-center justify-between gap-3 rounded-xl border px-3 py-2",
-                        selected ? "border-purple-300 bg-purple-50" : "border-slate-100 bg-slate-50/60",
+                        selected ? "border-blue-300 bg-blue-50" : "border-slate-100 bg-slate-50/60",
                       )}
                     >
                       <button
@@ -826,7 +826,7 @@ export default function AIInterview() {
                         onClick={() => useSavedResume(record)}
                         className="flex items-center gap-2 min-w-0 text-left flex-1"
                       >
-                        <FileText className="h-4 w-4 text-purple-500 shrink-0" />
+                        <FileText className="h-4 w-4 text-blue-500 shrink-0" />
                         <span className="min-w-0">
                           <span className="block text-xs font-bold text-slate-700 truncate">{record.filename}</span>
                           <span className="block text-[10px] text-slate-400 truncate">
@@ -864,7 +864,7 @@ export default function AIInterview() {
                     className={cn(
                       "rounded-xl border px-4 py-3 text-left transition-all",
                       roleType === opt.label
-                        ? "bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-200"
+                        ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200"
                         : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50",
                     )}
                   >
@@ -912,7 +912,7 @@ export default function AIInterview() {
                       </div>
                     </div>
                     {savedResumeId && (
-                      <Badge variant="outline" className="shrink-0 text-[10px] text-purple-700 border-purple-200 bg-white">
+                      <Badge variant="outline" className="shrink-0 text-[10px] text-blue-700 border-blue-200 bg-white">
                         saved resume
                       </Badge>
                     )}
@@ -966,10 +966,10 @@ export default function AIInterview() {
                 <button
                   onClick={pickResumeFile}
                   disabled={parsingResume}
-                  className="w-full rounded-xl border-2 border-dashed border-slate-200 hover:border-purple-300 hover:bg-purple-50/40 px-4 py-5 text-center transition-colors disabled:opacity-60"
+                  className="w-full rounded-xl border-2 border-dashed border-slate-200 hover:border-blue-300 hover:bg-blue-50/40 px-4 py-5 text-center transition-colors disabled:opacity-60"
                 >
                   {parsingResume ? (
-                    <span className="flex items-center justify-center gap-2 text-sm font-semibold text-purple-600">
+                    <span className="flex items-center justify-center gap-2 text-sm font-semibold text-blue-600">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Parsing resume with AI…
                     </span>
@@ -999,7 +999,7 @@ export default function AIInterview() {
                     className={cn(
                       "flex-1 rounded-xl border px-4 py-2.5 text-sm font-semibold transition-all",
                       difficulty === level
-                        ? "bg-purple-600 text-white border-purple-600 shadow-md shadow-purple-200"
+                        ? "bg-blue-600 text-white border-blue-600 shadow-md shadow-blue-200"
                         : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50",
                     )}
                   >
@@ -1012,7 +1012,7 @@ export default function AIInterview() {
             <Button
               onClick={startInterview}
               disabled={busy || (roleType === "Custom" && !customRole.trim())}
-              className="w-full gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl py-5"
+              className="w-full gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl py-5"
             >
               {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
               {resume ? `Start ${selectedRole} Interview` : `Start ${selectedRole} Interview (no resume)`}
@@ -1031,7 +1031,7 @@ export default function AIInterview() {
                 className="w-full flex items-center justify-between gap-2"
               >
                 <span className="flex items-center gap-2 text-sm font-bold text-slate-700">
-                  <History className="h-4 w-4 text-purple-500" />
+                  <History className="h-4 w-4 text-blue-500" />
                   Past Interviews
                 </span>
                 {showHistory ? <ChevronUp className="h-4 w-4 text-slate-400" /> : <ChevronDown className="h-4 w-4 text-slate-400" />}
@@ -1072,7 +1072,7 @@ export default function AIInterview() {
                               // amber = in progress, purple = review (same as /interviews)
                               s.status === "active"
                                 ? "bg-amber-600 hover:bg-amber-700 text-white"
-                                : "bg-purple-600 hover:bg-purple-700 text-white",
+                                : "bg-blue-600 hover:bg-blue-700 text-white",
                             )}
                           >
                             {s.status === "active" ? <PlayCircle className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
@@ -1159,17 +1159,17 @@ export default function AIInterview() {
           )}
 
           {busy && (
-            <div className="mb-4 rounded-2xl border border-purple-100 bg-purple-50 px-4 py-3 text-sm text-purple-700 flex items-center gap-2">
+            <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-700 flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin" /> Evaluating your interview…
             </div>
           )}
 
           {!busy && evaluation && sessionId && (!feedback || !recommendations) && (
-            <div className="mb-6 rounded-2xl border border-purple-200 bg-purple-50/60 px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
-              <p className="text-xs text-purple-800 font-medium">
+            <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50/60 px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+              <p className="text-xs text-blue-800 font-medium">
                 Feedback for this past interview isn't stored yet — you can generate it now (AI).
               </p>
-              <Button size="sm" onClick={regenerateAnalysis} className="rounded-lg gap-1.5 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold">
+              <Button size="sm" onClick={regenerateAnalysis} className="rounded-lg gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold">
                 <Lightbulb className="h-3.5 w-3.5" /> Generate feedback &amp; recommendations
               </Button>
             </div>
@@ -1233,9 +1233,9 @@ export default function AIInterview() {
           </div>
 
           {feedback && (
-            <div className="mb-6 rounded-3xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-purple-50/30 p-6 shadow-xl shadow-slate-200/50">
+            <div className="mb-6 rounded-3xl border border-blue-100 bg-gradient-to-br from-blue-50 via-white to-blue-50/30 p-6 shadow-xl shadow-slate-200/50">
               <div className="flex items-center gap-2 mb-3">
-                <Lightbulb className="h-4 w-4 text-purple-600" />
+                <Lightbulb className="h-4 w-4 text-blue-600" />
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Personalized Feedback</p>
               </div>
               {feedback.biggest_opportunity && (
@@ -1259,7 +1259,7 @@ export default function AIInterview() {
           {recommendations && (
             <div className="mb-8 rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/50">
               <div className="flex items-center gap-2 mb-3">
-                <Target className="h-4 w-4 text-purple-600" />
+                <Target className="h-4 w-4 text-blue-600" />
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Recommended Next Steps</p>
               </div>
               {recommendations.next_best_action && (
@@ -1269,7 +1269,7 @@ export default function AIInterview() {
                 <ul className="space-y-1.5 mb-2">
                   {recommendations.recommended_drills.map((d, i) => (
                     <li key={i} className="text-sm text-slate-600 flex items-start gap-2">
-                      <span className="text-purple-600 font-bold">•</span>
+                      <span className="text-blue-600 font-bold">•</span>
                       {d.title}
                       {d.reason ? <span className="text-muted-foreground"> — {d.reason}</span> : null}
                     </li>
@@ -1284,14 +1284,14 @@ export default function AIInterview() {
           {practice.length > 0 && (
             <div className="mb-8 rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/50">
               <div className="flex items-center gap-2 mb-1">
-                <Sparkles className="h-4 w-4 text-purple-600" />
+                <Sparkles className="h-4 w-4 text-blue-600" />
                 <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Turn weaknesses into practice</p>
               </div>
               <p className="text-xs text-slate-400 mb-4">Based on your lowest measured skills from this interview.</p>
               <div className="flex flex-wrap gap-2">
                 {practice.map((p) => (
                   <Link key={p.label} to={p.href}>
-                    <Button size="sm" variant="outline" className="rounded-xl gap-1.5 border-purple-200 text-purple-700 hover:bg-purple-50 font-bold">
+                    <Button size="sm" variant="outline" className="rounded-xl gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-50 font-bold">
                       <ArrowRight className="h-3.5 w-3.5" />
                       {p.label}
                     </Button>
@@ -1314,8 +1314,8 @@ export default function AIInterview() {
                       {pair.q}
                     </div>
                     {pair.a ? (
-                      <div className="rounded-xl bg-purple-50 px-4 py-3 text-sm text-purple-900 ml-4">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-purple-400 mb-1 flex items-center gap-1">
+                      <div className="rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-900 ml-4">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-blue-400 mb-1 flex items-center gap-1">
                           <User className="h-3 w-3" /> Your answer
                         </p>
                         {pair.a}
@@ -1328,7 +1328,7 @@ export default function AIInterview() {
           )}
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <Button onClick={reset} className="flex-1 gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl">
+            <Button onClick={reset} className="flex-1 gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl">
               <Sparkles className="h-4 w-4" />
               New Interview
             </Button>
@@ -1389,7 +1389,7 @@ export default function AIInterview() {
             </div>
             <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
               <div
-                className="h-full rounded-full bg-purple-500 transition-all"
+                className="h-full rounded-full bg-blue-500 transition-all"
                 style={{ width: `${Math.max(6, Math.min(100, pct ?? 0))}%` }}
               />
             </div>
@@ -1458,7 +1458,7 @@ export default function AIInterview() {
                   className={cn(
                     "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition-all capitalize",
                     inputMode === mode
-                      ? "bg-white text-purple-700 shadow-sm border border-slate-200"
+                      ? "bg-white text-blue-700 shadow-sm border border-slate-200"
                       : "text-slate-500 hover:text-slate-700",
                   )}
                 >

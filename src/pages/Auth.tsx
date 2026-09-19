@@ -84,7 +84,7 @@ export default function Auth() {
       {/* Left hero panel */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-[#1e1b4b] via-[#4c1d95] to-[#9a3412] text-white p-12 flex-col overflow-hidden">
         <div className="absolute inset-0 opacity-20 pointer-events-none">
-          <div className="absolute -top-24 -left-24 w-[520px] h-[520px] rounded-full bg-purple-400 blur-3xl" />
+          <div className="absolute -top-24 -left-24 w-[520px] h-[520px] rounded-full bg-blue-400 blur-3xl" />
           <div className="absolute -bottom-24 -right-24 w-[520px] h-[520px] rounded-full bg-orange-400 blur-3xl" />
         </div>
 
@@ -143,7 +143,7 @@ export default function Auth() {
           className="w-full max-w-md"
         >
           <div className="lg:hidden flex items-center gap-2 mb-8">
-            <div className="w-9 h-9 rounded-xl bg-purple-600 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center">
               <Target className="w-4 h-4 text-white" />
             </div>
             <span className="text-xl font-extrabold tracking-tight text-slate-900">Learnova</span>
@@ -199,7 +199,7 @@ export default function Auth() {
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Alex Chen"
-                  className="h-12 rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                  className="h-12 rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
                   required={mode === "signup"}
                 />
               </div>
@@ -214,7 +214,7 @@ export default function Auth() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@firm.com"
-                className="h-12 rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                className="h-12 rounded-xl border-slate-200 bg-white focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
                 required
               />
             </div>
@@ -230,7 +230,7 @@ export default function Auth() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   minLength={6}
-                  className="h-12 rounded-xl border-slate-200 bg-white pr-12 focus:ring-2 focus:ring-purple-500/30 focus:border-purple-500"
+                  className="h-12 rounded-xl border-slate-200 bg-white pr-12 focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500"
                   required
                 />
                 <button
@@ -261,7 +261,7 @@ export default function Auth() {
             <Button
               type="submit"
               disabled={submitting || isLoading}
-              className="w-full h-12 rounded-xl bg-gradient-to-r from-purple-600 to-orange-500 hover:from-purple-700 hover:to-orange-600 text-white font-semibold shadow-lg shadow-purple-500/25 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full h-12 rounded-xl bg-gradient-to-r from-blue-600 to-orange-500 hover:from-blue-700 hover:to-orange-600 text-white font-semibold shadow-lg shadow-blue-500/25 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {submitting
                 ? "Please wait…"
@@ -279,7 +279,7 @@ export default function Auth() {
                 <button
                   type="button"
                   onClick={() => toggleMode("signup")}
-                  className="font-semibold text-purple-700 hover:text-purple-800"
+                  className="font-semibold text-blue-700 hover:text-blue-800"
                 >
                   Create one
                 </button>
@@ -290,7 +290,7 @@ export default function Auth() {
                 <button
                   type="button"
                   onClick={() => toggleMode("login")}
-                  className="font-semibold text-purple-700 hover:text-purple-800"
+                  className="font-semibold text-blue-700 hover:text-blue-800"
                 >
                   Sign in
                 </button>

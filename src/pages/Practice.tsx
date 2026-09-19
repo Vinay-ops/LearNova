@@ -73,7 +73,7 @@ function CaseRow({
           </Badge>
           <span className="text-xs text-muted-foreground">{caseData.duration_minutes || caseData.duration} min</span>
           {caseData.skills.map((s: string) => (
-            <Badge key={s} variant="secondary" className="text-[10px] font-normal px-1.5 py-0 bg-purple-50 text-purple-600 border-0">
+            <Badge key={s} variant="secondary" className="text-[10px] font-normal px-1.5 py-0 bg-blue-50 text-blue-600 border-0">
               {s}
             </Badge>
           ))}

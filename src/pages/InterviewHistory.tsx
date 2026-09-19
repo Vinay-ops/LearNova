@@ -55,7 +55,7 @@ function modeLabel(session: AISession): string {
 /** Tile tone reuses the app palette: amber = in progress, purple = role, blue = case. */
 function modeIconTone(kind: string, isActive: boolean): string {
   if (isActive) return "bg-amber-50 text-amber-600";
-  if (kind === "role") return "bg-purple-50 text-purple-600";
+  if (kind === "role") return "bg-blue-50 text-blue-600";
   if (kind === "case") return "bg-blue-50 text-blue-600";
   return "bg-slate-50 text-slate-500";
 }
@@ -191,8 +191,8 @@ export default function InterviewHistory() {
         {/* Empty state */}
         {!loading && interviews.length === 0 && (
           <div className="rounded-3xl border border-slate-100 bg-white p-12 text-center shadow-lg shadow-slate-200/40">
-            <div className="mx-auto mb-4 h-12 w-12 rounded-2xl bg-purple-50 flex items-center justify-center">
-              <Mic className="h-6 w-6 text-purple-400" />
+            <div className="mx-auto mb-4 h-12 w-12 rounded-2xl bg-blue-50 flex items-center justify-center">
+              <Mic className="h-6 w-6 text-blue-400" />
             </div>
             <p className="text-base font-bold text-slate-700">No interviews yet</p>
             <p className="text-sm text-muted-foreground mt-1 mb-5">
@@ -200,7 +200,7 @@ export default function InterviewHistory() {
             </p>
             <Button
               onClick={() => navigate("/interview")}
-              className="gap-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl"
+              className="gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl"
             >
               Start an Interview
             </Button>
@@ -287,7 +287,7 @@ export default function InterviewHistory() {
                           "h-8 gap-1.5 rounded-xl px-3 text-[11px] font-bold",
                           isActive
                             ? "bg-amber-600 hover:bg-amber-700 text-white"
-                            : "bg-purple-600 hover:bg-purple-700 text-white",
+                            : "bg-blue-600 hover:bg-blue-700 text-white",
                         )}
                       >
                         {isActive ? (
@@ -330,7 +330,7 @@ export default function InterviewHistory() {
             <Button
               variant="outline"
               onClick={() => navigate("/interview")}
-              className="gap-2 rounded-xl font-semibold border-purple-200 text-purple-700 hover:bg-purple-50"
+              className="gap-2 rounded-xl font-semibold border-blue-200 text-blue-700 hover:bg-blue-50"
             >
               <ChevronRight className="h-4 w-4" />
               Start a new interview
