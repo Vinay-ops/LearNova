@@ -42,7 +42,7 @@ def _seed_case() -> str:
 def _signup_other(client: TestClient, email: str):
     resp = client.post(
         "/api/auth/signup",
-        json={"full_name": "Other", "email": email, "password": "Password123!"},
+        json={"full_name": "Other", "email": email, "password": "Password123!", "terms_accepted": True, "privacy_accepted": True},
     )
     return {"Authorization": f"Bearer {resp.json()['access_token']}"}
 

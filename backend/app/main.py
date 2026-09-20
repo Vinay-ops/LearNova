@@ -1,13 +1,16 @@
 from contextlib import asynccontextmanager
+from typing import Any
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError as PydanticValidationError
+from starlette.middleware.base import BaseHTTPMiddleware
 import traceback
 
 from .core.config import settings
 from .core.logging import LOG_LEVEL, setup_logging, log_api_error, get_logger
+from .core.security_headers import SecurityHeadersMiddleware
 from .ai import bootstrap_prompts
 from .api import (
     auth_router,
@@ -77,21 +80,65 @@ _origins = settings.frontend_origins
 if not _origins:
     _origins = ["http://localhost:5173", "http://localhost:3000"]
 
+# Requests larger than this are rejected before they reach a route. The resume
+# upload caps files at 2 MB, so this leaves headroom for multipart framing while
+# still refusing a trivially large body that would otherwise be buffered and
+# parsed. (Without this, Starlette buffers the whole body into memory.)
+MAX_REQUEST_BYTES = 4 * 1024 * 1024
+
+
+class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
+    """Reject oversized request bodies early (413) instead of buffering them."""
+
+    async def dispatch(self, request: Request, call_next):
+        raw_length = request.headers.get("content-length")
+        if raw_length:
+            try:
+                if int(raw_length) > MAX_REQUEST_BYTES:
+                    return JSONResponse(
+                        status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                        content={
+                            "detail": "Request body is too large.",
+                            "code": "request_too_large",
+                        },
+                    )
+            except ValueError:
+                # A non-numeric Content-Length is malformed; let the server's
+                # own parsing reject it rather than guessing here.
+                pass
+        return await call_next(request)
+
+
+app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(RequestSizeLimitMiddleware)
+
+# CORS is explicit-origins only. A wildcard is never used because this API
+# accepts `Authorization` headers and must never become readable by an arbitrary
+# origin. Settings.frontend_origins strips "*" defensively.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Accept-Language"],
+    max_age=600,
 )
 
 
 @app.get("/api/health", tags=["health"])
-def health():
-    """Health check that also reports DATABASE_URL diagnostics and a live DB
-    connection probe. On Vercel this is the first URL to hit to debug env-var
-    issues without needing a login attempt.
+def health(request: Request):
+    """Health check and DB probe.
+
+    Full infrastructure diagnostics (DB host/port, driver error text, config
+    warnings) are sensitive internal details. They are returned only in
+    non-production, or to a caller presenting ``X-Health-Token`` matching
+    ``HEALTH_DETAIL_TOKEN``. Everything else gets a minimal, non-revealing
+    probe so an unauthenticated caller cannot fingerprint the deployment.
     """
+    _token = settings.HEALTH_DETAIL_TOKEN
+    verbose = (not settings.is_production) or bool(
+        _token and request.headers.get("x-health-token") == _token
+    )
     from urllib.parse import urlparse
     from .db.database import get_engine, _normalize_database_url
     from sqlalchemy import text
@@ -193,6 +240,15 @@ def health():
     if warnings or db_probe.get("status") == "error":
         overall = "degraded"
 
+    if not verbose:
+        # Public probe: alive, plus whether the database answered. No host,
+        # port, driver message or configuration warning is disclosed.
+        return {
+            "status": overall,
+            "version": "0.2.0",
+            "database": {"probe": {"status": db_probe.get("status", "skipped")}},
+        }
+
     payload = {
         "status": overall,
         "version": "0.2.0",
@@ -230,17 +286,43 @@ def health():
     return payload
 
 
+def scrub_validation_errors(errors: Any) -> list[dict[str, Any]]:
+    """Strip submitted values out of Pydantic/FastAPI validation errors.
+
+    Pydantic v2 includes an ``input`` key holding the value that failed, and a
+    ``ctx`` key that can hold the raised exception. Echoing those back to the
+    client — and into the logs — leaks the request body. For ``/api/auth/signup``
+    that means the user's **plaintext password** would be returned in the 422
+    response and written to the application log whenever the password policy or
+    the consent checkbox rejected the request. Only the field location, the
+    machine-readable error type and the human message are safe to surface.
+    """
+    scrubbed: list[dict[str, Any]] = []
+    for error in errors or []:
+        if not isinstance(error, dict):
+            continue
+        scrubbed.append(
+            {
+                "loc": error.get("loc"),
+                "type": error.get("type"),
+                "msg": error.get("msg"),
+            }
+        )
+    return scrubbed
+
+
 @app.exception_handler(RequestValidationError)
 async def request_validation_exception_handler(
     request: Request, exc: RequestValidationError
 ) -> JSONResponse:
+    safe_errors = scrub_validation_errors(exc.errors())
     log_api_error(
         request.method, request.url.path, 422,
-        error_detail=exc.errors(),
+        error_detail=safe_errors,
     )
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": exc.errors(), "code": "validation_error"},
+        content={"detail": safe_errors, "code": "validation_error"},
     )
 
 
@@ -253,7 +335,7 @@ async def response_validation_exception_handler(
         extra={
             "method": request.method,
             "path": request.url.path,
-            "errors": exc.errors(),
+            "errors": scrub_validation_errors(exc.errors()),
             "traceback": traceback.format_exc(limit=10),
         },
     )
@@ -262,7 +344,11 @@ async def response_validation_exception_handler(
         content={
             "detail": "Response schema validation failed",
             "code": "response_validation_error",
-            "errors": exc.errors() if settings.ENVIRONMENT == "development" else None,
+            "errors": (
+                scrub_validation_errors(exc.errors())
+                if not settings.is_production
+                else None
+            ),
         },
     )
 
@@ -282,16 +368,22 @@ async def unhandled_exception_handler(
             "traceback": tb_str,
         },
     )
+    # Production responses never carry the exception message, its class name or
+    # a traceback. The detail is in the structured server log instead.
+    if settings.is_production:
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "detail": "Something went wrong. Please try again.",
+                "code": "internal_error",
+            },
+        )
     return JSONResponse(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         content={
-            "detail": (
-                str(exc)
-                if settings.ENVIRONMENT == "development"
-                else "Internal server error"
-            ),
+            "detail": str(exc),
             "code": "internal_error",
-            "error_type": type(exc).__name__ if settings.ENVIRONMENT == "development" else None,
+            "error_type": type(exc).__name__,
         },
     )
 

@@ -3,7 +3,7 @@ import Markdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Check, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { fenceLanguage, nodeToText } from "@/lib/markdown";
+import { fenceLanguage, nodeToText, safeUrlTransform } from "@/lib/markdown";
 
 /**
  * Markdown renderer for AI-generated text (tutor answers, interviewer turns,
@@ -12,8 +12,10 @@ import { fenceLanguage, nodeToText } from "@/lib/markdown";
  *
  * Safety: `react-markdown` parses to a React element tree and does NOT render
  * embedded HTML, so there is no `dangerouslySetInnerHTML` and no XSS surface.
- * GitHub-flavoured Markdown (tables, task lists, strikethrough) comes from
- * `remark-gfm`.
+ * URLs are additionally filtered by `safeUrlTransform`, which drops
+ * `javascript:`/`data:`/`vbscript:` schemes an AI could be tricked into
+ * emitting. GitHub-flavoured Markdown (tables, task lists, strikethrough) comes
+ * from `remark-gfm`.
  */
 
 /** A fenced code block with a language label and a copy button. */
@@ -99,16 +101,20 @@ const components: Components = {
   ),
   em: ({ children }) => <em className="italic">{children}</em>,
   del: ({ children }) => <del className="text-muted-foreground line-through">{children}</del>,
-  a: ({ children, href }) => (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="font-medium text-primary underline underline-offset-2 hover:text-primary/80"
-    >
-      {children}
-    </a>
-  ),
+  a: ({ children, href }) => {
+    // A rejected URL renders as plain text rather than a dead/unsafe link.
+    if (!href) return <span className="font-medium">{children}</span>;
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-medium text-primary underline underline-offset-2 hover:text-primary/80"
+      >
+        {children}
+      </a>
+    );
+  },
   ul: ({ children }) => (
     <ul className="my-2 list-disc space-y-1 pl-5 marker:text-primary [&_ol]:my-1 [&_ul]:my-1">
       {children}
@@ -126,9 +132,15 @@ const components: Components = {
     </blockquote>
   ),
   hr: () => <hr className="my-4 border-border" />,
-  img: ({ src, alt }) => (
-    <img src={src} alt={alt ?? ""} className="my-2 max-w-full rounded-xl" loading="lazy" />
-  ),
+  // Only http(s) images survive `safeUrlTransform`; anything rejected renders
+  // as its alt text. An empty `src` is withheld too — browsers treat it as a
+  // request for the current document.
+  img: ({ src, alt }) => {
+    if (!src) return alt ? <span className="text-muted-foreground">{alt}</span> : null;
+    return (
+      <img src={src} alt={alt ?? ""} className="my-2 max-w-full rounded-xl" loading="lazy" />
+    );
+  },
   // Enables a block code block to be a real block with copy affordance.
   pre: ({ children }) => <CodeBlock>{children}</CodeBlock>,
   code: ({ children, className }) => (
@@ -187,7 +199,11 @@ export function MarkdownMessage({ content, className }: MarkdownMessageProps) {
         className,
       )}
     >
-      <Markdown remarkPlugins={[remarkGfm]} components={components}>
+      <Markdown
+        remarkPlugins={[remarkGfm]}
+        components={components}
+        urlTransform={safeUrlTransform}
+      >
         {content}
       </Markdown>
     </div>

@@ -26,6 +26,8 @@ const Applications = lazy(() => import("./pages/Applications.tsx"));
 const Profile = lazy(() => import("./pages/Profile.tsx"));
 const Settings = lazy(() => import("./pages/Settings.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
+const Terms = lazy(() => import("./pages/Terms.tsx"));
+const Privacy = lazy(() => import("./pages/Privacy.tsx"));
 
 function RouteLoading() {
   return (
@@ -40,6 +42,8 @@ function RouteLoading() {
   );
 }
 
+const IS_DEV = Boolean(import.meta.env?.DEV);
+
 class RootErrorBoundary extends React.Component<
   { children: React.ReactNode },
   { hasError: boolean; message: string; stack: string }
@@ -53,22 +57,37 @@ class RootErrorBoundary extends React.Component<
     };
   }
   componentDidCatch(err: Error) {
-    console.error("[Preview] Root crash:", err);
+    // Full detail stays in the developer console; the rendered UI does not
+    // surface stack traces or internal messages to end users.
+    console.error("[Learnova] Root crash:", err);
   }
   render() {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-background text-foreground p-6">
           <div className="max-w-lg text-center">
-            <p className="text-sm font-semibold">Preview runtime error</p>
+            <p className="text-sm font-semibold">Something went wrong</p>
             <p className="mt-2 text-xs text-muted-foreground break-words">
-              {this.state.message}
+              An unexpected error stopped this page from loading. Reloading
+              usually fixes it.
             </p>
-            {this.state.stack && (
+            {/* Stack traces are a development affordance only — a production
+                build must not reveal internal file paths or library versions. */}
+            {IS_DEV && this.state.message ? (
+              <p className="mt-3 text-xs text-red-600 break-words">{this.state.message}</p>
+            ) : null}
+            {IS_DEV && this.state.stack ? (
               <pre className="mt-3 text-left text-[10px] leading-4 text-muted-foreground/80 max-h-40 overflow-auto rounded border border-border/60 p-2">
                 {this.state.stack}
               </pre>
-            )}
+            ) : null}
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="mt-5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground"
+            >
+              Reload
+            </button>
           </div>
         </div>
       );
@@ -79,7 +98,11 @@ class RootErrorBoundary extends React.Component<
 
 function RouteSyncer() {
   const location = useLocation();
+
   useEffect(() => {
+    // Only announce the route to an actual parent frame — a top-level window
+    // has nothing to notify.
+    if (window.parent === window) return;
     window.parent.postMessage(
       { type: "iframe-route-change", path: location.pathname },
       "*",
@@ -88,10 +111,20 @@ function RouteSyncer() {
 
   useEffect(() => {
     function handleMessage(event: MessageEvent) {
-      if (event.data?.type === "navigate") {
-        if (event.data.direction === "back") window.history.back();
-        if (event.data.direction === "forward") window.history.forward();
-      }
+      // Accept navigation commands ONLY from our own parent frame.
+      //
+      // Without this check any window that obtains a handle to this one — or
+      // any page that embeds the app — could drive the router. Comparing
+      // `event.source` against `window.parent` is the correct gate here (the
+      // only legitimate sender is the embedding harness); it also survives the
+      // parent being on a different origin, which an origin comparison would
+      // not. Payload shape is validated as well, so a malformed message cannot
+      // reach `history` with unexpected values.
+      if (event.source !== window.parent) return;
+      if (event.data?.type !== "navigate") return;
+      const direction = event.data.direction;
+      if (direction === "back") window.history.back();
+      else if (direction === "forward") window.history.forward();
     }
     window.addEventListener("message", handleMessage);
     return () => window.removeEventListener("message", handleMessage);
@@ -115,6 +148,10 @@ function AnimatedRoutes() {
         <Routes location={location}>
           <Route path="/" element={<Landing />} />
           <Route path="/auth" element={<Auth />} />
+          {/* Public legal documents — reachable without authentication, and
+              deep-linkable (they must survive a refresh). */}
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
 
           <Route
             path="/setup"

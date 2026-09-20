@@ -334,7 +334,7 @@ def test_review_requires_ownership_and_completion(client, auth_headers, monkeypa
     # A different user cannot read this attempt's review.
     other = client.post(
         "/api/auth/signup",
-        json={"full_name": "Other", "email": "other2@example.com", "password": "Password123!"},
+        json={"full_name": "Other", "email": "other2@example.com", "password": "Password123!", "terms_accepted": True, "privacy_accepted": True},
     ).json()
     other_headers = {"Authorization": f"Bearer {other['access_token']}"}
     resp = client.get(
@@ -433,7 +433,7 @@ def test_learning_session_ownership(client, auth_headers):
     # second (different) user cannot read the first user's session
     other = client.post(
         "/api/auth/signup",
-        json={"full_name": "Other", "email": "other-user@example.com", "password": "Password123!"},
+        json={"full_name": "Other", "email": "other-user@example.com", "password": "Password123!", "terms_accepted": True, "privacy_accepted": True},
     )
     other_headers = {"Authorization": f"Bearer {other.json()['access_token']}"}
     resp = client.get(f"/api/learning/sessions/{session['id']}", headers=other_headers)

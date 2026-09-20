@@ -1,4 +1,4 @@
-"""Lightweight in-process rate limiting for AI generation endpoints.
+"""Lightweight in-process rate limiting for AI and authentication endpoints.
 
 SCOPE AND LIMITATIONS (documented intentionally):
 - The limiter is per-process and in-memory. On a single Vercel serverless
@@ -6,9 +6,16 @@ SCOPE AND LIMITATIONS (documented intentionally):
   concurrent lambdas the effective limit is `limit x instances`. This is a
   deliberate MVP trade-off — the alternative is Redis, which this project
   explicitly does not add. It is still sufficient to stop runaway client
-  loops and obvious abuse of the paid Groq API in a single-instance deploy.
+  loops, credential stuffing from one host, and obvious abuse of the paid
+  Groq API in a single-instance deploy.
+  **Launch requirement:** for a multi-instance production deployment this must
+  move to a shared store (Redis/Upstash) or the platform's edge rate limiting.
 - Entries are pruned lazily on each check, so memory stays bounded by the
   number of *active* users within the window.
+- ``settings.RATE_LIMIT_ENABLED`` turns the whole layer off. It defaults to
+  True and exists so the automated test suite (which creates hundreds of
+  accounts from a single synthetic client) does not trip auth limits it is not
+  trying to exercise. Never disable it in production.
 """
 
 from __future__ import annotations
@@ -19,6 +26,8 @@ from collections import defaultdict, deque
 from typing import Deque, Dict, Tuple
 
 from fastapi import HTTPException, status
+
+from .config import settings
 
 
 class RateLimiter:
@@ -65,6 +74,10 @@ AI_RATE_LIMITS = {
     "feedback": RateLimiter(max_requests=15, window_seconds=60),
     "recommendations": RateLimiter(max_requests=15, window_seconds=60),
     "resume_parse": RateLimiter(max_requests=10, window_seconds=60),
+    # File uploads run the same AI parse and are also an abuse vector in their
+    # own right (CPU-bound extraction + multipart bodies), so they are limited
+    # independently of the JSON parse path.
+    "resume_upload": RateLimiter(max_requests=10, window_seconds=60),
     "learning_chat": RateLimiter(max_requests=40, window_seconds=60),
     "case_generate": RateLimiter(max_requests=10, window_seconds=60),
 }
@@ -72,6 +85,37 @@ AI_RATE_LIMITS = {
 
 def enforce_ai_rate_limit(scope: str, user_id: str) -> None:
     """Apply the named AI rate limit for this user (raises 429 when exceeded)."""
+    if not settings.RATE_LIMIT_ENABLED:
+        return
     limiter = AI_RATE_LIMITS.get(scope)
     if limiter is not None:
         limiter.check(key=str(user_id), scope=scope)
+
+
+# ---------------------------------------------------------------------------
+# Authentication limits
+# ---------------------------------------------------------------------------
+#
+# Signup and login are the only unauthenticated, credential-handling endpoints,
+# so they need limits that are keyed differently from the AI ones (which are
+# per authenticated user). The caller supplies the bucket key: the normalised
+# email when known, otherwise the client IP. Rate limiting a login by email
+# means an attacker cannot bypass it by rotating source addresses, and the IP
+# fallback stops one host spraying many different accounts.
+#
+# Deliberately conservative rather than tight: Argon2 verification is already
+# CPU-expensive, and an over-aggressive login limit is a trivial denial of
+# service against real users behind a shared NAT.
+AUTH_RATE_LIMITS = {
+    "signup": RateLimiter(max_requests=10, window_seconds=600),
+    "login": RateLimiter(max_requests=15, window_seconds=300),
+}
+
+
+def enforce_auth_rate_limit(scope: str, key: str) -> None:
+    """Apply the named auth rate limit for this bucket key (raises 429)."""
+    if not settings.RATE_LIMIT_ENABLED:
+        return
+    limiter = AUTH_RATE_LIMITS.get(scope)
+    if limiter is not None:
+        limiter.check(key=str(key), scope=f"auth:{scope}")

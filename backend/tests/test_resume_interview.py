@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.ai.client import LLMResponse, StubLLMClient
-from app.core.exceptions import ResumeExtractionError
+from app.core.exceptions import ResumeExtractionError, ValidationError
 from app.db.database import SessionLocal
 from app.services.resume_service import extract_resume_text
 
@@ -159,7 +159,14 @@ def test_extract_docx_text():
 
 
 def test_extract_docx_corrupt_file():
-    with pytest.raises(ResumeExtractionError):
+    """Bytes that merely claim to be a .docx must be rejected cleanly.
+
+    Content sniffing now rejects this *before* python-docx is invoked (a ZIP
+    header is required), so the error is a ValidationError rather than a parser
+    ResumeExtractionError. Both are 422s to the caller — the point of the test
+    is that nothing is fabricated and no parser exception escapes.
+    """
+    with pytest.raises((ValidationError, ResumeExtractionError)):
         extract_resume_text("resume.docx", b"this is not a real docx")
 
 
@@ -202,7 +209,10 @@ def test_pdf_extraction_path_with_fake_module(monkeypatch):
     assert "Alex Rivera" in text
     assert "SQL" in text
 
-    with pytest.raises(ResumeExtractionError):
+    # Content sniffing is the outer layer: a .pdf whose bytes are not a PDF at
+    # all never reaches the parser. Defence in depth — see test_security.py for
+    # the payload-level cases.
+    with pytest.raises(ValidationError):
         extract_resume_text("resume.pdf", b"not a pdf at all")
 
 
@@ -436,7 +446,7 @@ def test_other_users_resume_asset_cannot_start_interview(
     ).json()
     other = client.post(
         "/api/auth/signup",
-        json={"full_name": "Other", "email": "resume-use-other@example.com", "password": "Password123!"},
+        json={"full_name": "Other", "email": "resume-use-other@example.com", "password": "Password123!", "terms_accepted": True, "privacy_accepted": True},
     ).json()
     other_headers = {"Authorization": f"Bearer {other['access_token']}"}
 
@@ -501,7 +511,7 @@ def test_role_interview_ownership(client: TestClient, auth_headers, monkeypatch)
     _fake, sid = _start_role_interview(client, auth_headers, monkeypatch)
     other_resp = client.post(
         "/api/auth/signup",
-        json={"full_name": "Other", "email": "role-other@example.com", "password": "Password123!"},
+        json={"full_name": "Other", "email": "role-other@example.com", "password": "Password123!", "terms_accepted": True, "privacy_accepted": True},
     )
     other_headers = {"Authorization": f"Bearer {other_resp.json()['access_token']}"}
 
@@ -624,7 +634,7 @@ def test_role_interview_evaluation_ownership(client: TestClient, auth_headers, m
 
     other_resp = client.post(
         "/api/auth/signup",
-        json={"full_name": "Other", "email": "role-eval-other@example.com", "password": "Password123!"},
+        json={"full_name": "Other", "email": "role-eval-other@example.com", "password": "Password123!", "terms_accepted": True, "privacy_accepted": True},
     )
     other_headers = {"Authorization": f"Bearer {other_resp.json()['access_token']}"}
     resp = client.post(

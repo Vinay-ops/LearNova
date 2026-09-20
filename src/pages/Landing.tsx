@@ -1889,18 +1889,38 @@ function FinalCTA() {
 /* 18. Footer                                                          */
 /* ------------------------------------------------------------------ */
 
-const footerCols = [
+// `to` marks a real in-app route; those must be actual links so the public
+// legal documents are reachable from the landing page (and deep-linkable).
+const footerCols: {
+  title: string;
+  links: { label: string; to?: string }[];
+}[] = [
   {
     title: "Product",
-    links: ["Learn", "Quizzes", "Practice", "Interviews", "Progress"],
+    links: [
+      { label: "Learn", to: "/learn" },
+      { label: "Practice", to: "/practice" },
+      { label: "Interviews", to: "/interview" },
+      { label: "Progress", to: "/progress" },
+    ],
   },
   {
     title: "Resources",
-    links: ["Learning Paths", "Interview Preparation", "Help Center", "FAQ"],
+    links: [
+      { label: "Learning Paths" },
+      { label: "Interview Preparation" },
+      { label: "Help Center" },
+      { label: "FAQ" },
+    ],
   },
   {
     title: "Company",
-    links: ["About", "Contact", "Privacy", "Terms"],
+    links: [
+      { label: "About" },
+      { label: "Contact" },
+      { label: "Terms & Conditions", to: "/terms" },
+      { label: "Privacy Policy", to: "/privacy" },
+    ],
   },
 ];
 
@@ -1941,23 +1961,48 @@ function Footer() {
               </p>
               <ul className="mt-4 space-y-2.5">
                 {col.links.map((l) => (
-                  <li key={l}>
-                    <a
-                      href="#"
-                      className="text-sm text-slate-400 transition-colors hover:text-white"
-                    >
-                      {l}
-                    </a>
+                  <li key={l.label}>
+                    {l.to ? (
+                      <Link
+                        to={l.to}
+                        className="text-sm text-slate-400 transition-colors hover:text-white"
+                      >
+                        {l.label}
+                      </Link>
+                    ) : (
+                      <a
+                        href="#"
+                        className="text-sm text-slate-400 transition-colors hover:text-white"
+                      >
+                        {l.label}
+                      </a>
+                    )}
                   </li>
                 ))}
               </ul>
             </div>
           ))}
         </div>
-        <div className="mt-12 border-t border-slate-800 pt-6">
+        <div className="mt-12 flex flex-col gap-4 border-t border-slate-800 pt-6 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-slate-500">
             © 2026 Learnova. All rights reserved.
           </p>
+          {/* Legal links kept in the bottom bar as well as the link columns, so
+              they are reachable without hunting through the footer. */}
+          <nav aria-label="Legal" className="flex items-center gap-5">
+            <Link
+              to="/terms"
+              className="text-xs text-slate-400 transition-colors hover:text-white"
+            >
+              Terms &amp; Conditions
+            </Link>
+            <Link
+              to="/privacy"
+              className="text-xs text-slate-400 transition-colors hover:text-white"
+            >
+              Privacy Policy
+            </Link>
+          </nav>
         </div>
       </div>
     </footer>

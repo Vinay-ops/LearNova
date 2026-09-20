@@ -29,20 +29,45 @@ export interface Profile {
   readonly interviewDate?: string | null;
 }
 
+/**
+ * Server-reported consent status. The versions come from the backend, so the
+ * client always asks the user to accept exactly the revision being served and
+ * a version bump necessarily re-prompts.
+ */
+export interface LegalConsent {
+  terms_version: string;
+  privacy_version: string;
+  terms_accepted_version: string | null;
+  privacy_accepted_version: string | null;
+  terms_accepted_at: string | null;
+  privacy_accepted_at: string | null;
+  /** True when the user must (re-)accept the current revisions. */
+  requires_acceptance: boolean;
+}
+
+export interface SignupConsent {
+  terms: boolean;
+  privacy: boolean;
+}
+
 export interface AuthContextType {
   user: User | null;
   profile: Profile | null;
+  legalConsent: LegalConsent | null;
   isLoading: boolean;
   isAuthenticated: boolean;
   signUp: (
     fullName: string,
     email: string,
     password: string,
+    consent: SignupConsent,
   ) => Promise<{ error?: string }>;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
   signOut: () => void;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error?: string }>;
   refreshProfile: () => Promise<void>;
+  /** Record explicit acceptance of the current legal revisions. */
+  acceptTerms: () => Promise<{ error?: string }>;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
@@ -104,6 +129,7 @@ function normalizeBackendToLegacy(user: any, profile: any): { u: User; p: Profil
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [legalConsent, setLegalConsent] = useState<LegalConsent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const clearLocal = useCallback(() => {
@@ -115,6 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!token) {
       setUser(null);
       setProfile(null);
+      setLegalConsent(null);
       setIsLoading(false);
       return;
     }
@@ -123,10 +150,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { u, p } = normalizeBackendToLegacy(data.user, data.profile);
       setUser(u);
       setProfile(p);
+      setLegalConsent(data.legal_consent ?? null);
     } catch (_e) {
       clearLocal();
       setUser(null);
       setProfile(null);
+      setLegalConsent(null);
     } finally {
       setIsLoading(false);
     }
@@ -136,17 +165,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadSession();
   }, [loadSession]);
 
-  const signUp: AuthContextType["signUp"] = async (fullName, email, password) => {
+  const signUp: AuthContextType["signUp"] = async (
+    fullName,
+    email,
+    password,
+    consent,
+  ) => {
     try {
       const { data } = await api.post("/api/auth/signup", {
         full_name: fullName,
         email,
         password,
+        // Sent explicitly because the API requires them; the backend records
+        // its OWN version constants and server timestamp regardless. Never send
+        // an accepted-at value — a client-supplied timestamp is forgeable.
+        terms_accepted: consent.terms,
+        privacy_accepted: consent.privacy,
       });
       if (data?.access_token) localStorage.setItem("access_token", data.access_token);
       const { u, p } = normalizeBackendToLegacy(data.user, data.profile);
       setUser(u);
       setProfile(p);
+      setLegalConsent(data.legal_consent ?? null);
       return {};
     } catch (err: any) {
       return { error: extractApiMessage(err, "Sign up failed") };
@@ -160,6 +200,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { u, p } = normalizeBackendToLegacy(data.user, data.profile);
       setUser(u);
       setProfile(p);
+      setLegalConsent(data.legal_consent ?? null);
       return {};
     } catch (err: any) {
       return { error: extractApiMessage(err, "Invalid email or password") };
@@ -170,6 +211,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     clearLocal();
     setUser(null);
     setProfile(null);
+    setLegalConsent(null);
+  };
+
+  const acceptTerms: AuthContextType["acceptTerms"] = async () => {
+    if (!legalConsent) {
+      return { error: "Could not determine the current document versions." };
+    }
+    try {
+      // The versions sent are the ones the server told us to display; a
+      // mismatch (stale tab) is rejected server-side rather than silently
+      // recording consent for a document the user never saw.
+      const { data } = await api.post("/api/auth/accept-terms", {
+        terms_version: legalConsent.terms_version,
+        privacy_version: legalConsent.privacy_version,
+      });
+      setLegalConsent(data as LegalConsent);
+      return {};
+    } catch (err: any) {
+      return {
+        error: extractApiMessage(err, "We couldn't record your acceptance. Please try again."),
+      };
+    }
   };
 
   const refreshProfile: AuthContextType["refreshProfile"] = async () => {
@@ -216,6 +279,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       value={{
         user,
         profile,
+        legalConsent,
         isLoading,
         isAuthenticated,
         signUp,
@@ -223,6 +287,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         signOut,
         updateProfile,
         refreshProfile,
+        acceptTerms,
       }}
     >
       {children}

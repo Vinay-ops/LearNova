@@ -9,7 +9,11 @@ from ..core.exceptions import AuthorizationError, NotFoundError, ValidationError
 from ..models.resume import Resume
 from ..schemas.ai import ResumeData
 from ..utils.resume_sanitize import sanitize_resume_data
-from .resume_service import extract_resume_text, ensure_supported_resume
+from .resume_service import (
+    ensure_supported_resume,
+    extract_resume_text,
+    sanitize_filename,
+)
 
 
 class ResumeAssetService:
@@ -58,7 +62,9 @@ class ResumeAssetService:
             )
         record = Resume(
             user_id=user_id,
-            filename=(filename or "resume").strip()[:200] or "resume",
+            # Display-only, never a filesystem path — but sanitized so a crafted
+            # name cannot carry traversal segments or control characters.
+            filename=sanitize_filename(filename)[:200],
             source_type=(source_type or "parsed")[:40],
             role=((role or "").strip()[:80]) or None,
             data=cleaned,
@@ -98,7 +104,7 @@ class ResumeAssetService:
         if filename is not None:
             if not (filename or "").strip():
                 raise ValidationError("filename cannot be empty")
-            record.filename = filename.strip()[:200]
+            record.filename = sanitize_filename(filename)[:200]
         if role is not None:
             record.role = (role.strip()[:80]) or None
         if resume is not None:

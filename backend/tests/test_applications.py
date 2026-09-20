@@ -46,6 +46,8 @@ def test_cross_user_ownership_blocked(client: TestClient, auth_headers):
         "full_name": "Attacker",
         "email": f"attacker_{id({})}@example.com",
         "password": "Password123!",
+        "terms_accepted": True,
+        "privacy_accepted": True,
     })
     other_headers = {"Authorization": f"Bearer {other.json()['access_token']}"}
     resp = client.get(f"/api/applications/{app['id']}", headers=other_headers)

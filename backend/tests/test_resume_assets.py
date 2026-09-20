@@ -103,7 +103,7 @@ def test_saved_resume_cannot_be_accessed_by_other_user(
     created = _save(client, auth_headers).json()
     other = client.post(
         "/api/auth/signup",
-        json={"full_name": "Other", "email": "resume-other@example.com", "password": "Password123!"},
+        json={"full_name": "Other", "email": "resume-other@example.com", "password": "Password123!", "terms_accepted": True, "privacy_accepted": True},
     ).json()
     other_headers = {"Authorization": f"Bearer {other['access_token']}"}
 

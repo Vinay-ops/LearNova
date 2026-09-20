@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, File, Form, status, UploadFile
 from sqlalchemy.orm import Session
 
 from ..core.exceptions import ValidationError as AppValidationError
+from ..core.rate_limit import enforce_ai_rate_limit
 from ..core.security import get_current_user, get_db
 from ..models.user import User
 from ..schemas.resume import (
@@ -65,6 +66,8 @@ async def upload_resume(
         raise AppValidationError("Resume file is empty")
     if len(data) > MAX_RESUME_BYTES:
         raise AppValidationError("Resume file is too large (max 2 MB)")
+
+    enforce_ai_rate_limit("resume_upload", str(current_user.id))
 
     service = ResumeAssetService(db)
     return service.create_from_file(current_user.id, filename, data, role=role)

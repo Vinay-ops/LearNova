@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router";
 import { useAuth } from "@/hooks/use-auth";
+import { LegalConsentGate } from "@/components/LegalConsentGate";
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -29,5 +30,11 @@ export function RequireAuth({ children }: { children: React.ReactNode }) {
     return <Navigate to="/auth" state={{ from: location.pathname + location.search }} replace />;
   }
 
-  return <>{children}</>;
+  // Authenticated, but every protected route also requires the current legal
+  // revisions to have been accepted (see LegalConsentGate).
+  return (
+    <LegalConsentGate>
+      {children}
+    </LegalConsentGate>
+  );
 }

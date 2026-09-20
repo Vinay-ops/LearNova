@@ -320,6 +320,8 @@ def test_progress_is_isolated_between_users(client: TestClient, auth_headers):
             "full_name": "Progress Other",
             "email": "progress-other@example.com",
             "password": "Password123!",
+            "terms_accepted": True,
+            "privacy_accepted": True,
         },
     ).json()
     other_headers = {"Authorization": f"Bearer {other['access_token']}"}
@@ -381,6 +383,8 @@ def test_resume_library_is_isolated_between_users(client: TestClient, auth_heade
             "full_name": "Resume Other",
             "email": "resume-other-lib@example.com",
             "password": "Password123!",
+            "terms_accepted": True,
+            "privacy_accepted": True,
         },
     ).json()
     other_headers = {"Authorization": f"Bearer {other['access_token']}"}

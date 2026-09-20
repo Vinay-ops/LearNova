@@ -58,6 +58,12 @@ CREATE TABLE users (
 	email VARCHAR NOT NULL, 
 	password_hash VARCHAR NOT NULL, 
 	is_active BOOLEAN NOT NULL, 
+	terms_accepted BOOLEAN DEFAULT false NOT NULL, 
+	terms_version VARCHAR(32), 
+	terms_accepted_at TIMESTAMP WITH TIME ZONE, 
+	privacy_policy_accepted BOOLEAN DEFAULT false NOT NULL, 
+	privacy_policy_version VARCHAR(32), 
+	privacy_policy_accepted_at TIMESTAMP WITH TIME ZONE, 
 	created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL, 
 	updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL, 
 	PRIMARY KEY (id), 
@@ -454,5 +460,5 @@ CREATE TABLE IF NOT EXISTS alembic_version (
     version_num VARCHAR(32) NOT NULL,
     CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num)
 );
-INSERT INTO alembic_version (version_num) VALUES ('0003_resumes_readiness')
+INSERT INTO alembic_version (version_num) VALUES ('0004_legal_consent')
 ON CONFLICT (version_num) DO NOTHING;

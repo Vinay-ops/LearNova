@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { MarkdownMessage } from "@/components/nova/MarkdownMessage";
-import { fenceLanguage, nodeToText } from "@/lib/markdown";
+import { fenceLanguage, nodeToText, safeUrlTransform } from "@/lib/markdown";
 
 /**
  * The AI answers in Markdown. Before this renderer existed the chat printed raw
@@ -169,6 +169,69 @@ describe("MarkdownMessage — safety and layout", () => {
   it("renders nothing (no crash) for empty content", () => {
     const { container } = renderMd("");
     expect(container.textContent).toBe("");
+  });
+});
+
+describe("MarkdownMessage — malicious AI output (XSS)", () => {
+  it.each([
+    ["<script>alert(1)</script>"],
+    ["<img src=x onerror=alert(1)>"],
+    ["<svg onload=alert(1)>"] ,
+    ['<iframe src="javascript:alert(1)"></iframe>'],
+    ["<body onload=alert(1)>"],
+    ["<a href=\"javascript:alert(1)\">click</a>"],
+  ])("renders %s as inert text, not markup", (payload) => {
+    const { container } = renderMd(payload);
+
+    expect(container.querySelector("script")).toBeNull();
+    expect(container.querySelector("svg")).toBeNull();
+    expect(container.querySelector("iframe")).toBeNull();
+    // No event-handler attribute can exist because no raw HTML is ever parsed
+    // into the DOM — every payload above is escaped into text content.
+    const withHandlers = Array.from(container.querySelectorAll("*")).filter((el) =>
+      Array.from(el.attributes).some((attr) => attr.name.toLowerCase().startsWith("on")),
+    );
+    expect(withHandlers).toEqual([]);
+  });
+
+  it.each([
+    "javascript:alert(1)",
+    "JavaScript:alert(1)",
+    "java\tscript:alert(1)",
+    "java\nscript:alert(1)",
+    "vbscript:msgbox(1)",
+    "data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==",
+  ])("drops the dangerous URL scheme in %s", (url) => {
+    expect(safeUrlTransform(url)).toBe("");
+  });
+
+  it("renders a javascript: link as plain text with no href", () => {
+    const { container } = renderMd("[click me](javascript:alert(1))");
+
+    expect(container.querySelector("a")).toBeNull();
+    expect(container.textContent).toContain("click me");
+    expect(container.innerHTML).not.toContain("javascript:");
+  });
+
+  it("renders a data: image as text with no src attribute", () => {
+    const { container } = renderMd("![pixel](data:image/png;base64,iVBORw0KGgoAAAANSUhEUg)");
+
+    // Either the image is dropped entirely, or it is rendered without a src.
+    const img = container.querySelector("img");
+    expect(img?.getAttribute("src") ?? "").not.toContain("data:");
+    expect(container.querySelector("img[src^='data:']")).toBeNull();
+  });
+
+  it("keeps a normal https link working", () => {
+    const { container } = renderMd("[docs](https://example.com/guide)");
+    expect(container.querySelector("a")?.getAttribute("href")).toBe(
+      "https://example.com/guide",
+    );
+  });
+
+  it("keeps a relative link working", () => {
+    const { container } = renderMd("[practice](/practice)");
+    expect(container.querySelector("a")?.getAttribute("href")).toBe("/practice");
   });
 });
 

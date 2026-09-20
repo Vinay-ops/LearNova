@@ -2,11 +2,62 @@ import { vlyPlugin } from "@vly-ai/integrations";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
+
+/**
+ * Local parity with the production security headers in vercel.json.
+ *
+ * `frame-ancestors` / `X-Frame-Options` are deliberately OMITTED here: the dev
+ * server is previewed inside an iframe by the tooling, and denying framing would
+ * make the app impossible to preview. Production (vercel.json) sets both to
+ * deny, which is where clickjacking protection actually matters.
+ *
+ * `upgrade-insecure-requests` is also omitted so http://localhost keeps working.
+ */
+function securityHeadersPlugin(): Plugin {
+  const headers: Record<string, string> = {
+    "Content-Security-Policy": [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "script-src 'self' 'unsafe-inline'", // Vite injects an inline HMR client in dev
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' data: https://fonts.gstatic.com",
+      "img-src 'self' data: blob: https:",
+      "connect-src 'self' ws: http://localhost:* http://127.0.0.1:*",
+      "manifest-src 'self'",
+      "worker-src 'self' blob:",
+    ].join("; "),
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy":
+      "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(self), midi=(), payment=(), usb=()",
+  };
+
+  return {
+    name: "learnova-security-headers",
+    configureServer(server) {
+      server.middlewares.use((_req, res, next) => {
+        for (const [key, value] of Object.entries(headers)) {
+          res.setHeader(key, value);
+        }
+        next();
+      });
+    },
+    configurePreviewServer(server) {
+      server.middlewares.use((_req, res, next) => {
+        for (const [key, value] of Object.entries(headers)) {
+          res.setHeader(key, value);
+        }
+        next();
+      });
+    },
+  };
+}
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), vlyPlugin(), tailwindcss()],
+  plugins: [react(), vlyPlugin(), tailwindcss(), securityHeadersPlugin()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

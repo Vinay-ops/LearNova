@@ -1,6 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from app.core.legal import PRIVACY_VERSION, TERMS_VERSION
+from tests.conftest import CONSENT
+
 pytestmark = pytest.mark.phase1
 
 
@@ -12,6 +15,7 @@ class TestSignup:
             "full_name": "New User",
             "email": email,
             "password": "Password123!",
+            **CONSENT,
         })
         assert resp.status_code == 201
         body = resp.json()
@@ -19,11 +23,19 @@ class TestSignup:
         assert body["token_type"] == "bearer"
         assert body["user"]["email"] == email
         assert body["profile"]["full_name"] == "New User"
+        # Consent is recorded against the version actually served, with a
+        # server-side timestamp — never a client-supplied one.
+        consent = body["legal_consent"]
+        assert consent["requires_acceptance"] is False
+        assert consent["terms_accepted_version"] == TERMS_VERSION
+        assert consent["privacy_accepted_version"] == PRIVACY_VERSION
+        assert consent["terms_accepted_at"] is not None
+        assert consent["privacy_accepted_at"] is not None
 
     def test_signup_duplicate_email(self, client: TestClient):
         import random
         email = f"dup{random.randint(1, 999999)}@example.com"
-        payload = {"full_name": "A", "email": email, "password": "Password123!"}
+        payload = {"full_name": "A", "email": email, "password": "Password123!", **CONSENT}
         r1 = client.post("/api/auth/signup", json=payload)
         assert r1.status_code == 201
         r2 = client.post("/api/auth/signup", json=payload)
@@ -35,7 +47,7 @@ class TestLogin:
         import random
         email = f"login{random.randint(1, 999999)}@example.com"
         client.post("/api/auth/signup", json={
-            "full_name": "L", "email": email, "password": "pw123456!",
+            "full_name": "L", "email": email, "password": "pw123456!", **CONSENT,
         })
         resp = client.post("/api/auth/login", json={
             "email": email,
@@ -48,7 +60,7 @@ class TestLogin:
         import random
         email = f"bad{random.randint(1, 999999)}@example.com"
         client.post("/api/auth/signup", json={
-            "full_name": "B", "email": email, "password": "correct123!",
+            "full_name": "B", "email": email, "password": "correct123!", **CONSENT,
         })
         resp = client.post("/api/auth/login", json={
             "email": email,
