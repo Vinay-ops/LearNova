@@ -8,7 +8,6 @@ import {
   CheckCircle2,
   Flame,
   GraduationCap,
-  Play,
   TrendingUp,
   Target,
   Trophy,
@@ -31,6 +30,7 @@ import { useDrills } from "@/hooks/use-drills";
 import { Link } from "react-router";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
+import { ErrorState } from "@/components/nova/ErrorState";
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -56,17 +56,27 @@ const skillTextColor = (score: number) =>
 export default function Dashboard() {
   const { user, profile } = useAuth();
   const userId = user?.id || "";
-  const { summary } = useProgress(userId || undefined);
+  const {
+    summary,
+    loading: progressLoading,
+    error: progressError,
+    reload: reloadProgress,
+  } = useProgress(userId || undefined);
   const { attempts: caseAttempts } = useCaseAttempts(userId || undefined);
   const { cases } = useCases();
   const { drills } = useDrills();
+
+  // When the progress request has not succeeded there is no measured data. We
+  // show an em dash rather than 0 so a failed/loading request can never be
+  // mistaken for a real "your readiness is 0" measurement.
+  const progressPending = progressLoading || !!progressError;
+  const metric = <T extends string | number>(value: T): T | "—" =>
+    progressPending ? "—" : value;
 
   const skillScores = summary?.skill_scores || [];
   const readinessScore = summary?.readiness_score ?? 0;
   const readinessOverTime = summary?.readiness_over_time || [];
   const completedCases = summary?.total_cases_completed ?? 0;
-  const completedAssessments = summary?.total_assessments_completed ?? 0;
-  const completedDrills = summary?.total_drills_completed ?? 0;
   const completedInterviews = summary?.total_interviews_completed ?? 0;
   const averageInterviewScore = summary?.average_interview_score;
   const averageScore = summary?.average_score ?? 0;
@@ -126,13 +136,23 @@ export default function Dashboard() {
         </Link>
       </motion.div>
 
+      {/* Progress failure must be visible — the stats below show "—" not zeros. */}
+      {progressError ? (
+        <ErrorState
+          className="mb-8"
+          title="Unable to load progress"
+          message="We couldn't load your progress right now. Your data is safe — please try again."
+          onRetry={reloadProgress}
+        />
+      ) : null}
+
       {/* Stat cards */}
       <FadeIn delay={0.1} className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
         {[
           {
             icon: Target,
-            value: readinessScore,
-            suffix: "/100",
+            value: metric(readinessScore),
+            suffix: progressPending ? "" : "/100",
             label: "Interview Readiness",
             color: "bg-blue-100 text-blue-600",
             trend:
@@ -143,8 +163,8 @@ export default function Dashboard() {
           },
           {
             icon: Flame,
-            value: streak,
-            suffix: " days",
+            value: metric(streak),
+            suffix: progressPending ? "" : " days",
             label: "Day Streak",
             color: "bg-amber-100 text-amber-600",
             trend: "Keep it going!",
@@ -152,7 +172,7 @@ export default function Dashboard() {
           },
           {
             icon: BookOpen,
-            value: completedCases,
+            value: metric(completedCases),
             suffix: "",
             label: "Cases Done",
             color: "bg-blue-100 text-blue-600",
@@ -161,7 +181,7 @@ export default function Dashboard() {
           },
           {
             icon: Mic,
-            value: completedInterviews,
+            value: metric(completedInterviews),
             suffix: "",
             label: "Interviews Done",
             color: "bg-pink-100 text-pink-600",
@@ -170,8 +190,8 @@ export default function Dashboard() {
           },
           {
             icon: Trophy,
-            value: `${averageScore}`,
-            suffix: "%",
+            value: progressPending ? "—" : `${averageScore}`,
+            suffix: progressPending ? "" : "%",
             label: "Avg Score",
             color: "bg-emerald-100 text-emerald-600",
             trend: "Solid progress",
@@ -226,6 +246,22 @@ export default function Dashboard() {
             </Link>
           </div>
           <div className="nova-card rounded-3xl p-6">
+            {skillScores.length === 0 ? (
+              <div className="py-6 text-center">
+                <p className="text-sm font-semibold text-slate-700">
+                  {progressError
+                    ? "Skill data couldn't be loaded"
+                    : progressLoading
+                      ? "Loading your skills…"
+                      : "No measured skills yet"}
+                </p>
+                {!progressError && !progressLoading ? (
+                  <p className="mx-auto mt-1.5 max-w-sm text-xs leading-relaxed text-slate-400">
+                    Finish a quiz, drill or interview and your measured skills will show up here.
+                  </p>
+                ) : null}
+              </div>
+            ) : (
             <StaggerList className="space-y-4">
               {skillScores.map((skill, i) => (
                 <StaggerItem key={skill.name}>
@@ -269,6 +305,7 @@ export default function Dashboard() {
                 </StaggerItem>
               ))}
             </StaggerList>
+            )}
 
             {/* Weakness callout — only from real measured skill scores */}
             <FadeIn delay={0.6} className="mt-6">
@@ -479,7 +516,9 @@ export default function Dashboard() {
         ) : (
           <div className="nova-card rounded-3xl p-8 text-center">
             <p className="text-sm text-slate-500">
-              Your readiness trend will appear here as you complete evaluations.
+              {progressError
+                ? "Your readiness history couldn't be loaded right now."
+                : "Your readiness trend will appear here as you complete evaluations."}
             </p>
             <p className="text-xs text-slate-400 mt-1">
               Only real snapshots are shown — no estimated history.

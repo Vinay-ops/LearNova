@@ -185,6 +185,27 @@ def test_supabase_schema_declares_every_model_table():
     )
 
 
+def test_alembic_revision_ids_fit_the_version_column():
+    """Every revision id must fit ``alembic_version.version_num`` (VARCHAR(32)).
+
+    Alembic creates that column as VARCHAR(32). SQLite ignores the length, so an
+    over-long id passes locally — but PostgreSQL raises
+    ``value too long for type character varying(32)`` and the upgrade dies. That
+    is precisely how revision ``0003_resumes_and_readiness_snapshots`` (36 chars)
+    broke ``alembic upgrade head`` on Supabase while passing every local run.
+    """
+    over_long: list[tuple[str, str]] = []
+    for path in (BACKEND_DIR / "alembic" / "versions").glob("*.py"):
+        text = path.read_text(encoding="utf-8")
+        match = re.search(r'^revision:\s*str\s*=\s*"([^"]+)"', text, re.M)
+        if match and len(match.group(1)) > 32:
+            over_long.append((path.name, match.group(1)))
+
+    assert not over_long, (
+        f"these revision ids exceed VARCHAR(32) and would fail on PostgreSQL: {over_long}"
+    )
+
+
 def test_supabase_schema_stamps_alembic_head():
     """The bootstrap file stamps alembic_version — it must stamp the real head.
 
@@ -210,6 +231,11 @@ def test_supabase_schema_stamps_alembic_head():
     assert stamped, "supabase_schema.sql does not stamp alembic_version"
     assert stamped.group(1) == head, (
         f"supabase_schema.sql stamps {stamped.group(1)!r} but the alembic head is {head!r}"
+    )
+    # The stamp is inserted into the same VARCHAR(32) column, so it is bound by
+    # the identical length limit.
+    assert len(stamped.group(1)) <= 32, (
+        f"stamped revision {stamped.group(1)!r} exceeds VARCHAR(32)"
     )
 
 

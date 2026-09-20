@@ -1,9 +1,13 @@
 """add resumes and readiness_snapshots tables
 
-Revision ID: 0003_resumes_and_readiness_snapshots
+Revision ID: 0003_resumes_readiness
 Revises: 0002_remaining_tables
 Create Date: 2026-09-04 09:00:00.000000
 
+NOTE: the revision id MUST stay within 32 characters — Alembic stores it in
+``alembic_version.version_num``, which it creates as VARCHAR(32). SQLite ignores
+that length so an over-long id passes locally, but PostgreSQL rejects the insert
+with "value too long for type character varying(32)" and the upgrade fails.
 """
 from typing import Sequence, Union
 
@@ -11,7 +15,7 @@ from alembic import op
 import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
-revision: str = "0003_resumes_and_readiness_snapshots"
+revision: str = "0003_resumes_readiness"
 down_revision: Union[str, None] = "0002_remaining_tables"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
