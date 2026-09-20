@@ -194,7 +194,35 @@ def health(request: Request):
             engine = get_engine()
             with engine.connect() as conn:
                 conn.execute(text("SELECT 1"))
-                db_probe = {"status": "ok"}
+                missing_columns = conn.execute(
+                    text(
+                        "SELECT column_name FROM information_schema.columns "
+                        "WHERE table_schema = 'public' AND table_name = 'users' "
+                        "AND column_name IN ("
+                        "'terms_accepted', 'terms_version', 'terms_accepted_at', "
+                        "'privacy_policy_accepted', 'privacy_policy_version', "
+                        "'privacy_policy_accepted_at')"
+                    )
+                ).scalars().all()
+                expected_columns = {
+                    "terms_accepted",
+                    "terms_version",
+                    "terms_accepted_at",
+                    "privacy_policy_accepted",
+                    "privacy_policy_version",
+                    "privacy_policy_accepted_at",
+                }
+                missing_columns = sorted(expected_columns - set(missing_columns))
+                db_probe = {
+                    "status": "error" if missing_columns else "ok",
+                    "category": "schema_drift" if missing_columns else None,
+                    "missing_columns": missing_columns,
+                    "hints": [
+                        "Run `python -m alembic upgrade head` against the deployed database."
+                    ]
+                    if missing_columns
+                    else [],
+                }
         except SQLAlchemyError as e:
             inner = getattr(e, "orig", None)
             inner_msg = str(inner) if inner is not None else str(e)

@@ -1,4 +1,3 @@
-import { vlyPlugin } from "@vly-ai/integrations";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
@@ -20,7 +19,7 @@ function securityHeadersPlugin(): Plugin {
       "default-src 'self'",
       "base-uri 'self'",
       "object-src 'none'",
-      "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net", // Vite injects an inline HMR client in dev; VLY loads html2canvas-pro from jsdelivr
+      "script-src 'self'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' data: https://fonts.gstatic.com",
       "img-src 'self' data: blob: https:",
@@ -57,13 +56,13 @@ function securityHeadersPlugin(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), vlyPlugin(), tailwindcss(), securityHeadersPlugin()],
+  plugins: [react(), tailwindcss(), securityHeadersPlugin()],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-    // Force a single copy of React across all packages (including vlyPlugin).
-    // Without this, @vly-ai/integrations can resolve its own React copy, which
+    // Force a single copy of React across all packages.
+    // Without this, dependencies can resolve their own React copy, which
     // triggers "Invalid hook call" errors at runtime.
     dedupe: ["react", "react/jsx-runtime", "react-dom", "react-dom/client"],
   },
