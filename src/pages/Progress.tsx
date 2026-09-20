@@ -16,6 +16,10 @@ import { useAuth } from "@/context/AuthContext";
 import { progressApi, type ProgressSummary, type SkillScore } from "@/features/progress";
 import { Link } from "react-router";
 import { cn } from "@/lib/utils";
+import { ErrorState } from "@/components/nova/ErrorState";
+import { EmptyState } from "@/components/nova/EmptyState";
+import { ListSkeleton, StatGridSkeleton } from "@/components/nova/LoadingState";
+import { Sparkles, Target } from "lucide-react";
 
 const skillColor = (score: number) =>
   score >= 80 ? "bg-emerald-500" : score >= 65 ? "bg-primary" : "bg-amber-500";
@@ -96,17 +100,24 @@ export default function Progress() {
         </p>
       </div>
 
-      {error && (
-        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {error}
-        </div>
-      )}
+      {error ? (
+        <ErrorState
+          className="mb-6"
+          title="Unable to load progress"
+          message="We couldn't load your progress right now. Your data is safe — please try again."
+          onRetry={loadSummary}
+        />
+      ) : null}
 
       {loading ? (
-        <div className="rounded-3xl border border-slate-100 bg-white p-12 text-center text-muted-foreground shadow-xl shadow-slate-200/50">
-          Loading progress...
+        <div className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-[auto_1fr]">
+            <ListSkeleton rows={2} />
+            <ListSkeleton rows={2} />
+          </div>
+          <StatGridSkeleton count={6} />
         </div>
-      ) : (
+      ) : error ? null : (
         <>
           {/* Readiness + Key insights */}
           <FadeIn delay={0.1} className="grid lg:grid-cols-[auto_1fr] gap-6 mb-8">
@@ -183,9 +194,9 @@ export default function Progress() {
                       <Tooltip
                         contentStyle={{
                           borderRadius: "12px",
-                          border: "1px solid #e8e2dc",
+                          border: "1px solid var(--border)",
                           fontSize: "12px",
-                          boxShadow: "0 4px 12px rgba(108,92,231,0.08)",
+                          boxShadow: "0 4px 12px rgba(37,99,235,0.10)",
                         }}
                       />
                       <Line
@@ -220,6 +231,21 @@ export default function Progress() {
               Skill Development
             </p>
             <div className="rounded-3xl border border-slate-100 bg-white p-6 shadow-xl shadow-slate-200/50">
+              {skillScores.length === 0 ? (
+                <EmptyState
+                  icon={<Target className="size-6" />}
+                  title="Start learning to build your progress"
+                  description="Complete a learning topic, quiz, practice drill or interview and your measured skills will appear here."
+                  action={
+                    <Link to="/learn">
+                      <button className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition-colors hover:bg-blue-700">
+                        <Sparkles className="size-4" />
+                        Start learning
+                      </button>
+                    </Link>
+                  }
+                />
+              ) : (
               <StaggerList className="space-y-4">
                 {skillScores.map((skill, i) => (
                   <StaggerItem key={skill.name}>
@@ -248,6 +274,7 @@ export default function Progress() {
                   </StaggerItem>
                 ))}
               </StaggerList>
+              )}
             </div>
           </div>
 
@@ -288,7 +315,11 @@ export default function Progress() {
               <Link to="/practice">
                 <motion.div whileHover={{ y: -2 }} className="rounded-3xl border border-slate-100 bg-white p-5 shadow-xl shadow-slate-200/50 hover:shadow-md transition-all h-full">
                   <p className="text-sm font-bold text-slate-900">Practice Weakest Skill</p>
-                  <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">Focus on {weakest.name} ({weakest.score}/100)</p>
+                  <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                    {skillScores.length > 0
+                      ? `Focus on ${weakest.name} (${weakest.score}/100)`
+                      : "Complete an evaluation to find your weakest skill"}
+                  </p>
                 </motion.div>
               </Link>
               <Link to="/practice">

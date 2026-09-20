@@ -332,6 +332,37 @@ CREATE TABLE case_answers (
 	FOREIGN KEY(question_id) REFERENCES case_questions (id) ON DELETE CASCADE
 );
 
+CREATE TABLE resumes (
+	id VARCHAR(36) NOT NULL, 
+	user_id VARCHAR(36) NOT NULL, 
+	filename VARCHAR NOT NULL, 
+	source_type VARCHAR, 
+	role VARCHAR, 
+	data JSON NOT NULL, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL, 
+	updated_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+CREATE TABLE readiness_snapshots (
+	id VARCHAR(36) NOT NULL, 
+	user_id VARCHAR(36) NOT NULL, 
+	score INTEGER NOT NULL, 
+	source VARCHAR NOT NULL, 
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT now() NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(user_id) REFERENCES users (id) ON DELETE CASCADE
+);
+
+CREATE INDEX ix_resumes_id ON resumes (id);
+
+CREATE INDEX ix_resumes_user_id ON resumes (user_id);
+
+CREATE INDEX ix_readiness_snapshots_id ON readiness_snapshots (id);
+
+CREATE INDEX ix_readiness_snapshots_user_id ON readiness_snapshots (user_id);
+
 CREATE INDEX ix_assessments_id ON assessments (id);
 
 CREATE INDEX ix_prompts_id ON prompts (id);
@@ -423,5 +454,5 @@ CREATE TABLE IF NOT EXISTS alembic_version (
     version_num VARCHAR(32) NOT NULL,
     CONSTRAINT alembic_version_pkc PRIMARY KEY (version_num)
 );
-INSERT INTO alembic_version (version_num) VALUES ('0002_remaining_tables')
+INSERT INTO alembic_version (version_num) VALUES ('0003_resumes_and_readiness_snapshots')
 ON CONFLICT (version_num) DO NOTHING;

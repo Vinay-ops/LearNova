@@ -1,11 +1,9 @@
-from typing import Dict, List, Optional
+from typing import Dict, List
 from datetime import datetime, timezone
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from ..core.exceptions import NotFoundError
-from ..models.user import User
 from ..models.profile import Profile
 from ..models.ai_session import AISession
 from ..models.case import CaseAttempt
@@ -30,8 +28,11 @@ class ProgressService:
 
     def get_summary(self, user_id: str) -> ProgressSummary:
         profile = self.db.query(Profile).filter(Profile.user_id == user_id).first()
-        if not profile:
-            raise NotFoundError("Profile")
+        # A user with no profile yet (or no activity at all) is a valid ZERO
+        # state, not an error: signup creates the profile, but a legacy or
+        # partially-provisioned account must still render an empty progress
+        # page rather than a 404/500.
+        readiness_score = clamp_score(profile.readiness_score) if profile else 0
 
         case_attempts = (
             self.db.query(CaseAttempt)
@@ -106,11 +107,11 @@ class ProgressService:
                 )
             )
 
-        readiness_over_time = self._build_readiness_history(user_id, profile.readiness_score)
+        readiness_over_time = self._build_readiness_history(user_id)
 
         return ProgressSummary(
             user_id=str(user_id),
-            readiness_score=clamp_score(profile.readiness_score),
+            readiness_score=readiness_score,
             previous_readiness_score=None,
             streak_days=0,
             total_cases_completed=len(case_attempts),
@@ -127,7 +128,7 @@ class ProgressService:
             readiness_over_time=readiness_over_time,
         )
 
-    def _build_readiness_history(self, user_id: str, current_score: int) -> List[ReadinessEntry]:
+    def _build_readiness_history(self, user_id: str) -> List[ReadinessEntry]:
         """Real readiness-over-time series from persisted snapshots.
 
         Snapshots are written only when a genuine evaluation/progress event

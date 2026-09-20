@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Check, Copy, Sparkles, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { formatClockTime } from "@/lib/design";
+import { MarkdownMessage } from "@/components/nova/MarkdownMessage";
 
 export type ChatRole = "user" | "assistant" | "interviewer" | "candidate" | "system";
 
@@ -80,14 +81,18 @@ export function ChatMessage({
       >
         <div
           className={cn(
-            "rounded-2xl px-4 py-3 text-sm leading-relaxed",
+            "min-w-0 rounded-2xl px-4 py-3 text-sm leading-relaxed",
             isAssistant
               ? "rounded-tl-md border border-border bg-card text-foreground"
               : "rounded-tr-md bg-primary text-primary-foreground",
             pending && "opacity-70",
           )}
         >
-          <p className="whitespace-pre-wrap break-words">{content}</p>
+          {isAssistant ? (
+            <MarkdownMessage content={content} />
+          ) : (
+            <p className="whitespace-pre-wrap break-words">{content}</p>
+          )}
         </div>
 
         <div

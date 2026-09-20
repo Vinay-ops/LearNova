@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { MarkdownMessage } from "@/components/nova/MarkdownMessage";
+import { VoiceConsole } from "@/components/nova/VoiceConsole";
+import { ErrorState } from "@/components/nova/ErrorState";
+import { EmptyState } from "@/components/nova/EmptyState";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,12 +32,10 @@ import {
   ArrowRight,
   Sparkles,
   Home,
-  MicOff,
   FileText,
   UploadCloud,
   Trash2,
   Keyboard,
-  MessageSquare,
   ChevronDown,
   ChevronUp,
   History,
@@ -230,6 +232,10 @@ export default function AIInterview() {
   const [loadingSession, setLoadingSession] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [inputMode, setInputMode] = useState<InputMode>("chat");
+  // Final speech-to-text transcript for the CURRENT voice answer. Kept
+  // separate from the chat draft (`response`) so switching input modes never
+  // leaks half-typed text into the other one.
+  const [voiceTranscript, setVoiceTranscript] = useState("");
   const [resultsTitle, setResultsTitle] = useState<string | null>(null);
 
   const [evaluation, setEvaluation] = useState<StructuredEvaluation | null>(null);
@@ -254,6 +260,9 @@ export default function AIInterview() {
   // True once the first GET /api/ai/sessions has settled (success or failure),
   // so the pending-session resolver knows the list is authoritative.
   const [libraryLoaded, setLibraryLoaded] = useState(false);
+  // Surfaced to the user instead of being swallowed — a failed resume library
+  // load used to disappear into a silent catch.
+  const [libraryError, setLibraryError] = useState<string | null>(null);
 
   // StrictMode / double-invoke guard: prevents startInterview() from firing
   // twice on the same user click or from a React StrictMode double-effect.
@@ -267,18 +276,23 @@ export default function AIInterview() {
 
   // ── library + history loaders ─────────────────────────────────────────────
   const loadLibrary = useCallback(async () => {
-    try {
-      const [resumes, sessions] = await Promise.all([
-        aiInterviewApi.listResumes(),
-        aiInterviewApi.listSessions(""),
-      ]);
-      setSavedResumes(resumes);
-      setInterviews(sessions);
-    } catch {
-      /* non-fatal: library loads lazily on demand */
-    } finally {
-      setLibraryLoaded(true);
+    setLibraryError(null);
+    // Settled (not all): a 500 on one endpoint must not blank the other.
+    // Previously a failing /api/resumes also hid the interview history because
+    // Promise.all rejected the whole batch.
+    const [resumes, sessions] = await Promise.allSettled([
+      aiInterviewApi.listResumes(),
+      aiInterviewApi.listSessions(""),
+    ]);
+    if (resumes.status === "fulfilled") {
+      setSavedResumes(resumes.value);
+    } else {
+      setLibraryError(
+        extractApiMessage(resumes.reason, "Your resume library couldn't be loaded."),
+      );
     }
+    if (sessions.status === "fulfilled") setInterviews(sessions.value);
+    setLibraryLoaded(true);
   }, []);
 
   useEffect(() => {
@@ -558,9 +572,10 @@ export default function AIInterview() {
     }
   };
 
-  const sendAnswer = async (text: string) => {
+  /** Returns true when the turn was accepted, so callers can keep the draft on failure. */
+  const sendAnswer = async (text: string): Promise<boolean> => {
     const trimmed = text.trim();
-    if (!trimmed || busy) return;
+    if (!trimmed || busy) return false;
     setResponse("");
     setError(null);
     setMessages((prev) => [...prev, { role: "candidate", content: trimmed }]);
@@ -573,8 +588,10 @@ export default function AIInterview() {
       setMessages((prev) => [...prev, { role: "interviewer", content: res.message }]);
       // Keep sessionStorage up to date on every successful turn.
       if (sessionId) persistActiveSessionId(sessionId);
+      return true;
     } catch (e: any) {
       setError(extractApiMessage(e, "The interviewer could not respond. Please retry."));
+      return false;
     } finally {
       setBusy(false);
     }
@@ -672,19 +689,44 @@ export default function AIInterview() {
     reset();
   };
 
-  const micStart = () => {
+  /**
+   * Start/stop dictation. Recognition results accumulate into the voice
+   * transcript (never the chat draft); each final chunk is appended so a long
+   * answer spoken in several segments stays whole.
+   */
+  const voiceStart = () => {
     if (listening) {
       stop();
       return;
     }
     start((text) => {
-      setResponse((prev) => (prev ? `${prev} ${text}` : text));
+      setVoiceTranscript((prev) => (prev ? `${prev} ${text}` : text));
     });
+  };
+
+  /**
+   * Submit the transcript through the SAME interview API as a typed answer —
+   * voice is an input method, not a second engine. The transcript is cleared
+   * only after the message is accepted so a failed turn can be retried.
+   */
+  const voiceSubmit = async () => {
+    const trimmed = voiceTranscript.trim();
+    if (!trimmed || busy) return;
+    stop();
+    // Keep the transcript on failure so the candidate can retry without
+    // having to repeat themselves.
+    if (await sendAnswer(trimmed)) setVoiceTranscript("");
   };
 
   const progress = useMemo(
     () => interviewProgress(messages, sessionMeta),
     [messages, sessionMeta],
+  );
+
+  /** Latest interviewer turn — shown above the microphone for context. */
+  const lastInterviewerPrompt = useMemo(
+    () => [...messages].reverse().find((m) => m.role === "interviewer")?.content,
+    [messages],
   );
 
   const practice = useMemo(() => practiceTargets(evaluation, 3), [evaluation]);
@@ -802,8 +844,19 @@ export default function AIInterview() {
             </div>
           )}
 
+          {/* Resume library failure — actionable, never a silent blank */}
+          {libraryError && (
+            <div className="mb-5">
+              <ErrorState
+                title="Unable to load resumes"
+                message={libraryError}
+                onRetry={loadLibrary}
+              />
+            </div>
+          )}
+
           {/* My Resumes library */}
-          {savedResumes.length > 0 && (
+          {!libraryError && savedResumes.length > 0 && (
             <div className="mb-5 rounded-2xl border border-slate-200 bg-white px-4 py-3">
               <div className="flex items-center gap-2 mb-2">
                 <Library className="h-4 w-4 text-blue-600" />
@@ -847,6 +900,17 @@ export default function AIInterview() {
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {/* Empty library: say so, and point at the upload control below. */}
+          {libraryLoaded && !libraryError && savedResumes.length === 0 && (
+            <div className="mb-5">
+              <EmptyState
+                icon={<FileText className="size-6" />}
+                title="No resumes yet"
+                description="Upload a resume below and it will be saved to your library so you can reuse it for any future interview."
+              />
             </div>
           )}
 
@@ -1276,7 +1340,12 @@ export default function AIInterview() {
                   ))}
                 </ul>
               )}
-              {recommendations.reasoning && <p className="text-xs text-muted-foreground mt-2">{recommendations.reasoning}</p>}
+              {recommendations.reasoning && (
+                <MarkdownMessage
+                  content={recommendations.reasoning}
+                  className="mt-2 text-xs text-muted-foreground"
+                />
+              )}
             </div>
           )}
 
@@ -1311,14 +1380,14 @@ export default function AIInterview() {
                       <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1 flex items-center gap-1">
                         <Bot className="h-3 w-3" /> Question {i + 1}
                       </p>
-                      {pair.q}
+                      <MarkdownMessage content={pair.q} />
                     </div>
                     {pair.a ? (
                       <div className="rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-900 ml-4">
                         <p className="text-[10px] font-bold uppercase tracking-wider text-blue-400 mb-1 flex items-center gap-1">
                           <User className="h-3 w-3" /> Your answer
                         </p>
-                        {pair.a}
+                        <p className="whitespace-pre-wrap break-words">{pair.a}</p>
                       </div>
                     ) : null}
                   </div>
@@ -1404,26 +1473,71 @@ export default function AIInterview() {
           </div>
         )}
 
-        {/* Conversation */}
+        {/* Chat / Voice segmented control — voice is only an input method */}
+        <div className="mb-3 inline-flex rounded-full border border-slate-200 bg-slate-50 p-0.5">
+          {(["chat", "voice"] as InputMode[]).map((mode) => (
+            <button
+              key={mode}
+              onClick={() => {
+                // Leaving voice mid-dictation must release the microphone.
+                if (mode === "chat" && listening) stop();
+                setInputMode(mode);
+              }}
+              className={cn(
+                "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition-all capitalize",
+                inputMode === mode
+                  ? "bg-white text-blue-700 shadow-sm border border-slate-200"
+                  : "text-slate-500 hover:text-slate-700",
+              )}
+            >
+              {mode === "chat" ? <Keyboard className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
+              {mode}
+            </button>
+          ))}
+        </div>
+
+        {inputMode === "voice" ? (
+          <VoiceConsole
+            supported={supported}
+            listening={listening}
+            interim={interim}
+            error={voiceError}
+            busy={busy}
+            transcript={voiceTranscript}
+            onChangeTranscript={setVoiceTranscript}
+            onStart={voiceStart}
+            onStop={stop}
+            onSubmit={voiceSubmit}
+            onDiscard={() => {
+              stop();
+              setVoiceTranscript("");
+            }}
+            onSwitchToChat={() => setInputMode("chat")}
+            prompt={lastInterviewerPrompt}
+            questionLabel={
+              progress ? `Question ${progress.asked} of ${progress.total}` : "Current question"
+            }
+          />
+        ) : (
         <div className="rounded-3xl border border-slate-100 bg-white overflow-hidden shadow-xl shadow-slate-200/50 flex flex-col h-[calc(100vh-260px)]">
           <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
             {messages.map((m, i) =>
               m.role === "interviewer" ? (
-                <div key={i} className="flex justify-start">
-                  <div className="max-w-[85%] rounded-lg px-4 py-3 text-sm leading-relaxed bg-muted text-foreground">
+                <div key={i} className="flex min-w-0 justify-start">
+                  <div className="min-w-0 max-w-[85%] rounded-lg px-4 py-3 text-sm leading-relaxed bg-muted text-foreground">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 flex items-center gap-1">
                       <Bot className="h-3 w-3" /> Interviewer
                     </p>
-                    <p>{m.content}</p>
+                    <MarkdownMessage content={m.content} />
                   </div>
                 </div>
               ) : (
-                <div key={i} className="flex justify-end">
-                  <div className="max-w-[85%] rounded-lg px-4 py-3 text-sm leading-relaxed bg-primary text-primary-foreground">
+                <div key={i} className="flex min-w-0 justify-end">
+                  <div className="min-w-0 max-w-[85%] rounded-lg px-4 py-3 text-sm leading-relaxed bg-primary text-primary-foreground">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-primary-foreground/70 mb-1.5 flex items-center gap-1">
                       <User className="h-3 w-3" /> You
                     </p>
-                    <p>{m.content}</p>
+                    <p className="whitespace-pre-wrap break-words">{m.content}</p>
                   </div>
                 </div>
               ),
@@ -1436,47 +1550,15 @@ export default function AIInterview() {
                 </div>
               </div>
             )}
-            {listening && interim && (
-              <div className="flex justify-end">
-                <div className="max-w-[85%] rounded-lg px-4 py-3 text-sm text-muted-foreground italic border border-dashed border-emerald-300">
-                  {interim}
-                </div>
-              </div>
-            )}
           </div>
 
-          {/* Input */}
+          {/* Chat composer — voice has its own immersive surface above */}
           <div className="border-t px-5 py-4">
-            {voiceError && <p className="text-xs text-amber-600 mb-2">{voiceError}</p>}
-
-            {/* Chat / Voice segmented control — voice is only an input method */}
-            <div className="mb-3 inline-flex rounded-full border border-slate-200 bg-slate-50 p-0.5">
-              {(["chat", "voice"] as InputMode[]).map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setInputMode(mode)}
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-bold transition-all capitalize",
-                    inputMode === mode
-                      ? "bg-white text-blue-700 shadow-sm border border-slate-200"
-                      : "text-slate-500 hover:text-slate-700",
-                  )}
-                >
-                  {mode === "chat" ? <Keyboard className="h-3 w-3" /> : <Mic className="h-3 w-3" />}
-                  {mode}
-                </button>
-              ))}
-            </div>
-
             <div className="relative">
               <Textarea
                 value={response}
                 onChange={(e) => setResponse(e.target.value)}
-                placeholder={
-                  inputMode === "voice"
-                    ? "Speak with the mic below — your words appear here and you can edit them before sending."
-                    : "Type your answer…"
-                }
+                placeholder="Type your answer…"
                 className="min-h-[90px] resize-none pr-24"
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
@@ -1486,26 +1568,6 @@ export default function AIInterview() {
                 }}
               />
               <div className="absolute bottom-3 right-3 flex items-center gap-1.5">
-                {inputMode === "voice" && (
-                  <Button
-                    size="sm"
-                    variant={listening ? "default" : "outline"}
-                    onClick={micStart}
-                    disabled={!supported}
-                    title={
-                      supported
-                        ? "Answer by voice (speech-to-text)"
-                        : "Voice input not supported in this browser"
-                    }
-                    className="h-8 w-8 p-0 rounded-full"
-                  >
-                    {supported ? (
-                      listening ? <Mic className="h-3.5 w-3.5 animate-pulse" /> : <Mic className="h-3.5 w-3.5" />
-                    ) : (
-                      <MicOff className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                )}
                 <Button
                   size="sm"
                   onClick={() => sendAnswer(response)}
@@ -1517,24 +1579,12 @@ export default function AIInterview() {
                 </Button>
               </div>
             </div>
-
-            {listening && (
-              <p className="mt-2 text-xs text-emerald-600 font-medium flex items-center gap-1.5">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Listening… speak your answer. Review the transcript below the mic before sending.
-              </p>
-            )}
-            {inputMode === "voice" && !supported && (
-              <p className="mt-2 text-[11px] text-muted-foreground flex items-center gap-1">
-                <MessageSquare className="h-3 w-3" />
-                Voice input isn't available in this browser — use the Chat tab to type instead.
-              </p>
-            )}
-            {inputMode === "chat" && (
-              <p className="mt-2 text-[11px] text-muted-foreground">Press Enter to send. Switch to Voice to answer by speech.</p>
-            )}
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              Press Enter to send. Switch to Voice to answer by speech.
+            </p>
           </div>
         </div>
+        )}
       </div>
     </AppLayout>
   );

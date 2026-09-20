@@ -1,8 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/AuthContext";
@@ -10,6 +9,7 @@ import { extractApiMessage } from "@/lib/api-client";
 import { learningApi, type LearningMessage, type LearningSession } from "@/features/learning/api";
 import { quizzesApi } from "@/features/quizzes/api";
 import { cn } from "@/lib/utils";
+import { MarkdownMessage } from "@/components/nova/MarkdownMessage";
 import { GraduationCap, Send, Sparkles, ArrowRight, Loader2, BookOpen, RefreshCw } from "lucide-react";
 
 const EXAMPLE_TOPICS = [
@@ -35,7 +35,7 @@ function toLearnerLevel(raw: string | null | undefined): string {
 export default function Learn() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, profile } = useAuth();
+  const { profile } = useAuth();
 
   const topicFromUrl = searchParams.get("topic") || "";
   const focusFromUrl = (searchParams.get("focus") || "")
@@ -340,16 +340,23 @@ export default function Learn() {
                   </div>
                 ) : (
                   messages.map((m) => (
-                    <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
+                    <div
+                      key={m.id}
+                      className={cn("flex min-w-0", m.role === "user" ? "justify-end" : "justify-start")}
+                    >
                       <div
                         className={cn(
-                          "max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed whitespace-pre-wrap",
+                          "min-w-0 max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed sm:max-w-[80%]",
                           m.role === "user"
-                            ? "bg-blue-600 text-white rounded-br-md shadow-md shadow-blue-200"
+                            ? "whitespace-pre-wrap break-words bg-blue-600 text-white rounded-br-md shadow-md shadow-blue-200"
                             : "bg-white border border-slate-100 text-slate-700 rounded-bl-md shadow-sm",
                         )}
                       >
-                        {m.content}
+                        {m.role === "user" ? (
+                          m.content
+                        ) : (
+                          <MarkdownMessage content={m.content} className="text-slate-700" />
+                        )}
                       </div>
                     </div>
                   ))
