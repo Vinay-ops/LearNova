@@ -20,7 +20,7 @@ function securityHeadersPlugin(): Plugin {
       "default-src 'self'",
       "base-uri 'self'",
       "object-src 'none'",
-      "script-src 'self' 'unsafe-inline'", // Vite injects an inline HMR client in dev
+      "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net", // Vite injects an inline HMR client in dev; VLY loads html2canvas-pro from jsdelivr
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' data: https://fonts.gstatic.com",
       "img-src 'self' data: blob: https:",
